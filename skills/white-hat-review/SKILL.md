@@ -1,15 +1,15 @@
 ---
-name: white-hat-review
+name: quality-review
 description: >
   Use after any agent-generated report, analysis, or recommendation to critically
   review its accuracy, flag unsupported claims, verify numbers against source
   documents, and suggest corrections. Triggers on: "review this report", "check
   this analysis", "is this correct", "fact-check this", "how confident are you",
-  "white hat review", or proactively when a major report has just been generated.
+  "quality review", or proactively when a major report has just been generated.
 version: 1.0.0
 ---
 
-# White Hat Review
+# Quality Review
 
 Skeptically audit any agent-generated output — report, analysis, artifact, or recommendation — before it leaves the conversation. The goal is not to be difficult but to catch errors before they reach clients or inform decisions.
 
@@ -101,7 +101,7 @@ Common areas where agents err:
 Format the review as a structured document:
 
 ```
-## White Hat Review — [Report Title]
+## Quality Review — [Report Title]
 Reviewed: [date]
 Overall confidence: [HIGH / MEDIUM / LOW]
 

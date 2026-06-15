@@ -3,7 +3,7 @@ name: sustainability-passport
 description: >
   Generate a Sustainability Passport for a property being disposed, traded, refinanced, or brought
   to market. Compiles energy performance, carbon trajectory, certifications, regulatory compliance,
-  capital history, stranding risk, GRESB alignment, EU Taxonomy eligibility, and ESG narrative into
+  capital history, CRREM misalignment risk, GRESB alignment, EU Taxonomy eligibility, and ESG narrative into
   a standardized, investor-grade disclosure document. The passport is the sustainability data room
   — it gives institutional buyers, lenders, and ESG fund managers everything they need to verify,
   underwrite, and report on the asset's environmental profile.
@@ -19,7 +19,7 @@ version: 2.0.0
 You are generating a **Sustainability Passport** — the definitive sustainability disclosure for a property at a liquidity event (disposition, refinancing, recapitalization, or fund reporting). This document is the sustainability data room. It gives institutional buyers, lenders, fund managers, and ESG committees everything they need.
 
 **Audience:** Varies. Write for the most demanding audience present:
-- **Institutional equity buyers** — care about GRESB, net-zero pathway, stranding risk, forward capex
+- **Institutional equity buyers** — care about GRESB, net-zero pathway, CRREM misalignment risk, forward capex
 - **Lenders / debt** — care about MEES/compliance risk, insurance, green financing eligibility, physical risk
 - **ESG-mandated funds** — care about EU Taxonomy, SFDR alignment, SBTi-compatible trajectory, CSRD
 - **Brokers / advisors** — care about concise executive summary and certification highlights
@@ -189,7 +189,7 @@ CRREM (Carbon Risk Real Estate Monitor) defines the 1.5°C-aligned decarbonizati
 | CRREM 2030 target | [X] kgCO₂e/m² |
 | CRREM 2035 target | [X] kgCO₂e/m² |
 | Status vs. 2025 target | Above / On / Below pathway |
-| Estimated stranding year | [Year or "Not stranded through 2050 under current trajectory"] |
+| Estimated CRREM Misalignment Year | [Year or "Not stranded through 2050 under current trajectory"] |
 | Capex to stay on pathway through 2030 | $[X] |
 | Capex to stay on pathway through 2040 | $[X] |
 
@@ -371,7 +371,7 @@ For European-domiciled funds or assets subject to SFDR/EU Taxonomy:
 **Template:**
 > "[Property Name] is a [asset type, vintage, size] located in [market]. The building [lead credential — e.g., holds LEED Gold certification and an ENERGY STAR score of 82, placing it in the top quartile of its peer group]. 
 >
-> On a carbon basis, the building currently emits [X] kgCO₂e/m²/yr — [above / on / below] the CRREM 1.5°C pathway for [asset type] in [country]. [If above: The building is projected to strand in [year] without intervention. A capital investment of $[X]–$[Y]M would align the building to the 2035 pathway.] [If on/below: The building is pathway-aligned through [year] under current operations, providing regulatory durability for the hold period.]
+> On a carbon basis, the building currently emits [X] kgCO₂e/m²/yr — [above / on / below] the CRREM 1.5°C pathway for [asset type] in [country]. [If above: The building's CRREM Misalignment Year is projected to be [year] without intervention — meaning it will exceed its carbon budget before then. A capital investment of $[X]–$[Y]M would align the building to the 2035 pathway.] [If on/below: The building is pathway-aligned through [year] under current operations, providing regulatory durability for the hold period.]
 >
 > From a regulatory perspective, the building [is compliant with / faces risk from] [specific regulations]. [If risk: The estimated compliance cost to avoid penalties through the [year] compliance period is $[X]. This represents [X]% of the asking price.] 
 >
@@ -381,7 +381,96 @@ For European-domiciled funds or assets subject to SFDR/EU Taxonomy:
 
 ---
 
-### Section 13 — Data Room Index
+### Section 13 — Data Confidence & Transparency
+
+Before finalizing, produce a data transparency summary. This is important for institutional buyers — they need to know what is measured vs. estimated.
+
+| Data Point | Status | Source | Period Covered | Confidence |
+|-----------|--------|--------|----------------|-----------|
+| Electricity consumption | Collected / Estimated / Gap | [Bill / ESPM / Benchmark] | | High/Med/Low |
+| Natural gas consumption | Collected / Estimated / Gap | | | |
+| Water consumption | Collected / Estimated / Gap | | | |
+| Carbon Scope 1 | Calculated / Estimated | | | |
+| Carbon Scope 2 (location) | Calculated / Estimated | | | |
+| Carbon Scope 2 (market) | Calculated / Estimated | | | |
+| ENERGY STAR score | Verified / Self-reported / Estimated | | | |
+| EPC / building rating | Certified / Expired / Not assessed | | | |
+| CRREM carbon intensity | Measured / Modeled / Benchmark | | | |
+
+**Coverage rate:** [X]% of energy data is from verified meter readings; [Y]% is estimated or benchmark-derived.
+
+**Data assurance:** [None / Internal review / Third-party verified / ISAE 3000 equivalent]
+
+Note: Deepki (the market-leading ESG data platform for institutional real estate) has made data transparency — distinguishing collected vs. estimated data — a core credibility signal for institutional buyers. Any passport lacking this distinction will be challenged.
+
+---
+
+### Section 14 — Lender / Financing Profile
+
+For assets being refinanced, recapitalized, or acquired with institutional debt:
+
+**PCAF Score (Partnership for Carbon Accounting Financials):**
+PCAF is the standard for how lenders report financed emissions. Lenders increasingly require this for green loan/bond structuring.
+
+| Metric | Value |
+|--------|-------|
+| PCAF asset class | Commercial Real Estate |
+| PCAF data quality score | 1–5 (1=best — operational energy from verified bills) |
+| Total Scope 1+2 emissions | [X] tCO₂e |
+| Physical asset value | $[X]M |
+| Outstanding debt (if known) | $[X]M |
+| Attributed emissions (for lender) | [X] tCO₂e |
+
+**Green Financing Eligibility:**
+| Program | Eligible? | Notes |
+|---------|-----------|-------|
+| Green Bond Principles (ICMA) | | |
+| Climate Bonds Standard | | |
+| EU Green Bond Standard | | |
+| Fannie Mae Green Rewards (multifamily) | | ENERGY STAR score + utility verification required |
+| Freddie Mac Green Advantage | | |
+| HUD Green MIP reduction | | 25–45bp MIP reduction |
+| PACE financing | | Check state/municipality eligibility |
+| Green CMBS | | |
+
+**Green Asset Ratio (GAR):**
+For lenders subject to EU Taxonomy reporting, the Green Asset Ratio measures the share of assets aligned with the EU Taxonomy. For this asset:
+- **EU Taxonomy alignment:** [Aligned / Not aligned / Partially aligned]
+- **Reason:** [Top 15% of energy performance in building stock / NZEB standard / Not assessed]
+- **EPC equivalent:** [A / B / C / Not assessed]
+
+---
+
+### Section 15 — INREV / Institutional Fund Reporting
+
+For European funds reporting to institutional investors under INREV SDDS (Sustainability Data Delivery Standard):
+
+INREV SDDS requires 109 KPIs at fund and asset level. Key asset-level KPIs this passport covers:
+
+| KPI Category | KPIs Covered | Source |
+|-------------|-------------|--------|
+| Energy — electricity | Absolute consumption, intensity | Utility data |
+| Energy — gas/heating | Absolute consumption, intensity | Utility data |
+| GHG — Scope 1 | Absolute, intensity | Calculated |
+| GHG — Scope 2 | Absolute (market + location), intensity | Calculated |
+| Water | Absolute consumption, intensity | Utility data |
+| Certifications | Green certification type + level | Registry |
+| CRREM alignment | Above/on/below pathway | Modeled |
+| BPS compliance | Applicable regulations + status | Assessed |
+
+**Coverage rating:** [X]% of mandatory INREV SDDS KPIs available for this asset.
+
+**SFDR Principal Adverse Impacts (PAI) indicators contributed:**
+| PAI Indicator | Value | Notes |
+|--------------|-------|-------|
+| GHG intensity of real estate assets | [X] tCO₂e/m² | ESRS E1-4 |
+| Energy performance of real estate assets | [X] kWh/m² | ESRS E1-5 |
+| Share of real estate assets with EPC | [X]% | |
+| Real estate assets in flood high-risk areas | Y/N | TCFD physical risk |
+
+---
+
+### Section 16 — Data Room Index
 
 **Sustainability documents available in the data room:**
 
@@ -415,7 +504,7 @@ Before finalizing, verify:
 - [ ] Compliance status reflects the most current regulatory requirements (not 2022 versions)
 - [ ] All certification expiry dates are verified and flagged if within 12 months
 - [ ] Penalty estimates cite the specific regulation name, section, and rate
-- [ ] CRREM stranding year is labeled "estimated" if modeled rather than from Audette
+- [ ] CRREM CRREM Misalignment Year is labeled "estimated" if modeled rather than from Audette
 - [ ] Physical risk section follows TCFD framing
 - [ ] GRESB section only includes confirmed data — no speculation
 - [ ] EU Taxonomy section is clearly marked as applicable or not applicable

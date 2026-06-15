@@ -108,7 +108,7 @@ Search for:
 - `"[address]" Local Law 97` or `"[address]" LL97` — NYC compliance data
 - `"[address]" BERDO` or `"[address]" benchmarking` — Boston, Chicago, etc.
 - `"[building name]" LEED certification` — green certification databases
-- `"[address]" stranding risk` or `"[address]" CRREM`
+- `"[address]" CRREM misalignment risk` or `"[address]" CRREM`
 - Recent utility filings or energy disclosure data for the specific building
 
 ---
@@ -338,7 +338,7 @@ If asset type, jurisdiction, and size are known:
 
 1. Estimate current carbon intensity (kgCO₂e/m²/yr) from OM data or asset-type benchmarks
 2. Compare to CRREM 1.5°C pathway target for asset type + country
-3. Identify stranding year = year current trajectory crosses the pathway
+3. Identify CRREM Misalignment Year = year current trajectory crosses the pathway
 4. Calculate decarbonization capex needed to stay on pathway through 2030 / 2040 / 2050
 
 **CRREM 2024 Carbon Intensity Pathways (selected):**
@@ -432,6 +432,22 @@ Use web search: `"[state/city] commercial energy efficiency rebates [current yea
 | FHLB Green | Various | Green building pledge | Rate subsidy |
 | Green CMBS | Commercial | Green bond issuance | Access to green capital |
 | HUD Green MIP | FHA multifamily | MIP reduction | 25–45bp |
+
+### 7D — PCAF Score for Acquisition Financing
+
+If the acquisition will involve institutional debt or lenders tracking financed emissions under PCAF (Partnership for Carbon Accounting Financials):
+
+| PCAF Data Quality Score | Data Required | Notes |
+|------------------------|--------------|-------|
+| Score 1 (best) | Verified annual energy consumption from bills | Fully metered |
+| Score 2 | Certified EPC + estimated consumption | Some verification |
+| Score 3 | Unverified building data | Self-reported |
+| Score 4 | Physical activity (floor area × benchmark) | No utility data |
+| Score 5 (lowest) | No property data — pure estimation | Weakest |
+
+Estimated PCAF score for this acquisition: **[X]** — based on [data available].
+
+Note: lenders increasingly require PCAF Score 1–2 for green loan eligibility. If the building cannot supply verified utility data, this is a risk flag for any green-labeled financing.
 
 ### 7D — Net CapEx Summary
 

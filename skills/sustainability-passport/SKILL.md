@@ -1,154 +1,470 @@
 ---
 name: sustainability-passport
 description: >
-  Generate a Sustainability Passport for a property being disposed of (sold, traded, or refinanced).
-  Compiles energy performance, carbon footprint, certifications, compliance status, utility data,
-  and ESG metrics into a standardized investor-ready document. Triggers on: "sustainability passport",
-  "green credentials", "ESG summary for sale", "sustainability disclosure", "disposition sustainability",
-  "green due diligence package", "sustainability report for buyers".
-version: 1.0.0
+  Generate a Sustainability Passport for a property being disposed, traded, refinanced, or brought
+  to market. Compiles energy performance, carbon trajectory, certifications, regulatory compliance,
+  capital history, stranding risk, GRESB alignment, EU Taxonomy eligibility, and ESG narrative into
+  a standardized, investor-grade disclosure document. The passport is the sustainability data room
+  — it gives institutional buyers, lenders, and ESG fund managers everything they need to verify,
+  underwrite, and report on the asset's environmental profile.
+  Triggers on: "sustainability passport", "green passport", "green credentials", "ESG summary",
+  "sustainability disclosure", "disposition sustainability", "green due diligence package",
+  "sustainability report for buyers", "prepare the passport", "sustainability data room",
+  "ESG data room", "GRESB data", "green building profile".
+version: 2.0.0
 ---
 
-# Sustainability Passport — Disposition
+# Sustainability Passport
 
-Generate a standardized sustainability disclosure document for a property being sold, traded, or refinanced. This passport gives buyers and their advisors a complete, defensible picture of the property's environmental footprint, compliance posture, and green credentials.
+You are generating a **Sustainability Passport** — the definitive sustainability disclosure for a property at a liquidity event (disposition, refinancing, recapitalization, or fund reporting). This document is the sustainability data room. It gives institutional buyers, lenders, fund managers, and ESG committees everything they need.
 
-**Audience:** Buyers, brokers, lenders, ESG-mandated institutional investors.
+**Audience:** Varies. Write for the most demanding audience present:
+- **Institutional equity buyers** — care about GRESB, net-zero pathway, stranding risk, forward capex
+- **Lenders / debt** — care about MEES/compliance risk, insurance, green financing eligibility, physical risk
+- **ESG-mandated funds** — care about EU Taxonomy, SFDR alignment, SBTi-compatible trajectory, CSRD
+- **Brokers / advisors** — care about concise executive summary and certification highlights
+- **Operators** — care about utility data, equipment condition, certification maintenance cost
 
-**Default posture:** Only include claims you can source from uploaded documents, utility data, or connected systems (Audette, ENERGY STAR). Flag estimates clearly. Buyers will verify.
-
----
-
-## Step 1: Gather Data Sources
-
-Before writing, inventory what's available:
-
-**From uploaded files:**
-- [ ] Utility bills (last 24 months minimum — 36 preferred)
-- [ ] ENERGY STAR Portfolio Manager reports
-- [ ] LEED / BREEAM / Fitwel certificate or scorecard
-- [ ] Local law compliance filings (LL97, BERDO, Building Benchmarking)
-- [ ] Recent energy audit or retro-commissioning report
-- [ ] Capital improvements log (HVAC, envelope, lighting upgrades)
-- [ ] Phase I / Phase II environmental reports
-
-**From connected tools:**
-- Search Audette for building model, carbon plan, and existing assessments
-- Check CRREM pathway if available
-- Pull ENERGY STAR score if Portfolio Manager is connected
-
-**Prompt the user for anything missing:**
-> "To complete the passport I need [X]. Can you upload it or let me know the values directly?"
+**Default posture:** Only claim what you can source. Every number must have a source and period. Estimates must be labeled. Buyers will verify — overclaiming destroys credibility.
 
 ---
 
-## Step 2: Sustainability Passport Structure
+## Step 1: Data Inventory & Gap Assessment
 
-Generate the passport as a structured document artifact with these sections:
+Before writing a word, inventory what's available. Surface gaps to the user immediately.
+
+### 1A — Source Checklist
+
+**Energy & Utility Data (minimum 24 months; 36 preferred):**
+- [ ] Electricity bills (kWh by month, $ by month)
+- [ ] Natural gas bills (therms/GJ by month, $ by month)
+- [ ] District steam/chilled water (if applicable)
+- [ ] Water bills (gallons/m³ by month)
+- [ ] ENERGY STAR Portfolio Manager report (includes verified score + EUI)
+- [ ] Landlord vs. tenant utility breakdown (whole-building vs. landlord-controlled)
+- [ ] Smart meter / interval data (15-min or hourly if available)
+
+**Building Documentation:**
+- [ ] Current ENERGY STAR score (Portfolio Manager — not a stale screenshot)
+- [ ] LEED certification + scorecard (v4 or higher preferred; note version)
+- [ ] BREEAM assessment + certificate
+- [ ] BOMA BESt assessment + level
+- [ ] Fitwel / WELL / RESET certification
+- [ ] Local green building designations (LEED EB, Toronto TGBES, etc.)
+
+**Compliance & Legal:**
+- [ ] LL97 compliance report or consultant analysis (NYC)
+- [ ] BERDO compliance filings (Boston)
+- [ ] Building benchmarking filings (any required jurisdiction)
+- [ ] Energy audit reports (ASHRAE Level 1, 2, or 3)
+- [ ] Retro-commissioning report (RCx)
+- [ ] Phase I Environmental Site Assessment (date + conclusions)
+- [ ] Phase II Environmental Site Assessment (if applicable)
+- [ ] Any outstanding violations or fines (energy, environmental)
+
+**Capital & Operations:**
+- [ ] Capital improvements log (last 10 years, sustainability-related)
+- [ ] Deferred maintenance schedule / PCA (Property Condition Assessment)
+- [ ] Operating expense history (energy % of total OpEx)
+- [ ] Any green lease provisions in existing leases
+
+**External / Connected Tools:**
+- Audette: `list_buildings()` → `get_building_model_details(building_id)` — carbon model, CRREM pathway, equipment schedule
+- ENERGY STAR Portfolio Manager: connected via integration or shared report
+- Overture Maps: building footprint, height, floor count for GFA cross-check
+
+### 1B — Gap Messaging
+
+After the inventory, report what's missing:
+```
+DATA GAPS IDENTIFIED:
+⚠ Utility data: [specific gap]
+⚠ [Missing certification or report]
+
+Impact: Without utility data, I cannot compute EUI or operational carbon. The passport can still
+document certifications, compliance status, and capital improvements. Options:
+1. Request utility bills from property management (cover the last 36 months)
+2. Share ENERGY STAR Portfolio Manager login or export
+3. Proceed with CBECS benchmark estimates, clearly labeled as estimated
+
+Proceeding with available data. All estimates are marked [EST].
+```
+
+---
+
+## Step 2: The Passport Document
 
 ### Section 1 — Property Identity
-- Address, asset type, year built, gross floor area (SF / SM)
-- Ownership entity, disposition date / expected close
-- Primary use (office, multifamily, industrial, mixed-use, etc.)
+
+| Field | Value |
+|-------|-------|
+| Property name | |
+| Address | |
+| Asset type | |
+| Asset class | |
+| Year built | |
+| Last major renovation | Year + scope |
+| Gross floor area (GFA) | SF / SM |
+| Number of stories | |
+| Parking | Stalls + type |
+| Ownership entity | |
+| Reporting boundary | Whole building / landlord-only / portfolio |
+| Passport date | |
+| Passport prepared by | Aris (Soapbox AI) |
+| Data period | [Start] – [End] |
+
+---
 
 ### Section 2 — Energy Performance
-| Metric | Value | Source | Period |
-|--------|-------|--------|--------|
-| Site EUI (kBtu/sf/yr) | | | |
-| Source EUI (kBtu/sf/yr) | | | |
-| ENERGY STAR Score (1–100) | | | |
-| Total annual energy cost | | | |
-| Grid emission factor (lbs CO₂/kWh) | | | |
 
-**Trend:** Include 3-year trajectory (improving / flat / worsening) if data supports it.
+**2A — Consumption Summary**
+
+| Metric | Value | Unit | Period | Source |
+|--------|-------|------|--------|--------|
+| Total site energy | | kBtu/yr | | |
+| Site EUI | | kBtu/SF/yr | | |
+| ENERGY STAR Score | | 1–100 | | |
+| Electricity consumption | | kWh/yr | | |
+| Natural gas consumption | | therms/yr | | |
+| District steam/chilled water | | kBtu/yr | | |
+| Water consumption | | kGal/yr | | |
+| Total energy cost | | $/yr | | |
+| Energy cost per SF | | $/SF/yr | | |
+
+**2B — Peer Benchmarking**
+
+Compare against:
+- CBECS median for asset type (US DOE Energy Information Administration)
+- ENERGY STAR baseline for asset type + climate zone (Portfolio Manager)
+- CRREM intensity benchmark for asset type + country
+
+| Benchmark | This Property | Peer Median | Top Quartile | ENERGY STAR 75th %ile |
+|-----------|--------------|-------------|--------------|----------------------|
+| EUI (kBtu/SF/yr) | | | | |
+| Energy Star Score | | — | — | 75 |
+| Carbon Intensity (kgCO₂e/m²) | | | | |
+
+**2C — 3-Year Trend**
+
+| Year | EUI | ENERGY STAR | Total Cost | YoY Change |
+|------|-----|-------------|-----------|-----------|
+| [Y-2] | | | | |
+| [Y-1] | | | | |
+| [Y] (current) | | | | |
+| Trend | Improving / Flat / Worsening | | | |
+
+---
 
 ### Section 3 — Carbon Footprint
-| Scope | Annual tCO₂e | Method |
-|-------|-------------|--------|
-| Scope 1 (on-site combustion) | | |
-| Scope 2 (purchased electricity) | | |
-| Total operational carbon | | |
 
-- Carbon intensity (kgCO₂e/m² or lbsCO₂/sf)
-- CRREM pathway alignment: above/on/below stranding risk curve (if available)
-- 2030 target gap (if applicable)
+**3A — Emissions Inventory**
 
-### Section 4 — Green Certifications
-List all active certifications with expiry dates:
-- LEED (version, level, score)
-- BREEAM (rating, score)
-- ENERGY STAR Certification (year earned, score)
-- Fitwel / WELL / RESET / others
-- Local green building designations
+| Scope | Source | Annual tCO₂e | Method | Emission Factor |
+|-------|--------|-------------|--------|----------------|
+| Scope 1 — Natural gas (heating) | Direct combustion | | IPCC/EPA AP-42 | |
+| Scope 1 — Refrigerant leakage | If known | | GWP-based | |
+| Scope 2 — Electricity (market-based) | Utility + RECs | | Supplier factor | |
+| Scope 2 — Electricity (location-based) | Grid average | | eGRID / GHG Protocol | |
+| Scope 2 — District steam/chilling | If applicable | | Supplier or estimate | |
+| **Total Scope 1+2 (market-based)** | | | | |
+| **Total Scope 1+2 (location-based)** | | | | |
 
-Note: flag certifications within 12 months of expiry.
+**3B — Carbon Intensity**
+
+| Metric | Value | Unit |
+|--------|-------|------|
+| Carbon intensity (location-based) | | kgCO₂e/m²/yr |
+| Carbon intensity (market-based) | | kgCO₂e/m²/yr |
+| Carbon intensity (lbs/SF/yr) | | lbs CO₂e/SF/yr |
+
+**3C — CRREM Pathway Analysis**
+
+CRREM (Carbon Risk Real Estate Monitor) defines the 1.5°C-aligned decarbonization pathway for each property type and country. Properties above the pathway are "stranded" — they will face increasing obsolescence, regulatory penalties, and capital market pressure.
+
+| Metric | Value |
+|--------|-------|
+| CRREM asset type | [Office / Multifamily / Retail / etc.] |
+| Current carbon intensity | [X] kgCO₂e/m² |
+| CRREM 2025 target | [X] kgCO₂e/m² |
+| CRREM 2030 target | [X] kgCO₂e/m² |
+| CRREM 2035 target | [X] kgCO₂e/m² |
+| Status vs. 2025 target | Above / On / Below pathway |
+| Estimated stranding year | [Year or "Not stranded through 2050 under current trajectory"] |
+| Capex to stay on pathway through 2030 | $[X] |
+| Capex to stay on pathway through 2040 | $[X] |
+
+Provide a simple narrative:
+> "[Property] is currently [X] kgCO₂e/m², which is [above/on/below] the CRREM 1.5°C pathway for [asset type] in [country]. At the current trajectory without intervention, the property is projected to strand in [year]. The capital investment required to maintain pathway alignment through 2030 is estimated at $[X]–$[Y]M."
+
+**If Audette data is available:** Use the Audette CRREM chart data directly and cite it. This is the most defensible source.
+
+---
+
+### Section 4 — Green Certifications & Ratings
+
+List all active and recently expired certifications. Flag any expiring within 12 months.
+
+| Certification | Level / Score | Year Earned | Expiry | Status | Notes |
+|--------------|--------------|-------------|--------|--------|-------|
+| ENERGY STAR Certification | | | | Active / Expired | Annual recertification |
+| LEED | Certified/Silver/Gold/Platinum | | | Active / Expired | v4 EB O+M preferred |
+| BREEAM | Pass/Good/Very Good/Excellent/Outstanding | | | | |
+| BOMA BESt | Level 1–4 | | | | |
+| Fitwel | 1–3 stars | | | | |
+| WELL | Bronze/Silver/Gold/Platinum | | | | |
+| RESET | | | | | |
+| Toronto TGBES | | | | | |
+| Other | | | | | |
+
+**Certification Pathway Recommendation (if buyer is asking):**
+> "ENERGY STAR certification costs approximately $5–15K and can be achieved within 3–6 months with a score ≥ 75. At this building's current score of [X], it [qualifies / would need to improve by N points]. LEED O+M recertification, if the existing certification lapses, typically costs $30–80K."
+
+---
 
 ### Section 5 — Regulatory Compliance
-| Regulation | Jurisdiction | Status | Penalty Risk |
-|-----------|-------------|--------|-------------|
-| Local Law 97 | NYC | | |
-| BERDO | Boston | | |
-| Building Benchmarking | [City] | | |
-| State energy codes | [State] | | |
 
-For each applicable regulation:
-- Current compliance status (compliant / at risk / non-compliant)
-- Projected compliance through 2030 and 2035 at current trajectory
-- Estimated penalty exposure if non-compliant ($/year)
-- Required capital to achieve compliance
+For each applicable regulation, report current status and forward compliance risk. Buyers underwriting green bonds or ESG funds need this in writing.
 
-### Section 6 — Capital Improvements (Sustainability-Related)
-Table of completed sustainability capex (last 10 years):
-| Year | Measure | Cost | Impact |
-|------|---------|------|--------|
-| | HVAC replacement | | EUI reduction |
-| | LED lighting retrofit | | kWh/yr savings |
-| | Solar PV installation | | kW capacity |
-| | Envelope improvements | | |
+| Regulation | Jurisdiction | Threshold | Current Status | 2027 Risk | 2030 Risk | Annual Penalty (if non-compliant) | Capital to Comply |
+|-----------|-------------|---------|--------------|----------|----------|----------------------------------|------------------|
+| Local Law 97 | NYC | >25K SF | | | | $268/tCO₂e over | |
+| BERDO 2.0 | Boston | >20K SF | | | | | |
+| BEPS | DC | >50K SF | | | | $2/SF/yr | |
+| Energize Denver | Denver | >25K SF | | | | | |
+| MEES | UK | All | Min. EPC E | Min. EPC B by 2030 | | Unable to let | |
+| [Other applicable] | | | | | | | |
 
-### Section 7 — Stranding Risk & Forward Outlook
-- CRREM stranding year (if model available)
-- Required decarbonization capex to 2030 / 2035 / 2050
-- Key risk factors: grid decarbonization exposure, fuel-switching requirements, regulatory trajectory
-- Recommended buyer actions (optional — frame as opportunities, not liabilities)
+**Compliance narrative:** For each high-risk regulation, write 2–3 sentences explaining the specific compliance gap, the trajectory to compliance, and the estimated cost.
 
-### Section 8 — ESG Summary (for Institutional Buyers)
-One-paragraph narrative suitable for buyer's ESG committee or investment memo:
-- Lead with the strongest credential
-- Acknowledge the material risks honestly
-- Quantify the opportunity (cost of compliance, potential green premium)
+**Outstanding violations:** Explicitly state whether any energy, environmental, or building violations are currently open. If unknown: "No violations disclosed by seller. Buyer to verify through [city agency] prior to close."
+
+---
+
+### Section 6 — Physical Climate Risk
+
+**Format per TCFD (Task Force on Climate-related Financial Disclosures):**
+
+| Hazard | Risk Level | 2030 Outlook | 2050 Outlook | Primary Source |
+|--------|-----------|-------------|-------------|----------------|
+| Riverine flooding | | | | FEMA / First Street |
+| Coastal flooding / storm surge | | | | FEMA / NOAA |
+| Extreme heat | | | | NOAA / First Street |
+| Wildfire | | | | USFS / CalFire |
+| Drought / water stress | | | | WRI Aqueduct |
+| Hurricane / wind | | | | NOAA HURDAT |
+| Winter storm / freeze | | | | NOAA |
+| Seismic | | | | USGS |
+
+**Insurance implications:**
+- Current insurer and coverage type
+- Premium trend (3-year history if available)
+- Any market withdrawal concerns by jurisdiction
+- Flood insurance status (NFIP vs. private)
+
+**Adaptation measures in place** (if any):
+- Flood barriers, backup power, cool roofing, stormwater management, etc.
+
+---
+
+### Section 7 — Capital Improvements (Sustainability-Related)
+
+Document completed capital investments that improve the sustainability profile. This is the evidence base for the passport's credibility.
+
+| Year | Measure | Cost | Energy / Carbon Impact | Certification Impact |
+|------|---------|------|----------------------|---------------------|
+| | LED lighting retrofit | | -X% kWh/yr | ENERGY STAR ↑ N pts |
+| | HVAC replacement (chiller) | | | |
+| | Solar PV installation | | +X kW capacity | |
+| | Building envelope — windows | | -X kBtu/SF/yr | |
+| | BAS / controls upgrade | | | |
+| | EV charging installation | | | |
+| | [Other] | | | |
+| **Total** | | | | |
+
+---
+
+### Section 8 — Water Performance
+
+| Metric | Value | Unit | Period | Source |
+|--------|-------|------|--------|--------|
+| Total water consumption | | kGal/yr | | |
+| Water intensity | | Gal/SF/yr | | |
+| ENERGY STAR water score | | 1–100 | | |
+| Irrigation water | | kGal/yr | | |
+| Potable vs. non-potable | | % | | |
+| Water recycling / reuse | | | | |
+
+---
+
+### Section 9 — Tenant Sustainability Profile
+
+For multi-tenant assets, the tenant base affects both the risk and opportunity profile.
+
+| Tenant | SF | % of Building | Green Lease? | Sustainability Requirements | Lease Expiry |
+|--------|-----|--------------|-------------|---------------------------|-------------|
+| | | | Y/N | | |
+
+**Green lease analysis:**
+- Does any existing lease include energy reporting obligations?
+- Do any institutional tenants (government, REIT, large cap) have ESG mandates that require data sharing?
+- Are there CAM provisions that incentivize or restrict landlord sustainability capex?
+
+---
+
+### Section 10 — GRESB Alignment
+
+GRESB (Global ESG Benchmark for Real Assets) is the standard for institutional real estate ESG reporting. Many equity and debt investors require GRESB participation.
+
+**GRESB assessment components relevant to this asset:**
+
+| Component | Data Available? | Status |
+|----------|----------------|--------|
+| Management — policies | | |
+| Management — targets | | |
+| Management — reporting | | |
+| Performance — energy | | |
+| Performance — GHG | | |
+| Performance — water | | |
+| Performance — waste | | |
+| Performance — certifications | | |
+| Standing investments score (est.) | | /100 |
+
+**Note for buyer:** If this asset is to be included in a GRESB-participating fund, confirm: (1) whether the seller has GRESB portal data available for handover, (2) the asset's historical GRESB component scores, and (3) whether utility data can be transferred at close.
+
+---
+
+### Section 11 — EU Taxonomy Eligibility (If Applicable)
+
+For European-domiciled funds or assets subject to SFDR/EU Taxonomy:
+
+**Economic Activity:** [Select: Acquisition and ownership of buildings / Renovation of existing buildings / Construction of new buildings]
+
+**Technical Screening Criteria:**
+
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| EPC rating A or Top 15% in national building stock | | |
+| Nearly Zero Energy Building (NZEB) standard | | |
+| Primary energy demand ≤ 10% of NZEB threshold | | |
+| Substantial contribution to climate change mitigation | | |
+| Do No Significant Harm (DNSH) — climate adaptation | | |
+| Do No Significant Harm (DNSH) — water | | |
+| Do No Significant Harm (DNSH) — biodiversity | | |
+| Minimum social safeguards | | |
+
+**Taxonomy alignment:** Eligible / Not Eligible / Partially Eligible (note limitations)
+
+---
+
+### Section 12 — ESG Narrative
+
+**For institutional investors and ESG committees.** Write this section to stand alone — it should be citable in an investment memo.
+
+**Structure:**
+1. **Lead with the strongest credential** — What is this building's headline sustainability story?
+2. **Carbon trajectory** — Where is it today, where is it going, and what's the plan?
+3. **Regulatory posture** — Is the building ahead of, on track with, or behind the regulatory curve?
+4. **Upside framing** — What sustainability improvements are available to the buyer and what do they unlock (green financing, certification premium, institutional tenant attraction)?
+5. **Material risks** — State the primary sustainability risk honestly. Institutional buyers will find it. Disclosing it builds credibility.
+6. **Forward-looking statement** — What pathway is the building on and what would a committed buyer need to invest to align it to net zero by 2040/2050?
+
+**Template:**
+> "[Property Name] is a [asset type, vintage, size] located in [market]. The building [lead credential — e.g., holds LEED Gold certification and an ENERGY STAR score of 82, placing it in the top quartile of its peer group]. 
+>
+> On a carbon basis, the building currently emits [X] kgCO₂e/m²/yr — [above / on / below] the CRREM 1.5°C pathway for [asset type] in [country]. [If above: The building is projected to strand in [year] without intervention. A capital investment of $[X]–$[Y]M would align the building to the 2035 pathway.] [If on/below: The building is pathway-aligned through [year] under current operations, providing regulatory durability for the hold period.]
+>
+> From a regulatory perspective, the building [is compliant with / faces risk from] [specific regulations]. [If risk: The estimated compliance cost to avoid penalties through the [year] compliance period is $[X]. This represents [X]% of the asking price.] 
+>
+> The primary sustainability risk is [honest statement]. [Mitigation or buyer opportunity].
+>
+> For the right buyer, this asset represents [opportunity statement — e.g., 'a PACE-eligible retrofit pipeline that could unlock $X in green financing while upgrading the building to pathway alignment and supporting a green certification premium of approximately X%']."
+
+---
+
+### Section 13 — Data Room Index
+
+**Sustainability documents available in the data room:**
+
+| Document | Available | Date | Notes |
+|---------|-----------|------|-------|
+| 36-month utility bills (electricity) | | | |
+| 36-month utility bills (gas) | | | |
+| 36-month utility bills (water) | | | |
+| ENERGY STAR Portfolio Manager report | | | |
+| LEED certification + scorecard | | | |
+| BREEAM assessment | | | |
+| Local law compliance filings | | | |
+| Phase I Environmental Site Assessment | | | |
+| Phase II Environmental Site Assessment | | | |
+| Energy audit (ASHRAE Level 1/2/3) | | | |
+| Retro-commissioning report | | | |
+| Capital improvements log | | | |
+| Property Condition Assessment (PCA) | | | |
+| Green lease provisions (lease abstracts) | | | |
+| GRESB asset data (if available) | | | |
+| Audette building model / carbon plan | | | |
+| Insurance certificates | | | |
+| Any outstanding violations | | | |
 
 ---
 
 ## Step 3: Quality Checks Before Delivery
 
 Before finalizing, verify:
-- [ ] All EUI / carbon numbers are sourced — no ungrounded estimates
-- [ ] Compliance status is current (not based on expired filings)
-- [ ] Certification expiry dates are included
-- [ ] Penalty estimates cite the specific regulation and rate
-- [ ] CRREM stranding year is labeled "estimated" if based on modeled data
-- [ ] No greenwashing — do not overclaim on partial-year or projected data
+- [ ] All EUI and carbon numbers are sourced — no ungrounded estimates pass without [EST] labels
+- [ ] Compliance status reflects the most current regulatory requirements (not 2022 versions)
+- [ ] All certification expiry dates are verified and flagged if within 12 months
+- [ ] Penalty estimates cite the specific regulation name, section, and rate
+- [ ] CRREM stranding year is labeled "estimated" if modeled rather than from Audette
+- [ ] Physical risk section follows TCFD framing
+- [ ] GRESB section only includes confirmed data — no speculation
+- [ ] EU Taxonomy section is clearly marked as applicable or not applicable
+- [ ] No greenwashing — do not overclaim on partial-year data, projected improvements, or design-phase certifications
+- [ ] ESG narrative is honest — states the primary risk clearly
 
 ---
 
-## Output Format
+## Step 4: Output Format
 
-Deliver as:
-1. **Structured HTML artifact** — formatted for printing / PDF export
-2. **Executive summary** (200 words max) — suitable for OM teaser or data room index
+Deliver the passport as:
 
-If the user asks for a Word or PDF export, use the write_file tool to create a `.docx` version.
+**1. Full passport (HTML artifact)** — formatted for PDF export, suitable for printing and inclusion in the physical data room. Professional layout with sections, tables, and a branded header.
+
+**2. Executive summary card (1 page)** — key metrics only, suitable for OM teaser or investment committee overview:
+- Property snapshot
+- ENERGY STAR score
+- Carbon intensity vs. CRREM pathway
+- Certification badges
+- Compliance status summary
+- Primary risk (1 sentence)
+- Green financing eligibility (Y/N + program)
+
+**3. GRESB-ready data export (on request)** — a structured table of all GRESB performance indicators with values and sources, ready to enter into the GRESB portal.
+
+After generating, offer to:
+- Save as file: `write_file("Sustainability_Passport_[PropertyName]_[YYYYMMDD].html")`
+- Generate a Word-compatible version for data room upload
+- Create the 1-page executive summary separately
+- Populate the RSRA CapEx section from the passport data (if running disposition → RSRA)
 
 ---
 
-## Common Edge Cases
+## Edge Cases
 
-**No utility data available:**
-> "Utility data is the foundation of this passport. Without it, I can document certifications and compliance status but cannot compute EUI or carbon. Options: (1) request bills from the seller/operator, (2) use ENERGY STAR Portfolio Manager if connected, (3) note 'data not available' and estimate from CBECS benchmarks with clear disclosure."
+**No utility data:**
+> "Utility data is the foundation of any credible passport. Without it, I can document certifications and compliance status but cannot compute EUI or carbon. Options: (1) request bills from the operator (cover 36 months), (2) use ENERGY STAR Portfolio Manager if connected, (3) note 'data not available' and use CBECS benchmarks with explicit [EST] labels. Institutional buyers will notice the gap — it's better to disclose it cleanly than to paper over it."
 
-**Property has deferred maintenance / poor performance:**
-> "The data shows [specific issues]. I'll document this accurately — buyers will find it anyway. We can frame it as priced-in capex opportunity rather than hidden liability."
+**Poor performance / deferred maintenance:**
+> "The data shows [specific performance gap]. I'll document this accurately and frame it honestly. Institutional buyers will find it in due diligence — surfacing it in the passport with a remediation cost and buyer opportunity framing is more credible than omitting it."
 
-**Multiple buildings / campus:**
-> "I'll generate one passport per building plus a portfolio-level summary. Should I treat the campus as a single reporting boundary or separate properties?"
+**Certification expired:**
+> "The [certification] expired [date]. I'll note the expiry and include the historical score. Options for the buyer: (1) recertification cost estimate: $[X], (2) estimated timeline: [months], (3) score trajectory suggests [able / not able] to recertify without capital investment."
+
+**European fund vehicle:**
+> "This asset will be acquired by an EU-regulated fund. Adding EU Taxonomy screening and SFDR classification analysis. Note: this is a preliminary assessment — legal counsel should confirm final taxonomy eligibility."
+
+**Disposition → hand-off to broker:**
+> "The passport is complete. For the broker package: use the 1-page executive summary. The full passport goes in the data room. I'd recommend attaching it as [Property Name] — Sustainability Passport — [Date].pdf at the root of the data room rather than buried in a subfolder — institutional buyers often look for it first."
+
+**Multifamily — whole building vs. tenant data:**
+> "Multifamily utility data is complicated by the landlord/tenant boundary. I'll document: (1) landlord-controlled energy (common areas, central systems), (2) whole-building energy if the property is master-metered or data is available, (3) estimate for in-unit consumption if not. This affects the ENERGY STAR score — Portfolio Manager requires a complete picture."

@@ -608,8 +608,17 @@ Generate the RSRA report as a rich HTML artifact designed for PDF export. Use cl
 ```
 
 After generating the artifact:
-1. Offer to save as a file: `write_file("RSRA_[PropertyName]_[YYYYMMDD].html")` → drops into the deal folder
-2. Offer a 1-page "RSRA summary card" for the acquisition memo
+1. Call `create_artifact` with the complete HTML — this opens the preview pane immediately
+2. Call `save_file` to persist: folder `"Reports"`, name `"{property-slug}-rsra.html"` (e.g. `prose-frontier-rsra.html`)
+3. Write a brief 3-5 sentence summary in chat
+4. Offer a 1-page "RSRA summary card" for the acquisition memo
+
+**Rules:**
+- All CSS must be inline or in a `<style>` block — no external dependencies (no CDN, no Google Fonts)
+- Use system fonts: `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Georgia, serif`
+- Property name, address, year built, unit count must match the documents exactly — never invent
+- Mark every benchmarked figure with "(est.)" inline
+- Omit sections that have no data rather than showing empty tables
 3. Offer to add the CapEx estimate to the underwriting model as a line item
 
 ---

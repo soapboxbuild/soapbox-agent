@@ -126,25 +126,37 @@ if [ -z "$SCRIPT" ]; then
 fi
 ```
 
+The saved model stores cashflows under `dcf_output`. Extract the fields the
+intervention engine needs by flattening before passing:
+
+```bash
+BASE_MODEL_JSON=$(python3 - << 'PYEOF'
+import json
+with open('.cashflow-models/<asset-key>.json') as f:
+    model = json.load(f)
+base = {
+    "asset_name": model["asset_name"],
+    "annual": model["dcf_output"]["annual"],
+    "going_in_noi": model["dcf_output"]["going_in_noi"],
+    "exit_value": model["dcf_output"]["exit_value"],
+    "unlevered_irr": model["dcf_output"]["unlevered_irr"],
+    "implied_purchase": model["dcf_output"].get("implied_purchase", 0),
+    "exit_cap_rate": model.get("exit_cap_rate", 0.05),
+}
+print(json.dumps(base))
+PYEOF
+)
+```
+
+Replace `<asset-key>` with the actual asset key (e.g. `prose-frontier`).
+
 Run for each intervention:
 
 ```bash
 python3 "$SCRIPT" \
-  --base '<BASE_MODEL_JSON>' \
+  --base "$BASE_MODEL_JSON" \
   --intervention '<INTERVENTION_JSON>' \
   --market-cap-rate <MARKET_CAP_RATE>
-```
-
-Where `<BASE_MODEL_JSON>` contains at minimum:
-```json
-{
-  "asset_name": "...",
-  "annual": [...],
-  "exit_value": ...,
-  "going_in_noi": ...,
-  "unlevered_irr": ...,
-  "exit_cap_rate": ...
-}
 ```
 
 For multiple interventions, sum the `noi_delta_by_year` arrays and re-run a combined

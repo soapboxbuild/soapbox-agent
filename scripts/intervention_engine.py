@@ -216,12 +216,29 @@ def compute_intervention(base_model: dict, intervention: dict,
                     if base_model.get("exit_value") else market_cap_rate)
     exit_value_delta = stabilised_noi_uplift / exit_cap_rate if exit_cap_rate > 0 else 0.0
 
-    # IRR delta: approximate via incremental cashflows
+    # IRR delta: blended asset IRR (original purchase + intervention capex,
+    # original + delta cashflows, original + delta exit value)
     base_irr = base_model.get("unlevered_irr", 0.08)
-    incremental_cfs = [-total_capex] + list(noi_deltas)
-    incremental_cfs[-1] += exit_value_delta
-    inc_irr = irr(incremental_cfs)
-    irr_delta = (inc_irr - base_irr) if inc_irr else 0.0
+    purchase = base_model.get("implied_purchase", 0)
+    # Fallback: derive implied purchase from going-in NOI and exit cap rate
+    if not purchase and base_model.get("going_in_noi") and exit_cap_rate:
+        purchase = base_model["going_in_noi"] / exit_cap_rate
+    if purchase > 0:
+        # Re-derive base IRR from actual cashflows so delta is internally consistent
+        base_cfs = [-purchase] + [yr["unlevered_cf"] for yr in base_model["annual"]]
+        base_cfs[-1] += base_model.get("exit_value", 0)
+        computed_base_irr = irr(base_cfs)
+        if computed_base_irr is not None:
+            base_irr = computed_base_irr
+
+        blended_cfs = [-(purchase + total_capex)]
+        for i, yr in enumerate(base_model["annual"]):
+            blended_cfs.append(yr["unlevered_cf"] + (noi_deltas[i] if i < len(noi_deltas) else 0))
+        blended_cfs[-1] += base_model.get("exit_value", 0) + exit_value_delta
+        new_irr = irr(blended_cfs)
+        irr_delta = (new_irr - base_irr) if new_irr else 0.0
+    else:
+        irr_delta = 0.0
 
     # Summary card
     total_capex_fmt = f"${total_capex:,.0f}"
@@ -245,7 +262,7 @@ def compute_intervention(base_model: dict, intervention: dict,
         f"Yield on Cost:      {yoc_fmt:>15}",
         f"Investment Spread:  {spread_fmt:>15}  (vs {market_cap_rate*100:.1f}% mkt cap)",
         f"Payback Period:     {payback_fmt:>15}",
-        f"Unlevered IRR:      {irr_base_fmt} → {irr_new_fmt}  ({irr_delta_sign}{irr_delta*100:.1f}pp)",
+        f"Unlevered IRR:      {irr_base_fmt} → {irr_new_fmt}  ({irr_delta_sign}{irr_delta*100:.2f}pp)",
         f"Exit Value Delta:   {exit_delta_fmt:>15}",
         "─" * 52,
     ]

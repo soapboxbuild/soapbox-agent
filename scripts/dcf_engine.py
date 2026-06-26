@@ -209,10 +209,10 @@ def build_commercial_dcf(inputs: dict) -> dict:
 
 def format_commercial_card(annual: list, exit_value: float, irr_val: float,
                             em: float, sf: float, asset_type: str,
-                            asset_name: str) -> str:
+                            asset_name: str, implied_purchase: float = 0) -> str:
     going_in_noi = annual[0]["noi"]
     stab_noi = annual[-1]["noi"]
-    going_in_cap = going_in_noi / exit_value if exit_value else 0
+    going_in_cap = going_in_noi / implied_purchase if implied_purchase > 0 else 0
     lines = [
         f"{asset_name} — Cashflow Model ({asset_type.title()} | US)",
         "─" * 52,
@@ -330,7 +330,7 @@ def main():
         card = format_hotel_card(annual, exit_value, irr_val, em, size, asset_name)
     elif asset_type in ("office", "industrial", "retail"):
         card = format_commercial_card(annual, exit_value, irr_val, em, size,
-                                       asset_type, asset_name)
+                                       asset_type, asset_name, implied_purchase)
     else:
         card = format_multifamily_card(annual, exit_value, irr_val, em, size, asset_name)
 
@@ -339,6 +339,7 @@ def main():
         "going_in_noi": going_in_noi_val,
         "stabilized_noi": stab_noi_val,
         "exit_value": exit_value,
+        "implied_purchase": round(implied_purchase, 0),
         "unlevered_irr": round(irr_val, 6),
         "equity_multiple": round(em, 4),
         "summary_card": card,

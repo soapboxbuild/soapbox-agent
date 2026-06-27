@@ -59,6 +59,8 @@ Ask the user:
 - Option 2: accept a typed list, one property per line, extract what you can
 - Option 3: call `mcp__claude_ai_Audette_AI__switch_customer_account` then `mcp__claude_ai_Audette_AI__list_buildings` to build the register from Audette
 
+**Fund name precedence:** When both the asset register and Audette provide a fund name, the asset register `fund_name` takes precedence. Only use the Audette fund name if the asset register entry has no `fund_name`.
+
 ### Step 1c — Check external system availability
 
 Ask:
@@ -125,6 +127,11 @@ List auto-resolved assets briefly. Then begin Stage 3 for flagged assets.
 
 ## Stage 3: Review Pass
 
+**Auto-link threshold:** Assets where ALL of the following are true proceed directly to execution without a review card:
+- Audette match score >= 0.85 (or Audette not available for this client)
+- All documents auto-assigned (each document match score >= 0.85, or no documents found)
+- All financial parameters present: `exit_year`, `exit_cap_rate`, `lease_structure`, and `metering_config`
+
 For each asset where ANY of the following is true, present a review card:
 - Audette match score is 0.40–0.84 (needs confirmation)
 - Any document match is ambiguous or unresolved
@@ -168,6 +175,12 @@ LL/TT ALLOCATION INPUTS
 - `skip` → leave field null; mark `analysis_ready: false`
 - `disposed` (for exit year) → set `status: "disposed"`, exclude from analysis
 
+**LL/TT allocation invocation:** Once `lease_structure`, `metering_config`, `jurisdiction`, and `bps_liable` are known for an asset (either from the register or confirmed during review), call:
+```bash
+python3 ~/soapbox-agent/scripts/ll_allocation.py --inputs '{"lease_structure":"<val>","metering_config":"<val>","jurisdiction":"<val>","bps_liable":<bool>,"measure_category":"in_unit_hvac"}'
+```
+Use the result to populate edge case warnings inline. Store `ll_allocation_overrides: {}` in metadata unless the user explicitly overrides a measure-level split during review.
+
 **After user response, show edge case warnings inline if applicable:**
 - NNN + envelope measure in plan → "Note: NNN paradox — LL bears capex, TT captures savings"
 - Solar + no green lease → "Note: rooftop solar typically requires tenant consent"
@@ -190,11 +203,13 @@ Query Supabase for existing asset with same name + client tag:
 SELECT id, metadata FROM assets 
 WHERE name = '<asset_name>' 
 AND '<client-slug>' = ANY(tags)
-LIMIT 1
+LIMIT 1;
+-- Then in application logic:
+-- if row found AND metadata->>'ingestion_status' = 'success' → skip
+-- if row found AND metadata->>'ingestion_status' = 'failed' → resume from first incomplete step
 ```
 
-If found and `ingestion_status = 'success'`, skip this asset (already done).
-If found and `ingestion_status = 'failed'`, resume from first incomplete step.
+The `ingestion_status` check is performed on the fetched row's `metadata` JSONB field in application logic — it is not a SQL WHERE filter. Fetch the row first, then inspect the metadata value.
 
 **Step 4.2 — Create Soapbox asset**
 
@@ -282,9 +297,14 @@ After each asset completes, output one line:
 
 After all assets finish:
 
-1. Query Supabase for the portfolio's conversations table
-2. Create a new conversation tagged `<client-slug>-portfolio-analysis`
-3. Post an opening message summarising:
+1. Use `mcp__plugin_supabase_supabase__execute_sql` to insert into the `conversations` table with `portfolio_id` set and `title` = `<client-slug>-portfolio-analysis`:
+```sql
+INSERT INTO conversations (portfolio_id, title, tags, metadata)
+VALUES ('<portfolio_id>', '<client-slug>-portfolio-analysis', ARRAY['portfolio-ingestion', '<client-slug>'], '{}'::jsonb)
+RETURNING id;
+```
+Use the same conversation creation pattern as asset-level chats.
+2. Post an opening message summarising:
    - Total assets created, by fund
    - Analysis-ready count vs. pending
    - List of failed assets with error reasons

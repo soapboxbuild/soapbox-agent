@@ -48,6 +48,10 @@ def resolve_ll_pct(inputs: dict) -> dict:
     bps_liable = bool(inputs.get("bps_liable", False))
     measure = inputs.get("measure_category", "").lower()
 
+    # Auto-derive bps_liable from jurisdiction if not explicitly set
+    if not bps_liable and jurisdiction in BPS_JURISDICTIONS:
+        bps_liable = True
+
     warnings = []
 
     # ── 1. Elevators / common-area systems — always LL regardless of lease ──

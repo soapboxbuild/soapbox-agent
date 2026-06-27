@@ -456,6 +456,19 @@ Ready to run: portfolio-analysis workflow
 
 ---
 
+## Migration Applied
+
+- `assets.metadata` JSONB column: created (2026-06-27 via Supabase MCP)
+  - Default: `'{}'::jsonb`
+  - Indexed: GIN index on `metadata` for analysis_ready queries
+  - Smoke test: write + read round-trip verified ✓
+- `assets.tags` text[] column: created (2026-06-27 via Supabase MCP)
+  - Default: `'{}'`
+  - Indexed: GIN index on `tags` for portfolio-level tag queries
+  - Smoke test: write + read round-trip verified ✓
+
+---
+
 ## Implementation Plan
 
 Handed off to `superpowers:writing-plans` for task breakdown.
@@ -465,4 +478,4 @@ Estimated deliverables:
 - `scripts/portfolio_ingest.py` — matching engine + execution pipeline
 - `scripts/ll_allocation.py` — decision tree logic
 - `scripts/document_classifier.py` — document type inference
-- Supabase migration: add LL/TT + financial param fields to asset metadata
+- Supabase migration: ✓ completed (see "Migration Applied" section above)

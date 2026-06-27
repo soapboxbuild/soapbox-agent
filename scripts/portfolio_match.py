@@ -67,7 +67,10 @@ def score_system_match(asset: dict, candidate: dict) -> float:
 
 
 def run_system_mode(inputs: dict) -> dict:
-    asset = inputs["asset"]
+    asset = inputs.get("asset")
+    if asset is None:
+        print(json.dumps({"error": "Missing required key: asset"}), file=sys.stderr)
+        sys.exit(1)
     candidates = inputs.get("candidates", [])
 
     matches = []

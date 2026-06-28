@@ -5,11 +5,13 @@ description: >
   Soapbox portfolio. For each asset: pulls Audette decarb plan (physics), runs Soapbox
   DCF engine (financial model), applies LL/TT allocation decision tree, screens measures by
   IRR ≥ hurdle. Aggregates to fund-level and portfolio-level summary. Produces
-  presentation-ready HTML report. Spec 2 of 2 — portfolio ingestion (Spec 1) is a prerequisite.
+  presentation-ready HTML report. Works for any client portfolio — parameters are fully
+  configurable per run. Spec 2 of 2 — portfolio ingestion (Spec 1) is a prerequisite.
   Triggers on: "run portfolio analysis", "analyze the portfolio", "portfolio decarbonization",
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
-  "portfolio CapEx", "run analysis on [client]", "Greystar analysis", after portfolio-ingest completes.
-version: 1.0.0
+  "portfolio CapEx", "run analysis on [client]", "Greystar analysis", "BCLC analysis",
+  after portfolio-ingest completes.
+version: 1.1.0
 ---
 
 # Portfolio Analysis
@@ -18,33 +20,76 @@ You are running a **portfolio-scale decarbonization analysis** — the workflow 
 a fully-ingested Soapbox portfolio into a presentation-ready view of required sustainability
 capital, value creation, and emissions trajectory across all assets.
 
-**Prerequisite:** Portfolio ingestion (Spec 1 / `portfolio-ingest` skill) must be complete.
-All assets must have `analysis_ready: true` in their metadata, with `exit_year`,
-`exit_cap_rate`, `lease_structure`, `metering_config`, and `jurisdiction` populated.
+**Works for any client portfolio.** All parameters are set per run — there are no
+hardcoded client assumptions. Greystar, BCLC, or any future client each get their own
+parameter set confirmed at the start.
 
-**This skill replaces the Greystar helper spreadsheet.** All calculations that lived
-in that sheet now run in Soapbox — Audette provides the physics (energy measures, decarb
-plan, EUI), the Soapbox DCF engine provides the finance (IRR, value creation, NOI uplift).
+**This skill replaces client-specific helper spreadsheets.** Audette provides the physics
+(energy measures, decarb plan, EUI), the Soapbox DCF engine provides the finance (IRR,
+value creation, NOI uplift).
 
 ---
 
-## Global Parameters
+## Step 0: Resolve Run Configuration
 
-Establish at the start of every run. If values were set in a prior session, confirm before proceeding.
+Before anything else, establish the run parameters. Accept them inline if the user
+provided them ("run Greystar analysis with 15% hurdle"), or prompt for each.
 
-| Parameter | Default | Greystar | Notes |
-|-----------|---------|----------|-------|
-| IRR threshold | 15% | 15% | Hurdle rate — measures below are excluded from recommendations |
-| Utility escalation rate | 3%/yr | 3%/yr | Applied to all future utility savings |
-| Discount rate | 8% | 8% | For NPV calculations |
-| Exit year floor | 2028 | 2028 | Assets with exit year < floor get moved to floor |
-| Value creation method | inclusive | inclusive | NOI uplift / exit cap = value creation, added to exit year CF |
-| Retrofit lead time cutoff | 18 months | 18 months | Measures that can't permit+build before exit are deferred to next-period exit |
-| Target year 1 | 2035 | 2035 | Primary emissions target for scenario analysis |
+### Parameters
 
-Ask: "Should I use the default parameters, or do you want to change any?"
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `client_name` | (required) | Client name — used in report header and file naming |
+| `portfolio_id` | (required) | Soapbox portfolio ID or name to query |
+| `fund_filter` | all funds | Comma-separated fund names to include, or "all" |
+| `irr_hurdle` | 15% | Minimum IRR for a measure to be recommended |
+| `utility_escalation` | 3%/yr | Annual escalation applied to energy savings |
+| `discount_rate` | 8% | Discount rate for NPV calculations |
+| `exit_year_floor` | 2028 | Assets exiting before this year are moved to floor date |
+| `retrofit_lead_months` | 18 | Measures needing > this many months to implement are deferred for near-exit assets |
+| `target_years` | [2030, 2035, 2040] | Emissions scenario target years for CRREM comparison |
+| `value_method` | inclusive | `inclusive` = NOI uplift capitalised at exit cap + added to terminal CF; `standalone` = IRR on savings only without exit value |
+| `top_n_assets` | 10 | Number of assets shown in "Top N by value creation" table |
+| `audette_account` | (ask if not known) | Audette customer account slug for `switch_customer_account` |
 
-If the user sets different values, confirm before proceeding.
+### Preset configurations
+
+If the user says a client name without specifying parameters, apply the known preset
+if one exists, then confirm before proceeding:
+
+**Greystar:**
+```
+irr_hurdle: 15%, exit_year_floor: 2028, retrofit_lead_months: 18,
+target_years: [2030, 2035], utility_escalation: 3%, discount_rate: 8%,
+value_method: inclusive, audette_account: greystar
+```
+
+**BCLC:**
+```
+irr_hurdle: 12%, exit_year_floor: 2027, target_years: [2030, 2035, 2040],
+utility_escalation: 3%, discount_rate: 7%, value_method: inclusive,
+audette_account: bclc
+```
+
+New clients: prompt for each required parameter. Save the confirmed set to a comment
+in the portfolio thread for future runs.
+
+### Confirm before proceeding
+
+Display the resolved parameters in a compact table and ask: "Run with these parameters? (y to proceed, or change any value)"
+
+```
+Client:         [client_name]
+Portfolio:      [portfolio name]
+Funds:          [all / fund list]
+IRR hurdle:     [X]%
+Exit year floor: [YYYY]
+Target years:   [YYYY, YYYY, ...]
+Utility escal.: [X]%/yr
+Discount rate:  [X]%
+Value method:   [inclusive / standalone]
+Audette acct:   [slug]
+```
 
 ---
 
@@ -52,13 +97,16 @@ If the user sets different values, confirm before proceeding.
 
 ### 1A — Load analysis-ready assets
 
-Query Soapbox for all assets in the portfolio tagged `analysis_ready: true`:
+Query Soapbox for all assets in the portfolio tagged `analysis_ready: true`.
+Apply `fund_filter` if not "all":
 
 ```sql
 SELECT id, name, address, property_type, metadata
 FROM assets
 WHERE portfolio_id = '<portfolio_id>'
   AND metadata->>'analysis_ready' = 'true'
+  -- if fund_filter != 'all':
+  AND metadata->>'fund_name' = ANY(ARRAY[<fund_list>])
 ORDER BY name;
 ```
 
@@ -197,7 +245,7 @@ include in portfolio emissions inventory only.
 For each recommended measure from Audette:
 
 **Step 1 — Retrofit lead time check:**
-- If `hold_period < 1.5 years` AND measure type is major capital (HVAC replacement, electrification,
+- If `hold_period < retrofit_lead_months / 12` AND measure type is major capital (HVAC replacement, electrification,
   envelope, solar): defer to next-period exit (set `install_year = exit_year_floor + 1`). Flag
   as "deferred — insufficient lead time."
 - Compliance-required measures are never deferred regardless of hold period.
@@ -262,7 +310,7 @@ IRR is unlevered, inclusive of asset value:
 
 | Result | Action |
 |--------|--------|
-| IRR ≥ hurdle rate (15%) | Include in recommended measures |
+| IRR ≥ `irr_hurdle` | Include in recommended measures |
 | IRR < hurdle rate | Exclude from recommendations; include in "below hurdle" table |
 | Compliance-required measure | Include regardless of IRR; flag as mandatory |
 
@@ -359,7 +407,7 @@ Group by `fund_name`. For each fund:
 
 ### 4C — Top-N by value creation
 
-Sort by `total_value_creation DESC`. Show top 10 (or configurable top-N from global settings).
+Sort by `total_value_creation DESC`. Show top `top_n_assets` (default 10).
 
 | Rank | Asset | Fund | Exit | CapEx Net | Value Created | Lead Measure |
 |------|-------|------|------|-----------|---------------|--------------|
@@ -380,15 +428,15 @@ Roll up recommended measures across all assets by category:
 
 ### 4E — Emissions trajectory vs. CRREM
 
-For each target year (2030, 2035, 2040, 2050):
+For each year in `target_years`:
 
 1. Compute portfolio-weighted average carbon intensity (kgCO₂e/m²) with no action
 2. Compute portfolio-weighted average carbon intensity with all recommended measures implemented
 3. Compare to CRREM 1.5°C pathway target for asset type + country
 4. Report % of portfolio above / below / on pathway in each scenario
 
-Flag: "Under current trajectory, [N] assets strand before 2035 (cross the CRREM pathway). With
-recommended measures, [M] assets are pathway-aligned through 2035."
+Flag: "Under current trajectory, [N] assets strand before [target_years[0]] (cross the CRREM pathway). With
+recommended measures, [M] assets are pathway-aligned through [target_years[0]]."
 
 **Circular benchmarking rule:** Only include assets with actual EUI data (Audette or ESPM) in
 the pathway comparison. Assets with estimated EUI are listed separately as "EUI unverified —
@@ -442,7 +490,7 @@ Update the same `{client-slug}-portfolio-analysis.html` artifact. Do not create 
 
 [Section: Below-Hurdle Measures (reference table)]
   Measures excluded from recommendations — IRR shown for transparency
-  "These measures do not meet the [X]% hurdle at stated assumptions. They may become
+  "These measures do not meet the [irr_hurdle]% hurdle at stated assumptions. They may become
   viable under different hold periods, exit cap rates, or if utility rates escalate faster."
 
 [Section: Deferred Measures]

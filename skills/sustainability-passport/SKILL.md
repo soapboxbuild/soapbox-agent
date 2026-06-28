@@ -68,10 +68,19 @@ Before writing a word, inventory what's available. Surface gaps to the user imme
 - [ ] Operating expense history (energy % of total OpEx)
 - [ ] Any green lease provisions in existing leases
 
-**External / Connected Tools:**
-- Audette: `list_buildings()` → `get_building_model_details(building_id)` — carbon model, CRREM pathway, equipment schedule
-- ENERGY STAR Portfolio Manager: connected via integration or shared report
-- Overture Maps: building footprint, height, floor count for GFA cross-check
+**External / Connected Tools — query in this order:**
+1. **Audette** (primary): `list_buildings()` → `get_building_model_details(building_id)` — calibrated carbon model, CRREM pathway, equipment schedule, decarb recommendations. This is the most defensible source; always check first.
+2. **ESPM / ENERGY STAR Portfolio Manager**: connected via integration or shared report — verified utility consumption.
+3. **Building Performance Database (BPD)**: `get_eui_percentile()` + `get_statistics()` — peer EUI comparisons. **Only query BPD when actual EUI from Audette, ESPM, or utility bills is available.** Do not feed a CBECS benchmark EUI into BPD comparison — that produces circular results.
+4. **Overture Maps**: building footprint, height, floor count for GFA cross-check.
+
+**Data source hierarchy for energy figures:**
+1. Audette calibrated model (best — use and cite directly)
+2. ESPM verified consumption data
+3. Utility bills from the data room
+4. CBECS benchmark estimate (last resort — label every figure as `(est.)` and skip peer benchmarking)
+
+**Circular benchmarking rule:** Never use a CBECS benchmark EUI in the Section 2B peer comparison table. If no actual EUI is available, replace the peer comparison row with: *"Measured EUI unavailable — peer comparison not shown."*
 
 ### 1B — Gap Messaging
 
@@ -196,7 +205,7 @@ CRREM (Carbon Risk Real Estate Monitor) defines the 1.5°C-aligned decarbonizati
 Provide a simple narrative:
 > "[Property] is currently [X] kgCO₂e/m², which is [above/on/below] the CRREM 1.5°C pathway for [asset type] in [country]. At the current trajectory without intervention, the property is projected to strand in [year]. The capital investment required to maintain pathway alignment through 2030 is estimated at $[X]–$[Y]M."
 
-**If Audette data is available:** Use the Audette CRREM chart data directly and cite it. This is the most defensible source.
+**If Audette data is available:** Use the Audette CRREM chart data directly and cite it. This is the most defensible source. If Audette is not connected: label the CRREM Misalignment Year as "(est. — Audette not connected)" and note the limitation.
 
 ---
 
@@ -515,24 +524,43 @@ Before finalizing, verify:
 
 ## Step 4: Output Format
 
-Deliver the passport as:
+Deliver the passport as a two-phase artifact using the same file path. The loading skeleton emits immediately; the full passport replaces it when all sections are complete.
 
-**1. Full passport (HTML artifact)** — formatted for PDF export, suitable for printing and inclusion in the physical data room. Professional layout with sections, tables, and a branded header.
+### Phase 1 — Loading Skeleton (emit at file path before research begins)
 
-**2. Executive summary card (1 page)** — key metrics only, suitable for OM teaser or investment committee overview:
-- Property snapshot
-- ENERGY STAR score
-- Carbon intensity vs. CRREM pathway
-- Certification badges
-- Compliance status summary
-- Primary risk (1 sentence)
-- Green financing eligibility (Y/N + program)
+Navy header with property name and address already filled in. Shimmer placeholders for the 16 sections. Three pulsing dots with status text.
 
-**3. GRESB-ready data export (on request)** — a structured table of all GRESB performance indicators with values and sources, ready to enter into the GRESB portal.
+Use the same consulting aesthetic as the RSRA loading skeleton: navy `#12253A` header, `#F8F9FB` background, section cards in `#fff`, pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`). Zero Paged.js, zero external CDN.
+
+### Phase 2 — Full Passport (update the same file path)
+
+**Typography:** Every element must use `-apple-system,'Helvetica Neue',Arial,sans-serif`. Zero `Georgia`, zero `serif`, zero web font imports. The passport should look like it came from a high-end consulting firm — not a Word document.
+
+**Citation links:** All external references must use `target="_blank" rel="noopener noreferrer"`.
+
+**Numeric precision:** 2 significant figures on all calculated values (`$1.4M`, `42 kgCO₂e/m²`, `18 kBtu/SF/yr`). Never write `$1,427,000` or `41.7 kg`.
+
+**File path:** Save as `Sustainability_Passport_[PropertyName]_[YYYYMMDD].html`. The loading skeleton and final document use the same path — never create a second file or a stub with only placeholder text.
+
+**Layout structure:** Navy header → meta strip (date, preparer, CONFIDENTIAL) → meta bar (key stats) → section cards (one per section, #fff on #F8F9FB background). Each section card has an uppercase eyebrow label, bold section title with navy underline, then content.
+
+**Omit sections with no data** rather than showing empty tables.
+
+**3 required outputs:**
+1. **Full passport HTML artifact** — the primary deliverable, designed for screen reading and Mila export to PDF/PPTX
+2. **Executive summary card** — key metrics only (1 page, separate artifact on request):
+   - Property snapshot
+   - ENERGY STAR score
+   - Carbon intensity vs. CRREM pathway
+   - Certification badges
+   - Compliance status summary
+   - Primary risk (1 sentence)
+   - Green financing eligibility (Y/N + program)
+3. **GRESB-ready data export (on request)** — structured table of GRESB performance indicators with values and sources
 
 After generating, offer to:
-- Save as file: `write_file("Sustainability_Passport_[PropertyName]_[YYYYMMDD].html")`
-- Generate a Word-compatible version for data room upload
+- Save to asset documents: `Sustainability_Passport_[PropertyName]_[YYYYMMDD].html`
+- Export to PDF/PPTX via Mila (for data room upload)
 - Create the 1-page executive summary separately
 - Populate the RSRA CapEx section from the passport data (if running disposition → RSRA)
 

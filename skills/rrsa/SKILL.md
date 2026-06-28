@@ -82,15 +82,26 @@ Read the OM and extract:
 
 ## Phase 2: External Data Pull
 
-### 2A — Audette (if connected)
+### 2A — Audette (if connected) — CHECK FIRST
+
+Audette is the primary energy and carbon data source. Query it before any benchmark estimates.
 
 ```
 list_buildings() → search for property by address
-get_building_model_details(building_id) → pull carbon baseline, equipment schedule, recommendations
+get_building_model_details(building_id) → pull carbon baseline, CRREM pathway, equipment schedule, decarb recommendations, IRR estimates
 ```
 
-If found: this is gold. Note existing Audette data and carbon plan.
+**Data hierarchy — use the highest tier available:**
+1. **Audette calibrated model** — actual EUI + equipment schedule + costed decarb plan (best)
+2. **ESPM verified data** — actual utility consumption from Portfolio Manager (verified)
+3. **Utility bills in OM** — actual consumption stated by seller (unverified but measured)
+4. **CBECS benchmark estimate** — median EUI for asset type/vintage (use only when 1–3 unavailable; label as `(est.)`)
+
+If Audette found: use the Audette carbon intensity as the baseline, cite the Audette decarb recommendations, and cross-check IRR estimates from the Audette model against the deal's own hold period and exit cap rate.
+
 If not found: "Building not yet in Audette — proceeding from OM data and benchmarks."
+
+**Circular benchmarking rule:** Never feed a CBECS benchmark EUI back into peer comparisons as if it were measured data. If actual EUI is unknown, the peer benchmark comparison must be skipped or clearly labeled "no measured baseline — comparison not available."
 
 ### 2B — Overture Maps (if connected)
 
@@ -101,7 +112,18 @@ get_building(lat, lon) → building footprint SF, height, floor count
 
 Cross-reference: stated GFA vs. footprint × floors. Large discrepancies warrant a seller question.
 
-### 2C — Web Research
+### 2C — Building Performance Database (BPD)
+
+Only query BPD when actual EUI is available from Audette, ESPM, or OM utility data. BPD peer comparison on estimated EUI is circular — skip it if no measured baseline exists.
+
+```
+get_eui_percentile(asset_type, climate_zone, eui_value) → percentile rank vs. verified building population
+get_statistics(filters) → peer median EUI + top quartile
+```
+
+Report the property's EUI percentile only when the input EUI is from actual bills or ESPM — not a CBECS estimate.
+
+### 2D — Web Research
 
 Search for:
 - `"[address]" ENERGY STAR` — check public Portfolio Manager benchmarking
@@ -298,7 +320,13 @@ Use the appropriate benchmark set for the asset type. All figures are USD and re
 
 ### 5B — Compliance-Required vs. Elective CapEx
 
-Separate the table explicitly:
+Separate the table explicitly. **IRR screen:** For each elective measure, compute unlevered IRR using (1) annual energy/penalty savings, (2) the OM's exit cap rate, and (3) hold period from the OM. Only include measures with IRR ≥ deal hurdle rate in the "recommended" column; flag the rest as "below hurdle."
+
+**Utility recovery check before any NOI claim:** Before calculating NOI uplift from energy savings, determine who pays utilities:
+- **Master-metered / landlord-paid:** 100% of savings flow to NOI — capture fully.
+- **Submetered (tenant-paid):** Savings accrue to tenants; landlord captures indirectly through rent premium / reduced vacancy. Do not model direct NOI uplift on in-unit measures unless lease structure supports it.
+- **Mixed:** Split by space type. Note the breakdown explicitly.
+Extract metering configuration from OM lease abstracts or explicitly ask if not disclosed.
 
 **Compliance-Required (unavoidable to avoid penalties):**
 | Measure | Required By | Compliance Deadline | Low Est. | Mid Est. | High Est. | Annual Penalty if Deferred |
@@ -306,9 +334,9 @@ Separate the table explicitly:
 | | | | | | | |
 
 **Performance-Elective (voluntary, NOI-accretive):**
-| Measure | Rationale | Low Est. | Mid Est. | High Est. | Payback (years) |
-|---------|---------|---------|---------|---------|----------------|
-| | | | | | |
+| Measure | Rationale | Low Est. | Mid Est. | High Est. | Est. IRR | Landlord NOI Capture? |
+|---------|---------|---------|---------|---------|----------|----------------------|
+| | | | | | | | |
 
 **Resilience / Insurance-Driven:**
 | Measure | Trigger | Low Est. | Mid Est. | High Est. |
@@ -349,7 +377,7 @@ If asset type, jurisdiction, and size are known:
 | Retail (US) | ~60 kgCO₂e/m² | ~35 kgCO₂e/m² | ~22 kgCO₂e/m² |
 | Industrial (US) | ~45 kgCO₂e/m² | ~28 kgCO₂e/m² | ~18 kgCO₂e/m² |
 
-If no utility data is available: estimate EUI from CBECS benchmarks, then calculate carbon intensity using local grid emission factor. Clearly label as estimated.
+If no utility data is available: estimate EUI from CBECS benchmarks for rough compliance cost sizing only. Label as `(est.)`. **Do not feed this estimate into peer benchmarking tables or BPD comparisons** — that would produce circular results where the benchmark appears to confirm itself. The CRREM misalignment year and decarbonization capex can still be estimated from benchmarks, but the comparison to "building's actual carbon intensity" must be omitted and replaced with "measured EUI unavailable — CRREM analysis based on asset-type benchmark."
 
 ---
 
@@ -517,109 +545,254 @@ Choose one:
 
 ## Phase 10: Report Output
 
-Generate the RSRA report as a rich HTML artifact designed for PDF export. Use clean, professional typography — this will be shared with the investment committee.
+Generate a two-phase artifact using the same file path so the user sees a live loading state that transitions directly into the finished report. Never create a separate file or a stub with placeholder text.
 
-### HTML Report Template
+### Phase 1 — Loading Skeleton (emit immediately, before research begins)
+
+Emit the artifact at `{property-slug}-rsra.html` with a consulting-style loading skeleton that shows the report header with real property data already in it, shimmer placeholders for sections still being computed, and pulsing status dots. This gives the investment team immediate visual confirmation that the run started.
 
 ```html
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
 <style>
-  body { font-family: 'Georgia', serif; max-width: 860px; margin: 0 auto; padding: 40px; color: #1a1a1a; }
-  .cover { border-bottom: 3px solid #2d5016; padding-bottom: 24px; margin-bottom: 32px; }
-  .cover h1 { font-size: 26px; font-weight: 700; margin: 0 0 4px; }
-  .cover .subtitle { font-size: 14px; color: #666; margin: 0; }
-  .cover .meta { display: flex; gap: 32px; margin-top: 16px; font-size: 13px; color: #444; }
-  .risk-badge { display: inline-block; padding: 6px 14px; border-radius: 4px; font-weight: 700; font-size: 14px; }
-  .risk-low { background: #d1fae5; color: #065f46; }
-  .risk-moderate { background: #fef3c7; color: #92400e; }
-  .risk-high { background: #fee2e2; color: #991b1b; }
-  .risk-critical { background: #1a1a1a; color: #fff; }
-  .exec-summary { background: #f8f9fa; border-left: 4px solid #2d5016; padding: 16px 20px; margin: 24px 0; border-radius: 0 4px 4px 0; }
-  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
-  .kpi { background: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; text-align: center; }
-  .kpi .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-  .kpi .value { font-size: 20px; font-weight: 700; margin: 4px 0; }
-  h2 { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #2d5016; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-top: 32px; }
-  h3 { font-size: 14px; font-weight: 600; margin-top: 20px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
-  th { background: #f3f4f6; text-align: left; padding: 8px 10px; font-weight: 600; border: 1px solid #e5e7eb; }
-  td { padding: 7px 10px; border: 1px solid #e5e7eb; }
-  tr:nth-child(even) { background: #fafafa; }
-  .flag { color: #b91c1c; font-weight: 600; }
-  .ok { color: #065f46; font-weight: 600; }
-  .warning { color: #92400e; font-weight: 600; }
-  .conflict-box { background: #fee2e2; border: 2px solid #fca5a5; border-radius: 6px; padding: 14px 16px; margin: 16px 0; }
-  .recommendation-box { border: 2px solid; border-radius: 6px; padding: 16px 20px; margin: 24px 0; }
-  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+  .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
+  .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+  .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+  .prop-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
+  .prop-addr{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+  .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
+  .meta-bar{display:flex;gap:32px;padding:14px 40px;background:#F1F4F8;border-top:1px solid #CBD5E1}
+  .meta-item{display:flex;flex-direction:column;gap:2px}
+  .meta-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
+  .shimmer{background:linear-gradient(90deg,#e2e8ef 25%,#f1f5f9 50%,#e2e8ef 75%);background-size:200% 100%;animation:sh 1.4s infinite;border-radius:3px;display:block}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .section{padding:32px 40px;background:#fff;margin-bottom:2px}
+  .sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+  .sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+  .status{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:12px;color:#64748B;font-weight:500}
+  .dot{width:6px;height:6px;border-radius:50%;background:#4CAF82;animation:pu 1.2s ease-in-out infinite;flex-shrink:0}
+  .dot:nth-child(2){animation-delay:.4s}.dot:nth-child(3){animation-delay:.8s}
+  @keyframes pu{0%,100%{opacity:.25}50%{opacity:1}}
 </style>
-</head>
-<body>
-
-<div class="cover">
-  <h1>Rapid Sustainability Risk Assessment</h1>
-  <p class="subtitle">[PROPERTY NAME / ADDRESS]</p>
-  <div class="meta">
-    <span>Prepared: [DATE]</span>
-    <span>Prepared by: Aris (Soapbox AI)</span>
-    <span>CONFIDENTIAL — For internal acquisition review only</span>
+<div class="report">
+  <div class="doc-header">
+    <div class="eyebrow">Rapid Sustainability Risk Assessment</div>
+    <div class="prop-name">[PROPERTY NAME]</div>
+    <div class="prop-addr">[FULL ADDRESS]</div>
+  </div>
+  <div class="meta-strip">
+    <span>Aris · Soapbox Sustainability Intelligence</span>
+    <span>CONFIDENTIAL</span>
+  </div>
+  <div class="meta-bar">
+    <div class="meta-item"><span class="meta-lbl">Asset Type</span><span>[TYPE]</span></div>
+    <div class="meta-item"><span class="meta-lbl">Size</span><span>[SF] SF</span></div>
+    <div class="meta-item"><span class="meta-lbl">Year Built</span><span>[YEAR]</span></div>
+    <div class="meta-item"><span class="meta-lbl">Asking Price</span><span>$[PRICE]</span></div>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Assessment Signal</div>
+    <div class="status"><span class="dot"></span><span class="dot"></span><span class="dot"></span>Researching regulations and energy data…</div>
+    <span class="shimmer" style="width:55%;height:20px;margin-bottom:12px"></span>
+    <span class="shimmer" style="width:100%;height:12px;margin-bottom:7px"></span>
+    <span class="shimmer" style="width:85%;height:12px;margin-bottom:7px"></span>
+    <span class="shimmer" style="width:40%;height:12px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Capital Planning</div>
+    <div class="sec-title">Sustainability CapEx Estimate</div>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Regulatory Exposure</div>
+    <div class="sec-title">Compliance Risk</div>
+    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:30px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Due Diligence</div>
+    <div class="sec-title">Seller Questions</div>
+    <span class="shimmer" style="width:100%;height:24px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:90%;height:24px"></span>
   </div>
 </div>
-
-<div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-  <span class="risk-badge risk-[LEVEL]">[RISK LABEL]</span>
-  <span style="font-size:14px; color:#444;">[ONE SENTENCE RISK SUMMARY]</span>
-</div>
-
-<div class="kpi-grid">
-  <div class="kpi"><div class="label">Sustainability CapEx (mid)</div><div class="value">$[X]M</div><div style="font-size:11px;color:#666;">$[Y]–$[Z]M range</div></div>
-  <div class="kpi"><div class="label">Per SF</div><div class="value">$[X]/SF</div></div>
-  <div class="kpi"><div class="label">% of Asking Price</div><div class="value">[X]%</div></div>
-  <div class="kpi"><div class="label">5-Yr NOI Impact</div><div class="value">+/- $[X]K</div></div>
-</div>
-
-<div class="exec-summary">
-  <strong>Executive Summary</strong><br>
-  [3–4 sentences: property description, primary sustainability risk, capex range and what drives it, deal recommendation rationale.]
-</div>
-
-<!-- [ALL SECTIONS FROM ABOVE RENDERED AS HTML TABLES] -->
-
-<div class="recommendation-box" style="border-color:[COLOR];">
-  <strong>RSRA Recommendation: [PROCEED / PROCEED WITH CONDITIONS / PRICING ADJUSTMENT REQUIRED / REFER TO IC]</strong><br><br>
-  [Detailed rationale]<br><br>
-  <strong>Suggested actions:</strong>
-  <ul>
-    <li>[Action 1]</li>
-    <li>[Action 2]</li>
-  </ul>
-</div>
-
-<div class="footer">
-  <strong>Data Sources:</strong> [List all sources]<br>
-  <strong>Assumptions:</strong> [Key assumptions]<br>
-  <strong>Limitations:</strong> This assessment is based on publicly available data and the provided OM. It is not a substitute for a full energy audit or Phase I/II environmental assessment. All CapEx estimates carry ±30% uncertainty without a site inspection or equipment survey. Regulatory compliance status should be confirmed with legal counsel and building compliance consultants prior to closing.
-</div>
-
-</body>
-</html>
 ```
 
-After generating the artifact:
-1. Call `create_artifact` with the complete HTML — this opens the preview pane immediately
-2. Call `save_file` to persist: folder `"Reports"`, name `"{property-slug}-rsra.html"` (e.g. `prose-frontier-rsra.html`)
-3. Write a brief 3-5 sentence summary in chat
-4. Offer a 1-page "RSRA summary card" for the acquisition memo
+### Phase 2 — Full Report (update the same file path when all sections are complete)
 
-**Rules:**
-- All CSS must be inline or in a `<style>` block — no external dependencies (no CDN, no Google Fonts)
-- Use system fonts: `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Georgia, serif`
-- Property name, address, year built, unit count must match the documents exactly — never invent
-- Mark every benchmarked figure with "(est.)" inline
-- Omit sections that have no data rather than showing empty tables
-3. Offer to add the CapEx estimate to the underwriting model as a line item
+Replace the loading skeleton by updating the same artifact file. The full report uses the same consulting aesthetic — navy header, pure sans-serif, sharp section dividers, no Paged.js, no external CDN, no serif fonts anywhere.
+
+**Typography rule:** Every element must use `-apple-system, 'Helvetica Neue', Arial, sans-serif`. Zero exceptions. No `Georgia`, no `serif`, no web font imports.
+
+**Citation links:** All external links must use `target="_blank" rel="noopener noreferrer"`.
+
+**Numeric precision:** Use 2 significant figures on all calculated values (e.g., `$1.4M` not `$1.427M`, `42 kgCO₂e/m²` not `41.7`). Currency: `$1.4M`, `$620K`, `$38` — never write unnecessary decimal places.
+
+**Template structure for Phase 2:**
+
+```html
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+  .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
+  .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+  .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+  .prop-name{font-size:28px;font-weight:700;margin:8px 0 4px}
+  .prop-addr{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+  .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
+  .meta-bar{display:flex;gap:32px;padding:14px 40px;background:#F1F4F8;border-top:1px solid #CBD5E1}
+  .meta-item{display:flex;flex-direction:column;gap:2px}
+  .meta-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
+  .section{padding:32px 40px;background:#fff;margin-bottom:2px}
+  .sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+  .sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+  .kpi-row{display:flex;gap:2px;margin-bottom:2px}
+  .kpi{flex:1;background:#F8F9FB;padding:14px 16px;border:1px solid #E2E8F0}
+  .kpi-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B}
+  .kpi-val{font-size:22px;font-weight:700;color:#12253A;margin-top:4px}
+  .risk-badge{display:inline-block;padding:4px 12px;font-size:11px;font-weight:700;letter-spacing:.05em}
+  .risk-low{background:#D1FAE5;color:#065F46}
+  .risk-moderate{background:#FEF3C7;color:#92400E}
+  .risk-high{background:#FEE2E2;color:#991B1B}
+  .risk-critical{background:#12253A;color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+  th{background:#F1F4F8;text-align:left;padding:8px 12px;font-weight:600;border:1px solid #E2E8F0;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#475569}
+  td{padding:8px 12px;border:1px solid #E2E8F0;vertical-align:top}
+  tr:nth-child(even) td{background:#FAFBFC}
+  .flag{color:#B91C1C;font-weight:600}
+  .ok{color:#065F46;font-weight:600}
+  .warn{color:#92400E;font-weight:600}
+  .recbox{border-left:4px solid #12253A;padding:16px 20px;background:#F8F9FB;margin-top:16px}
+  .footer{padding:24px 40px;font-size:11px;color:#94A3B8;background:#fff;border-top:1px solid #E2E8F0}
+</style>
+<div class="report">
+  <div class="doc-header">
+    <div class="eyebrow">Rapid Sustainability Risk Assessment</div>
+    <div class="prop-name">[PROPERTY NAME]</div>
+    <div class="prop-addr">[FULL ADDRESS]</div>
+  </div>
+  <div class="meta-strip">
+    <span>Aris · Soapbox Sustainability Intelligence · [DATE]</span>
+    <span>CONFIDENTIAL — For internal acquisition review only</span>
+  </div>
+  <div class="meta-bar">
+    <div class="meta-item"><span class="meta-lbl">Asset Type</span><span>[TYPE]</span></div>
+    <div class="meta-item"><span class="meta-lbl">Size</span><span>[SF] SF</span></div>
+    <div class="meta-item"><span class="meta-lbl">Year Built</span><span>[YEAR]</span></div>
+    <div class="meta-item"><span class="meta-lbl">Asking Price</span><span>$[PRICE]</span></div>
+    <div class="meta-item"><span class="meta-lbl">Hold Period</span><span>[X] yr</span></div>
+    <div class="meta-item"><span class="meta-lbl">Exit Cap Rate</span><span>[X]%</span></div>
+  </div>
+
+  <div class="section">
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-lbl">Sustainability CapEx (mid)</div><div class="kpi-val">$[X]M</div></div>
+      <div class="kpi"><div class="kpi-lbl">Per SF</div><div class="kpi-val">$[X]/SF</div></div>
+      <div class="kpi"><div class="kpi-lbl">% of Asking Price</div><div class="kpi-val">[X]%</div></div>
+      <div class="kpi"><div class="kpi-lbl">5-Yr NOI Impact</div><div class="kpi-val">±$[X]K</div></div>
+    </div>
+    <div style="margin-top:12px">
+      <span class="risk-badge risk-[LEVEL]">[RISK LABEL]</span>
+      <span style="font-size:13px;color:#475569;margin-left:12px">[ONE SENTENCE RISK SUMMARY]</span>
+    </div>
+    <div style="margin-top:16px;font-size:13px;line-height:1.6;color:#334155">
+      [3–4 sentence executive summary: property, primary risk, capex drivers, recommendation.]
+    </div>
+  </div>
+
+  <!-- Regulatory Compliance -->
+  <div class="section">
+    <div class="sec-lbl">Regulatory Exposure</div>
+    <div class="sec-title">Compliance Risk</div>
+    [COMPLIANCE TABLE]
+  </div>
+
+  <!-- CapEx Estimate -->
+  <div class="section">
+    <div class="sec-lbl">Capital Planning</div>
+    <div class="sec-title">Sustainability CapEx Estimate</div>
+    [CAPEX TABLE — compliance-required and elective with IRR column]
+    [NET CAPEX SUMMARY TABLE including incentives]
+  </div>
+
+  <!-- NOI Impact -->
+  <div class="section">
+    <div class="sec-lbl">Financial Impact</div>
+    <div class="sec-title">NOI Analysis</div>
+    [NOTE utility recovery structure — who pays determines landlord NOI capture]
+    [DOWNSIDE TABLE — cost of inaction]
+    [UPSIDE TABLE — ROI from intervention, only where landlord captures savings]
+  </div>
+
+  <!-- Energy & Carbon -->
+  <div class="section">
+    <div class="sec-lbl">Carbon Characterization</div>
+    <div class="sec-title">Energy &amp; Emissions Profile</div>
+    [If actual EUI available: EUI table + peer comparison + BPD percentile]
+    [If no actual EUI: "Measured EUI unavailable — peer comparison not shown to avoid circular benchmarking. CRREM analysis below uses asset-type benchmark (est.)."]
+    [CRREM PATHWAY — label as measured or (est.) source]
+  </div>
+
+  <!-- Physical Risk -->
+  <div class="section">
+    <div class="sec-lbl">Physical Climate Risk</div>
+    <div class="sec-title">Climate Hazard Exposure</div>
+    [HAZARD TABLE]
+  </div>
+
+  <!-- Incentives -->
+  <div class="section">
+    <div class="sec-lbl">Incentives &amp; Financing</div>
+    <div class="sec-title">Rebates, Tax Credits &amp; Green Financing</div>
+    [INCENTIVES TABLE]
+  </div>
+
+  <!-- Seller Questions -->
+  <div class="section">
+    <div class="sec-lbl">Due Diligence</div>
+    <div class="sec-title">Seller Questions</div>
+    [QUESTIONS — only those warranted by specific risk flags found above]
+  </div>
+
+  <!-- Recommendation -->
+  <div class="section">
+    <div class="recbox">
+      <strong>RSRA Recommendation: [PROCEED / PROCEED WITH CONDITIONS / PRICING ADJUSTMENT REQUIRED / REFER TO IC]</strong>
+      <div style="margin-top:12px;font-size:13px;line-height:1.6">[Detailed rationale]</div>
+      <div style="margin-top:12px;font-size:13px"><strong>Suggested actions:</strong>
+        <ul style="margin-top:8px;padding-left:20px;line-height:1.8">
+          <li>[Action 1]</li>
+          <li>[Action 2]</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <strong>Data Sources:</strong> [List all sources — Audette, ESPM, BPD, web search, OM, CBECS if used]<br>
+    <strong>Assumptions:</strong> [Key assumptions including utility recovery structure and hold period used for IRR]<br>
+    <strong>Limitations:</strong> This assessment is based on publicly available data and the provided OM. It is not a substitute for a full energy audit or Phase I/II environmental assessment. All CapEx estimates carry ±30% uncertainty without site inspection. Regulatory compliance status should be confirmed with legal counsel prior to closing.
+  </div>
+</div>
+```
+
+After generating Phase 2:
+1. Update the artifact at the same `{property-slug}-rsra.html` path (not a new file)
+2. Save to asset documents: folder `"Reports"`, name `"{property-slug}-rsra.html"`
+3. Write 3–5 sentence summary in chat citing the key risk finding, total CapEx mid-estimate, and recommendation
+4. Offer to add CapEx as a line item in the underwriting model
+
+**Hard rules:**
+- Zero serif fonts, zero Paged.js, zero external CDN
+- Same file path for loading skeleton and full report — the artifact updates in place
+- Never create a stub file with only "See rendered report artifact" — the Phase 1 skeleton already IS the artifact
+- All external links: `target="_blank" rel="noopener noreferrer"`
+- All calculated values: 2 significant figures
+- Mark every estimate from benchmarks with `(est.)` inline
 
 ---
 

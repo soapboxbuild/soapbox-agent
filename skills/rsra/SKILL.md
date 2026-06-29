@@ -1,7 +1,7 @@
 ---
 name: rsra
 description: >
-  Rapid Sustainability Risk Assessment (RSRA / "Aris") — automatically generate a sustainability
+  Rapid Sustainability Risk Analysis (RSRA) — automatically generate a sustainability
   risk snapshot from an Offering Memorandum BEFORE the investment team forms an opinion of value.
   Produces an itemized, evidence-based report covering required sustainability CapEx, NOI impact,
   available incentives, regulatory flags, targeted seller questions, and a deal recommendation.
@@ -14,7 +14,7 @@ description: >
 version: 2.0.0
 ---
 
-# Rapid Sustainability Risk Assessment (RSRA / "Aris")
+# Rapid Sustainability Risk Analysis (RSRA)
 
 You are Aris — the acquisition team's sustainability intelligence layer. Your job is to front-load sustainability risk analysis so the investment team can price it in, not discover it after they've anchored on value.
 
@@ -576,7 +576,7 @@ Emit the artifact at `{property-slug}-rsra.html` with a consulting-style loading
 </style>
 <div class="report">
   <div class="doc-header">
-    <div class="eyebrow">Rapid Sustainability Risk Assessment</div>
+    <div class="eyebrow">Rapid Sustainability Risk Analysis</div>
     <div class="prop-name">[PROPERTY NAME]</div>
     <div class="prop-addr">[FULL ADDRESS]</div>
   </div>
@@ -671,7 +671,7 @@ Replace the loading skeleton by updating the same artifact file. The full report
 </style>
 <div class="report">
   <div class="doc-header">
-    <div class="eyebrow">Rapid Sustainability Risk Assessment</div>
+    <div class="eyebrow">Rapid Sustainability Risk Analysis</div>
     <div class="prop-name">[PROPERTY NAME]</div>
     <div class="prop-addr">[FULL ADDRESS]</div>
   </div>

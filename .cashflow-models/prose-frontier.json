@@ -1,0 +1,154 @@
+{
+  "asset_name": "Prose Frontier",
+  "asset_key": "prose-frontier",
+  "profile": {
+    "asset_type": "multifamily",
+    "region": "us",
+    "currency": "USD",
+    "hold_convention": "levered-with-waterfall"
+  },
+  "unit_mix": [
+    {
+      "type": "1BR-A1",
+      "count": 120,
+      "avg_sf": 731,
+      "market_rent": 1540
+    },
+    {
+      "type": "1BR-A2",
+      "count": 42,
+      "avg_sf": 818,
+      "market_rent": 1625
+    },
+    {
+      "type": "2BR-B1",
+      "count": 36,
+      "avg_sf": 1105,
+      "market_rent": 2000
+    },
+    {
+      "type": "2BR-B2",
+      "count": 126,
+      "avg_sf": 1191,
+      "market_rent": 2100
+    }
+  ],
+  "loss_to_lease_pct": 0.06,
+  "vacancy_pct": 0.05,
+  "concessions_pct": 0.0194,
+  "bad_debt_pct": 0.0015,
+  "other_income_per_unit": 2057,
+  "opex": {
+    "payroll_per_unit": 1482,
+    "om_per_unit": 666,
+    "marketing_per_unit": 313,
+    "ga_per_unit": 367,
+    "utilities_per_unit": 887,
+    "management_fee_pct": 0.025,
+    "insurance_per_unit": 461,
+    "taxes_per_unit": 3923,
+    "reserves_per_unit": 150
+  },
+  "growth": {
+    "rent": [
+      0.04,
+      0.04,
+      0.03,
+      0.03,
+      0.03
+    ],
+    "expense": [
+      0.03,
+      0.03,
+      0.03,
+      0.03,
+      0.03
+    ]
+  },
+  "hold_period_years": 5,
+  "exit_cap_rate": 0.05,
+  "sale_costs_pct": 0.015,
+  "debt": null,
+  "waterfall": null,
+  "dcf_output": {
+    "annual": [
+      {
+        "year": 1,
+        "gpr": 7358832.0,
+        "egi": 7119992.0,
+        "noi": 4190594.0,
+        "unlevered_cf": 4190594.0
+      },
+      {
+        "year": 2,
+        "gpr": 7653185.0,
+        "egi": 7404792.0,
+        "noi": 4387190.0,
+        "unlevered_cf": 4387190.0
+      },
+      {
+        "year": 3,
+        "gpr": 7882781.0,
+        "egi": 7626936.0,
+        "noi": 4520263.0,
+        "unlevered_cf": 4520263.0
+      },
+      {
+        "year": 4,
+        "gpr": 8119264.0,
+        "egi": 7855744.0,
+        "noi": 4657329.0,
+        "unlevered_cf": 4657329.0
+      },
+      {
+        "year": 5,
+        "gpr": 8362842.0,
+        "egi": 8091416.0,
+        "noi": 4798507.0,
+        "unlevered_cf": 4798507.0
+      }
+    ],
+    "going_in_noi": 4190594.0,
+    "stabilized_noi": 4798507.0,
+    "exit_value": 97366506.0,
+    "implied_purchase": 83811880.0,
+    "unlevered_irr": 0.081053,
+    "equity_multiple": 1.4308
+  },
+  "scenarios": {
+    "solar-2026-06-26": {
+      "interventions": [
+        {
+          "type": "solar",
+          "capex": 75000,
+          "annual_savings": 4064
+        }
+      ],
+      "yoc": 0.054187,
+      "investment_spread": 0.004187,
+      "irr_delta": -1.1e-05,
+      "exit_value_delta": 81280,
+      "run_date": "2026-06-26"
+    },
+    "unit-reno-50units-2026-06-26": {
+      "interventions": [
+        {
+          "type": "unit_renovation",
+          "capex_per_unit": 3000,
+          "units": 50,
+          "rent_premium_per_unit_monthly": 150,
+          "absorption_months": 10,
+          "vacancy_days_per_unit": 14,
+          "start_year": 1
+        }
+      ],
+      "yoc": 0.6,
+      "investment_spread": 0.55,
+      "irr_delta": 0.003865,
+      "exit_value_delta": 1800000.0,
+      "run_date": "2026-06-26"
+    }
+  },
+  "last_updated": "2026-06-26",
+  "source": "Extracted from CBRE OM (April 2023) and Stoneweg acquisition model (Sept 2023)"
+}

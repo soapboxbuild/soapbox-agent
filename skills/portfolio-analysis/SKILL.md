@@ -93,26 +93,94 @@ Audette acct:   [slug]
 
 ---
 
-## Phase 1: Asset Inventory
+## Phase 1: Readiness Check & Financial Parameter Collection
 
-### 1A — Load analysis-ready assets
+Load all assets in the portfolio (not just analysis-ready ones) and collect any missing
+financial parameters before running the analysis. This replaces the separate
+`portfolio-ingest` skill for the parameter-collection step.
 
-Query Soapbox for all assets in the portfolio tagged `analysis_ready: true`.
-Apply `fund_filter` if not "all":
+### 1A — Load all assets
+
+```sql
+SELECT id, name, address, property_type, metadata
+FROM assets
+WHERE portfolio_id = '<portfolio_id>'
+  -- apply fund_filter if not "all":
+  -- AND metadata->>'fund_name' = ANY(ARRAY[<fund_list>])
+ORDER BY name;
+```
+
+Partition into:
+- **Analysis-ready** (`analysis_ready: true`) — proceed directly to Phase 2
+- **Missing params** (`analysis_ready: false` or null) — collect before proceeding
+- **Disposed** (`status: 'disposed'`) — include in emissions inventory only
+
+### 1B — Bulk-fill from register (if available)
+
+If a spreadsheet or asset register is available (e.g. Greystar asset prioritization sheet),
+parse it first to bulk-populate `exit_year`, `exit_cap_rate`, and `fund_name` before
+prompting asset-by-asset:
+
+```bash
+python3 ~/soapbox-agent/scripts/portfolio_match.py --mode financial --inputs '<json>'
+```
+
+Auto-populate any field that can be read from the register. Only prompt for what's still missing.
+
+### 1C — Collect missing parameters asset-by-asset
+
+For each asset still missing required fields, present a focused card:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[N/total] — [Asset Name]   [fund] · [type]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Audette linked: [building name]
+  Exit year       → ?  (e.g. 2030, or 'disposed')
+  Exit cap rate   → ?  (e.g. 4.5%)
+  Lease structure → gross / nnn / modified-gross / rubs / green-lease
+  Metering config → master / individual / submeter-passthrough
+  Jurisdiction    → [auto-detected or blank]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Only show missing fields. `skip` leaves null and excludes the asset from analysis.
+`disposed` marks the asset and includes it in emissions inventory only.
+
+Run LL/TT allocation once inputs are known:
+```bash
+python3 ~/soapbox-agent/scripts/ll_allocation.py --inputs '{"lease_structure":"<val>","metering_config":"<val>","jurisdiction":"<val>","bps_liable":<bool>,"measure_category":"in_unit_hvac"}'
+```
+
+Write results to asset metadata using `||` merge (preserves Audette/ESPM IDs and docs):
+```sql
+UPDATE assets SET metadata = metadata || '<params_json>'::jsonb WHERE id = '<asset_id>';
+```
+
+Show edge-case warnings inline (NNN paradox, solar consent, RUBS recovery, BPS liability).
+
+### 1D — Readiness summary
+
+Report before proceeding:
+```
+[N_ready] assets ready · [N_missing] skipped (missing params) · [N_disposed] disposed
+```
+
+If `N_ready = 0`: stop and ask the user to provide financial parameters.
+
+Confirm:
+
+### 1E — Load confirmed analysis-ready assets for the run
 
 ```sql
 SELECT id, name, address, property_type, metadata
 FROM assets
 WHERE portfolio_id = '<portfolio_id>'
   AND metadata->>'analysis_ready' = 'true'
-  -- if fund_filter != 'all':
-  AND metadata->>'fund_name' = ANY(ARRAY[<fund_list>])
 ORDER BY name;
 ```
 
 Count: `N_ready` assets ready to analyze.
-
-Check for `analysis_ready: false` assets — report them as skipped with their missing fields.
 
 Confirm:
 > "Found [N_ready] analysis-ready assets. [N_skipped] assets skipped — missing [fields].

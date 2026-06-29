@@ -545,11 +545,9 @@ Choose one:
 
 ## Phase 10: Report Output
 
-Generate a two-phase artifact using the same file path so the user sees a live loading state that transitions directly into the finished report. Never create a separate file or a stub with placeholder text.
+Generate the complete RSRA report as a single artifact after all research phases complete. Do not emit a loading state or building skeleton first — emit the full report directly.
 
-### Phase 1 — Loading Skeleton (emit immediately, before research begins)
-
-Emit the artifact at `{property-slug}-rsra.html` with a consulting-style loading skeleton that shows the report header with real property data already in it, shimmer placeholders for sections still being computed, and pulsing status dots. This gives the investment team immediate visual confirmation that the run started.
+### Complete Report (emit once, after all research is done)
 
 ```html
 <style>
@@ -622,9 +620,7 @@ Emit the artifact at `{property-slug}-rsra.html` with a consulting-style loading
 </div>
 ```
 
-### Phase 2 — Full Report (update the same file path when all sections are complete)
-
-Replace the loading skeleton by updating the same artifact file. The full report uses the same consulting aesthetic — navy header, pure sans-serif, sharp section dividers, no Paged.js, no external CDN, no serif fonts anywhere.
+The report uses a consulting aesthetic — navy header, pure sans-serif, sharp section dividers, no Paged.js, no external CDN, no serif fonts anywhere.
 
 **Typography rule:** Every element must use `-apple-system, 'Helvetica Neue', Arial, sans-serif`. Zero exceptions. No `Georgia`, no `serif`, no web font imports.
 
@@ -632,7 +628,7 @@ Replace the loading skeleton by updating the same artifact file. The full report
 
 **Numeric precision:** Use 2 significant figures on all calculated values (e.g., `$1.4M` not `$1.427M`, `42 kgCO₂e/m²` not `41.7`). Currency: `$1.4M`, `$620K`, `$38` — never write unnecessary decimal places.
 
-**Template structure for Phase 2:**
+**Template structure:**
 
 ```html
 <style>
@@ -780,16 +776,14 @@ Replace the loading skeleton by updating the same artifact file. The full report
 </div>
 ```
 
-After generating Phase 2:
-1. Update the artifact at the same `{property-slug}-rsra.html` path (not a new file)
-2. Save to asset documents: folder `"Reports"`, name `"{property-slug}-rsra.html"`
-3. Write 3–5 sentence summary in chat citing the key risk finding, total CapEx mid-estimate, and recommendation
-4. Offer to add CapEx as a line item in the underwriting model
+After generating the report:
+1. Save to asset documents: folder `"Reports"`, name `"{property-slug}-rsra.html"`
+2. Write 3–5 sentence summary in chat citing the key risk finding, total CapEx mid-estimate, and recommendation
+3. Offer to add CapEx as a line item in the underwriting model
 
 **Hard rules:**
 - Zero serif fonts, zero Paged.js, zero external CDN
-- Same file path for loading skeleton and full report — the artifact updates in place
-- Never create a stub file with only "See rendered report artifact" — the Phase 1 skeleton already IS the artifact
+- Never emit a placeholder, stub, or "Building your report…" state — emit the complete report directly
 - All external links: `target="_blank" rel="noopener noreferrer"`
 - All calculated values: 2 significant figures
 - Mark every estimate from benchmarks with `(est.)` inline

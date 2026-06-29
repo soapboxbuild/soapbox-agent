@@ -545,9 +545,90 @@ Choose one:
 
 ## Phase 10: Report Output
 
-Generate the complete RSRA report as a single artifact after all research phases complete. Do not emit a loading state or building skeleton first — emit the full report directly.
+Two-phase artifact: emit a loading skeleton immediately, then update with the full report when done.
 
-### Complete Report (emit once, after all research is done)
+### Phase 1 — Loading Skeleton (emit BEFORE any research begins)
+
+**Before running any searches or reading any documents**, emit the artifact at `{property-slug}-rsra.html` using exactly the HTML below. This gives the user immediate visual feedback. Do not emit plain text — use this HTML verbatim, substituting only [PROPERTY NAME], [FULL ADDRESS], and the org name in the meta-strip:
+
+```html
+<!doctype html>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+  .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
+  .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+  .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+  .prop-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
+  .prop-addr{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+  .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
+  .meta-bar{display:flex;gap:32px;padding:14px 40px;background:#F1F4F8;border-top:1px solid #CBD5E1}
+  .meta-item{display:flex;flex-direction:column;gap:2px}
+  .meta-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
+  .shimmer{background:linear-gradient(90deg,#e2e8ef 25%,#f1f5f9 50%,#e2e8ef 75%);background-size:200% 100%;animation:sh 1.4s infinite;border-radius:3px;display:block}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .section{padding:32px 40px;background:#fff;margin-bottom:2px}
+  .sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+  .sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+  .status{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:12px;color:#64748B;font-weight:500}
+  .dot{width:6px;height:6px;border-radius:50%;background:#4CAF82;animation:pu 1.2s ease-in-out infinite;flex-shrink:0}
+  .dot:nth-child(2){animation-delay:.4s}.dot:nth-child(3){animation-delay:.8s}
+  @keyframes pu{0%,100%{opacity:.25}50%{opacity:1}}
+</style>
+<div class="report">
+  <div class="doc-header">
+    <div class="eyebrow">Rapid Sustainability Risk Analysis</div>
+    <div class="prop-name">[PROPERTY NAME]</div>
+    <div class="prop-addr">[FULL ADDRESS]</div>
+  </div>
+  <div class="meta-strip"><span>[ORG] · Soapbox Sustainability Intelligence</span><span>CONFIDENTIAL</span></div>
+  <div class="meta-bar">
+    <div class="meta-item"><span class="meta-lbl">Asset Type</span><span class="shimmer" style="width:80px;height:14px;margin-top:2px"></span></div>
+    <div class="meta-item"><span class="meta-lbl">Size</span><span class="shimmer" style="width:70px;height:14px;margin-top:2px"></span></div>
+    <div class="meta-item"><span class="meta-lbl">Year Built</span><span class="shimmer" style="width:50px;height:14px;margin-top:2px"></span></div>
+    <div class="meta-item"><span class="meta-lbl">Est. CapEx / Unit</span><span class="shimmer" style="width:60px;height:14px;margin-top:2px"></span></div>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Deal Signal</div>
+    <div class="status"><span class="dot"></span><span class="dot"></span><span class="dot"></span>Gathering data…</div>
+    <span class="shimmer" style="width:55%;height:20px;margin-bottom:12px"></span>
+    <span class="shimmer" style="width:100%;height:12px;margin-bottom:7px"></span>
+    <span class="shimmer" style="width:85%;height:12px;margin-bottom:7px"></span>
+    <span class="shimmer" style="width:40%;height:12px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Capital Planning</div>
+    <div class="sec-title">Decarbonization Plan</div>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Carbon Characterization</div>
+    <div class="sec-title">Emissions Profile</div>
+    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:30px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Federal Programs</div>
+    <div class="sec-title">Incentives</div>
+    <span class="shimmer" style="width:100%;height:28px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:28px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:80%;height:28px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Compliance</div>
+    <div class="sec-title">Regulatory Scan</div>
+    <span class="shimmer" style="width:100%;height:24px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:90%;height:24px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:70%;height:24px"></span>
+  </div>
+</div>
+```
+
+### Phase 2 — Complete Report (update the same file path when done)
 
 ```html
 <style>
@@ -776,14 +857,16 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
 </div>
 ```
 
-After generating the report:
-1. Save to asset documents: folder `"Reports"`, name `"{property-slug}-rsra.html"`
-2. Write 3–5 sentence summary in chat citing the key risk finding, total CapEx mid-estimate, and recommendation
-3. Offer to add CapEx as a line item in the underwriting model
+After generating the Phase 2 report:
+1. Call Artifact with the **exact same file path** `{property-slug}-rsra.html` — this replaces the loading skeleton in-place. Do NOT use a different file path or a new artifact call.
+2. Save the complete HTML to asset documents: folder `"Reports"`, name `"{property-slug}-rsra.html"`. **Only save once, only the full report.** Never save the loading skeleton.
+3. Write 3–5 sentence summary in chat.
+4. Offer to add CapEx as a line item in the underwriting model.
 
 **Hard rules:**
+- Phase 1 and Phase 2 must use the **identical** file path — one artifact, updated in place
+- **Never save the Phase 1 loading skeleton** — only the complete Phase 2 report goes to "Reports"
 - Zero serif fonts, zero Paged.js, zero external CDN
-- Never emit a placeholder, stub, or "Building your report…" state — emit the complete report directly
 - All external links: `target="_blank" rel="noopener noreferrer"`
 - All calculated values: 2 significant figures
 - Mark every estimate from benchmarks with `(est.)` inline

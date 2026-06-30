@@ -32,8 +32,12 @@ value creation, NOI uplift).
 
 ## Step 0: Resolve Run Configuration
 
-Before anything else, establish the run parameters. Accept them inline if the user
-provided them ("run Greystar analysis with 15% hurdle"), or prompt for each.
+**First, search Portfolio Docs for existing financial parameters before prompting the user.**
+Check for spreadsheets, IC memos, fund term sheets, or asset registers that contain exit years,
+cap rates, IRR hurdles, or hold periods. Extract what you find, then only ask for what's missing.
+
+After checking docs, establish the run parameters. Accept them inline if the user
+provided them ("run Greystar analysis with 15% hurdle"), or confirm what was found in docs first.
 
 ### Parameters
 
@@ -95,11 +99,27 @@ Audette acct:   [slug]
 
 ## Phase 1: Readiness Check & Financial Parameter Collection
 
-Load all assets in the portfolio (not just analysis-ready ones) and collect any missing
-financial parameters before running the analysis. This replaces the separate
-`portfolio-ingest` skill for the parameter-collection step.
+**Before prompting the user for any parameters, search Portfolio Docs for existing data.**
+Exit years, cap rates, fund assignments, hold periods, and IRR targets are often already
+uploaded as spreadsheets, IC memos, or fund term sheets. Extract what you can before asking.
 
-### 1A — Load all assets
+### 1A — Search Portfolio Docs first
+
+Use `search_portfolio` and `list_portfolio_files` to check for:
+- Asset registers or spreadsheets with exit years and cap rates (e.g. "exit-year", "cap rate", "hold period", "fund")
+- IC memos, fund term sheets, or investment guidelines with IRR hurdle rates
+- Acquisition models or underwriting summaries with per-asset financial parameters
+
+For any file that looks relevant, read it and extract:
+- `exit_year` per asset
+- `exit_cap_rate` per asset or fund
+- `fund_name` assignments
+- IRR hurdle rate
+- Hold period assumptions
+
+Only ask the user for parameters that couldn't be found in the docs. If you found partial data (e.g. exit years but no cap rates), confirm what you found and ask only for what's missing.
+
+### 1B — Load all assets
 
 ```sql
 SELECT id, name, address, property_type, metadata

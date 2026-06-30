@@ -61,7 +61,8 @@ Scan for existing data before asking any questions. Run:
 ```bash
 ls .cashflow-models/<asset-key>.json 2>/dev/null && echo "HAS_CASHFLOW" || true
 ls projects/<asset-key>/<type-key>-kickoff.md 2>/dev/null && echo "HAS_PRIOR_KICKOFF" || true
-find . -maxdepth 4 \( \
+ls projects/<asset-key>/ 2>/dev/null || true
+find . -maxdepth 5 -path "*<asset-key>*" \( \
   -iname "*pca*" -o \
   -iname "*condition*" -o \
   -iname "*audit*" -o \
@@ -139,6 +140,6 @@ mkdir -p projects/portfolio/
 Write the file using the output template from the project type file, filling in all
 answers from the Q&A loop.
 
-Confirm to the user:
-> "Project kickoff saved to `projects/<asset-key>/<type-key>-kickoff.md`.
+Confirm to the user, citing the exact output path computed above:
+> "Project kickoff saved to `<output path>`.
 > This file will be used as the project reference throughout delivery."

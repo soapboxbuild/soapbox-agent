@@ -19,6 +19,8 @@ AskUserQuestion options:
 - ESG reporting / investor requirement
 - Proactive capital planning
 
+Ask this as a separate AskUserQuestion turn, after Q1 is answered.
+
 Store as: `goal_type`, `goal_driver`, and any free-text detail.
 
 ---

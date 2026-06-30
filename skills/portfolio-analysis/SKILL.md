@@ -306,7 +306,19 @@ Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures a
 
 6. **IRR screen last**: only after measures are compiled, de-duped, feasibility-checked, and allocated — then apply the IRR hurdle. A measure that fails on feasibility should be excluded before the IRR screen, not after.
 
-Audette has the most rigorous energy model but is not infallible. The Greenrock assessments reflect on-the-ground field observations. The goal is the most accurate blended picture across all available data.
+**Audette is the system of record for reconciled plans and calibrated energy models.**
+
+After reconciliation, write findings back to Audette so the model stays current:
+
+1. **Submit utility consumption data** — if utility bills are uploaded and more recent than Audette's baseline, extract monthly consumption and submit to Audette via the energy command. This triggers Audette to re-model the carbon reduction plan with current data.
+
+2. **Mark completed measures** — if Greenrock or PCA documents show a measure was already installed (LED retrofit done, HVAC replaced), mark it complete in Audette so it's removed from the forward-looking decarb plan and not counted in CapEx.
+
+3. **Update equipment records** — if field documents show equipment has been replaced (e.g. new chiller installed 2024) and Audette's equipment schedule doesn't reflect it, update the record so future calibrations are accurate.
+
+4. **Note calibration gaps** — if the Audette model appears based on design specs rather than measured data (common for new buildings), flag this and recommend submitting actual utility bills to recalibrate.
+
+The goal: by the end of the analysis, Audette should be more accurate than when you started. The Audette model is the living system of record — not a static snapshot to read from once.
 
 For each Audette-linked asset:
 

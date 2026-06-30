@@ -266,7 +266,15 @@ Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures a
 
 ### 3A — Load Audette data (mandatory first step — do this before anything else)
 
-**If Audette is connected, call it for every linked asset before using any other data source.** Uploaded PDFs (Greenrock assessments, PCAs) are supplementary — Audette calibrated models are authoritative when available. Only fall back to documents or benchmarks when Audette is not connected or an asset has no Audette link.
+**If Audette is connected, call it for every linked asset.** Then cross-check Audette figures against other available sources — uploaded Greenrock assessments, utility bills, ESPM scores — and reconcile discrepancies before presenting numbers.
+
+**Data reconciliation rules:**
+- If Audette EUI and a Greenrock/utility bill EUI differ by >20%, flag the gap and explain which figure you're using and why (e.g. Audette is calibrated to actual meter data; Greenrock may use design specs)
+- If Audette recommends a measure but the Greenrock assessment already completed it, mark it as done — don't double-count the CapEx
+- ESPM scores are measured performance; Audette models are calibrated — if both exist, cross-check them for consistency and note any divergence
+- If Audette data looks stale (e.g. model not updated in >12 months) or significantly off from field observations in the documents, note the confidence level
+
+Audette has the most rigorous energy model but is not infallible. The goal is a reconciled view, not wholesale substitution of one source for another.
 
 For each Audette-linked asset:
 

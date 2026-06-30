@@ -344,75 +344,62 @@ For assets without Audette:
 - **Circular benchmarking rule:** Never use a CBECS benchmark EUI in the BPD peer comparison.
   If EUI is estimated, skip BPD comparison for that asset.
 
-### 3B — Run Soapbox DCF (base model)
+### 3B — Run DCF base model (use the cashflow MCP tool)
 
-For each asset, run the DCF engine with asset parameters from metadata:
-
-```python
-python3 scripts/dcf_engine.py \
-  --asset-type <property_type> \
-  --exit-year <max(exit_year, exit_year_floor)> \
-  --exit-cap-rate <exit_cap_rate> \
-  --going-in-noi <audette_noi or document-extracted NOI> \
-  --hold-period <exit_year - current_year> \
-  --utility-escalation 0.03 \
-  --output-json
+Call `run_dcf` for each asset:
+```
+run_dcf(
+  asset_type: "multifamily",
+  hold_period_years: max(exit_year, exit_year_floor) - current_year,
+  exit_cap_rate: asset.exit_cap_rate,
+  going_in_noi: <from Audette model or document-extracted NOI>
+)
 ```
 
-Store the base DCF as `{asset_id}_base.json`.
+If hold period < 1 year (already past exit): mark as disposed, skip financial analysis.
 
-If hold period < 1 year (already past exit): mark asset as `status: disposed`, skip financial analysis,
-include in portfolio emissions inventory only.
+### 3C — Apply each measure through the cashflow MCP
 
-### 3C — Apply each Audette measure through the DCF
+For each reconciled measure per asset, use the cashflow MCP tools — do NOT use simple payback math:
 
-For each recommended measure from Audette:
-
-**Step 1 — Retrofit lead time check:**
-- If `hold_period < retrofit_lead_months / 12` AND measure type is major capital (HVAC replacement, electrification,
-  envelope, solar): defer to next-period exit (set `install_year = exit_year_floor + 1`). Flag
-  as "deferred — insufficient lead time."
-- Compliance-required measures are never deferred regardless of hold period.
-
-**Step 2 — LL/TT allocation:**
-
-Call `scripts/ll_allocation.py` with asset inputs:
-
-```python
-python3 scripts/ll_allocation.py \
-  --lease-structure <lease_structure> \
-  --metering-config <metering_config> \
-  --jurisdiction <jurisdiction> \
-  --measure-type <measure.measure_type> \
-  --output-json
+**Step 1 — LL/TT allocation (call `get_ll_capture`):**
 ```
-
-Returns: `ll_capture_pct` (0.0–1.0) + any edge case warnings.
+get_ll_capture(
+  lease_structure: asset.lease_structure,
+  metering_config: asset.metering_config,
+  jurisdiction: asset.jurisdiction,
+  measure_type: measure.category,
+  bps_liable: asset.bps_liable
+)
+→ returns ll_capture_pct + warnings
+```
 
 **LL capture is the fraction of energy savings that flows to landlord NOI.**
-Do not model NOI uplift on savings the landlord cannot capture. A NNN tenant-metered
-building gets `ll_capture_pct ≈ 0.05` on in-unit measures — only fine avoidance, not
-energy savings.
+A NNN tenant-metered building gets `ll_capture_pct ≈ 0.05` on in-unit measures.
+BPS fine avoidance is always LL-captured regardless of lease structure.
 
-**BPS jurisdiction override:** If `bps_liable: true`, add the avoided annual fine to
-landlord NOI regardless of lease structure:
+**Step 2 — Retrofit lead time feasibility:**
+- Major capital (HVAC, electrification, envelope, solar): requires 18+ months — defer if hold_period < 1.5 yrs
+- Compliance-required measures: never defer regardless of hold period
+- Controls/LED/commissioning: 3–6 months — feasible for any hold period
+
+**Step 3 — Value-inclusive IRR (call `run_intervention_irr`):**
 ```
-avoided_fine_annual = projected_excess_emissions_t × fine_rate_per_t
+run_intervention_irr(
+  base_model: <result from run_dcf>,
+  intervention_type: <mapped from measure category>,
+  capex: measure.install_cost,
+  annual_savings: measure.annual_savings_$ × ll_capture_pct,
+  utility_escalation: utility_escalation,
+  start_year: measure.install_year - current_year,
+  ll_capture_pct: ll_capture_pct
+)
+→ returns IRR, payback_years, exit_value_delta, yield_on_cost
 ```
-This is always landlord-captured (property owner is liable regardless of lease).
 
-**Step 3 — Compute annual NOI impact:**
+**For batch screening across assets:** use `screen_measure_portfolio` to run one measure type across all assets at once.
 
-```
-annual_noi_uplift = measure.annual_savings_$ × ll_capture_pct
-                  + avoided_fine_annual (if bps_liable)
-```
-
-Apply utility escalation: savings grow at 3%/yr from install year.
-
-**Step 4 — Compute IRR (value-inclusive):**
-
-Run the intervention through DCF engine:
+**Step 4 — IRR screen (use the `irr_hurdle` parameter):**
 
 ```python
 python3 scripts/dcf_engine.py \

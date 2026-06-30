@@ -259,10 +259,14 @@ pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`), zero Paged.
 
 ## Phase 3: Per-Asset Analysis
 
+**Audette is the mandatory primary data source. Call it for every linked asset before using any other data.**
+
 Process assets in sequence, streaming one progress line per asset as it completes.
 Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures above hurdle, $2.1M CapEx, +$1.4M value`
 
-### 3A — Load Audette data (primary energy source)
+### 3A — Load Audette data (mandatory first step — do this before anything else)
+
+**If Audette is connected, call it for every linked asset before using any other data source.** Uploaded PDFs (Greenrock assessments, PCAs) are supplementary — Audette calibrated models are authoritative when available. Only fall back to documents or benchmarks when Audette is not connected or an asset has no Audette link.
 
 For each Audette-linked asset:
 

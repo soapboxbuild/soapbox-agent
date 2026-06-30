@@ -203,9 +203,11 @@ No changes to core orchestration logic.
 
 ---
 
-## Open Questions
+## Re-runs
 
-- Should the kickoff file be versioned (kickoff-v2.md) if re-run for the same project, or
-  overwrite? Recommendation: timestamp and append, keeping history.
-- Should the skill notify the assigned Soapbox delivery lead via Slack/email on completion?
-  Out of scope for v1, but the POC field makes this easy to add.
+If a kickoff file already exists for the same asset + project type, the skill asks via
+`AskUserQuestion` before proceeding: **Overwrite** the existing file, or **Create a new one**
+(timestamped, e.g. `retrofit-analysis-kickoff-2026-06-30.md`). The original is never silently
+replaced.
+
+Notifications on completion are out of scope for v1.

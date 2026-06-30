@@ -268,13 +268,25 @@ Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures a
 
 **If Audette is connected, call it for every linked asset.** Then cross-check Audette figures against other available sources — uploaded Greenrock assessments, utility bills, ESPM scores — and reconcile discrepancies before presenting numbers.
 
-**Data reconciliation rules:**
-- If Audette EUI and a Greenrock/utility bill EUI differ by >20%, flag the gap and explain which figure you're using and why (e.g. Audette is calibrated to actual meter data; Greenrock may use design specs)
-- If Audette recommends a measure but the Greenrock assessment already completed it, mark it as done — don't double-count the CapEx
-- ESPM scores are measured performance; Audette models are calibrated — if both exist, cross-check them for consistency and note any divergence
-- If Audette data looks stale (e.g. model not updated in >12 months) or significantly off from field observations in the documents, note the confidence level
+**Measure blending — synthesize across all sources, assess feasibility critically:**
 
-Audette has the most rigorous energy model but is not infallible. The goal is a reconciled view, not wholesale substitution of one source for another.
+1. **Compile all recommended measures** from every source: Audette decarb plan, Greenrock utility assessment, PCA capital items, ESPM recommendations. Build a unified measure list per asset.
+
+2. **De-duplicate**: if a measure appears in multiple sources (e.g. LED upgrade in both Audette and Greenrock), keep one entry. Use the most detailed cost estimate and flag which source it came from.
+
+3. **Mark completion status**: if the Greenrock assessment shows a measure was already completed, remove it from the forward-looking CapEx — do not double-count.
+
+4. **Critical feasibility check per measure**:
+   - Is it technically feasible given building vintage, HVAC configuration, and fuel type?
+   - Can it be permitted and built within the hold period? (Heat pumps / envelope: 18+ months lead time; LED/controls: 3–6 months)
+   - Does the LL/TT allocation actually flow savings to the landlord? (NNN tenant-pays = near-zero NOI capture on in-unit measures)
+   - Does it require tenant cooperation or consent (solar on leased roof, sub-metering, RUBS rollout)?
+
+5. **Confidence levels**: label each measure as High / Medium / Low confidence based on data quality. Audette + field-verified Greenrock = High. Audette only or Greenrock only = Medium. CBECS benchmark = Low.
+
+6. **IRR screen last**: only after measures are compiled, de-duped, feasibility-checked, and allocated — then apply the IRR hurdle. A measure that fails on feasibility should be excluded before the IRR screen, not after.
+
+Audette has the most rigorous energy model but is not infallible. The Greenrock assessments reflect on-the-ground field observations. The goal is the most accurate blended picture across all available data.
 
 For each Audette-linked asset:
 

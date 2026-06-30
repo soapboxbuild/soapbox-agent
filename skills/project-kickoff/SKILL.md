@@ -41,6 +41,8 @@ If scope is ambiguous: ask via AskUserQuestion:
 > "Is this for a single asset or a portfolio?"
 > Options: Single asset | Portfolio
 
+Ask each of these one at a time; do not ask the next until the previous is answered.
+
 **Derive asset key:** lowercase the name, replace spaces with hyphens.
 Examples: "AvalonBay" → `avalonbay` | "Prose Frontier OM" → `prose-frontier-om`
 
@@ -84,6 +86,10 @@ Track findings:
 
 If "Create new": append `-YYYY-MM-DD` to the filename (use today's date).
 
+> **Portfolio scope note:** For portfolio-level kickoffs, `has_prior_kickoff` checks
+> `projects/portfolio/<type-key>-kickoff.md`. The timestamped version writes to
+> `projects/portfolio/<type-key>-kickoff-YYYY-MM-DD.md`.
+
 ---
 
 ## Step 3: Q&A Loop
@@ -124,7 +130,10 @@ Determine output path:
 
 Create directory:
 ```bash
+# Asset scope:
 mkdir -p projects/<asset-key>/
+# Portfolio scope:
+mkdir -p projects/portfolio/
 ```
 
 Write the file using the output template from the project type file, filling in all

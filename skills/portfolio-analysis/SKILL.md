@@ -494,21 +494,43 @@ Roll up recommended measures across all assets by category:
 | EV charging | 19 | $1.9M | $1.1M | — |
 | Envelope | 6 | $5.8M | $4.2M | 180 tCO₂ |
 
-### 4E — Emissions trajectory vs. CRREM
+### 4E — Emissions trajectory: three-scenario time series (2025–2050)
 
-For each year in `target_years`:
+Build a year-by-year portfolio emissions model for three scenarios and the CRREM 1.5°C pathway. This is the centrepiece of the report — it shows where the portfolio is going and what each investment strategy delivers.
 
-1. Compute portfolio-weighted average carbon intensity (kgCO₂e/m²) with no action
-2. Compute portfolio-weighted average carbon intensity with all recommended measures implemented
-3. Compare to CRREM 1.5°C pathway target for asset type + country
-4. Report % of portfolio above / below / on pathway in each scenario
+**Three scenarios to model:**
 
-Flag: "Under current trajectory, [N] assets strand before [target_years[0]] (cross the CRREM pathway). With
-recommended measures, [M] assets are pathway-aligned through [target_years[0]]."
+| Scenario | Definition |
+|----------|-----------|
+| **Business as Usual (BAU)** | No decarb capital deployed. Only passive grid decarbonization applies to Scope 2 emissions (~3.5%/yr for US multifamily, varies by grid region). Equipment degrades naturally. |
+| **15% IRR Pathway** | Only measures that pass the IRR hurdle (`irr_hurdle`) are deployed, at their modelled install years. Emissions drop as each measure comes online. |
+| **Maximum Decarb** | All Audette-recommended measures deployed at earliest viable install year, regardless of IRR. Represents the fastest achievable pathway given the existing building stock. |
 
-**Circular benchmarking rule:** Only include assets with actual EUI data (Audette or ESPM) in
-the pathway comparison. Assets with estimated EUI are listed separately as "EUI unverified —
-excluded from pathway analysis."
+**CRREM overlay:** Plot the portfolio-weighted CRREM 1.5°C pathway target for each year.
+
+**Calculation method per year Y (2025–2050):**
+
+For each asset:
+1. Start from Audette baseline carbon intensity (kgCO₂e/m²) in 2025
+2. BAU: apply grid decarbonization factor per year to Scope 2 component only
+3. 15% IRR: subtract each IRR-passing measure's annual emission reduction from its install year onward
+4. Max decarb: subtract all recommended measures from their install years onward
+5. Weight each asset's intensity by its gross floor area (m²) for portfolio aggregate
+
+**Output:** JSON array of `{ year, bau_intensity, irr_intensity, max_intensity, crrem_target }` for years 2025–2050.
+
+**Render as an inline SVG line chart** in the HTML report:
+- X axis: 2025–2050
+- Y axis: kgCO₂e/m² (portfolio weighted average)
+- Lines: BAU (grey dashed), CRREM target (red dashed), 15% IRR pathway (blue solid), Max decarb (green solid)
+- Shaded area between BAU and CRREM target = stranding risk zone
+- Annotation: year where 15% IRR pathway crosses CRREM target (if it does)
+
+Use inline SVG only — no external charting libraries. The chart should be self-contained and print-ready.
+
+**Circular benchmarking rule:** Only include assets with actual EUI data (Audette or ESPM) in the pathway. Assets with estimated EUI are listed separately as "EUI unverified — excluded from trajectory."
+
+Flag: "Under BAU, [N] assets cross the CRREM stranding threshold before [target_years[0]]. Under the 15% IRR pathway, [M] strand. Under maximum decarb, [P] strand."
 
 ---
 
@@ -545,6 +567,15 @@ Update the same `{client-slug}-portfolio-analysis.html` artifact. Do not create 
 
 [Section: Measure Category Summary]
   Table: category | assets | CapEx net | value creation | tCO₂ reduced
+
+[Section: Emissions Trajectory (2025–2050)]
+  Inline SVG line chart — three scenario lines + CRREM target:
+    · BAU (grey dashed)
+    · 15% IRR Decarb Pathway (blue solid)  
+    · Maximum Decarb (green solid)
+    · CRREM 1.5°C Target (red dashed)
+  Stranding risk zone shaded between BAU and CRREM lines.
+  Below chart: table of portfolio-weighted kgCO₂e/m² at 2030, 2035, 2040, 2050 per scenario.
 
 [Section: CRREM Pathway Analysis]
   Portfolio emissions trajectory table (current vs. measures, vs. 2030/2035/2040 targets)

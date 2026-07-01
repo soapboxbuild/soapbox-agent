@@ -234,7 +234,7 @@ For each asset loaded in 1B, check the `audette_property_id` column (NOT `metada
 | Status | Count | Treatment |
 |--------|-------|-----------|
 | `audette_property_id` not null | N | Full physics model from Audette MCP |
-| `audette_property_id` is null | N | Use documents (PCA/audit) + CBECS benchmark estimates — label all values `(est.)` |
+| `audette_property_id` is null | N | Use documents (PCA/audit) + BPD MCP benchmark — label all values `(est.)` |
 
 Report the gap count before proceeding. Do not stop — assets without Audette are included with
 lower confidence, clearly labeled.
@@ -390,7 +390,7 @@ Build a unified measure list per asset, reconciling all sources:
 **Source certainty:** Audette and uploaded field documents (Greenrock assessments, PCAs,
 energy audits) carry **equal weight**. Neither is authoritative over the other — a
 field-verified Greenrock cost estimate is as reliable as an Audette model figure. Only
-CBECS benchmark estimates are lower certainty and must be labeled `(est.)`.
+BPD MCP benchmark estimates (no Audette, no uploaded doc) are lower certainty and must be labeled `(est.)`.
 
 1. **De-duplicate**: if a measure appears in both Audette and a doc (e.g. LED upgrade),
    keep one entry. Use whichever source has the more detailed or recent cost/savings data.
@@ -405,7 +405,7 @@ CBECS benchmark estimates are lower certainty and must be labeled `(est.)`.
 3. **Confidence levels**:
    - `High` — two or more sources agree (Audette + doc, or two docs)
    - `Medium` — single source, either Audette or a field doc
-   - `Low` — CBECS benchmark only (no Audette, no uploaded doc)
+   - `Low` — BPD MCP benchmark only (no Audette, no uploaded doc)
 
 4. **Feasibility check per measure**:
    - Technically feasible given building vintage and HVAC config?
@@ -438,9 +438,8 @@ reconciliation, update it with anything the docs revealed that Audette doesn't y
 **The goal: Audette should be more accurate at the end of the run than at the start.**
 
 For assets with no Audette link and no uploaded docs:
-- Use CBECS median EUI for asset type + climate zone — label every value `(est.)`
-- **Circular benchmarking rule:** Never use a CBECS benchmark EUI in the BPD peer comparison.
-  Skip BPD comparison for that asset.
+- Call `get_statistics(analyze_by: "site_eui", filters: {building_type: ["<asset_type>"], climate_zone: ["<zone>"]})` on BPD MCP to get the median EUI for the asset's building type + climate zone. Use the 50th-percentile value as the baseline EUI — label every derived value `(est.)`.
+- **Circular benchmarking rule:** Never use a BPD-derived benchmark EUI as the subject EUI in a subsequent BPD `get_eui_percentile` call. Skip the percentile comparison for that asset.
 
 ### 3B — Run DCF base model (use the cashflow MCP tool)
 
@@ -669,7 +668,7 @@ For each asset:
 
 Use inline SVG only — no external charting libraries. The chart should be self-contained and print-ready.
 
-**Circular benchmarking rule:** Only include assets with actual EUI data (Audette or ESPM) in the pathway. Assets with estimated EUI are listed separately as "EUI unverified — excluded from trajectory."
+**Circular benchmarking rule:** Only include assets with actual EUI data (Audette or ESPM) in the pathway. Assets with BPD-estimated EUI are listed separately as "EUI unverified — excluded from trajectory."
 
 Flag: "Under BAU, [N] assets cross the CRREM stranding threshold before [target_years[0]]. Under the 15% IRR pathway, [M] strand. Under maximum decarb, [P] strand."
 
@@ -738,10 +737,10 @@ Update the same `{client-slug}-portfolio-analysis.html` artifact. Do not create 
 
 [Section: Data Quality Notes]
   Count of assets with Audette-verified vs. estimated EUI
-  "All values labeled (est.) are based on CBECS benchmarks and carry ±40% uncertainty."
+  "All values labeled (est.) are based on BPD MCP peer-group median EUI and carry ±40% uncertainty."
 
 [Footer]
-  Data sources: Audette · Soapbox DCF Engine · CRREM 2024 · IRA §48E/§179D · CBECS
+  Data sources: Audette · Soapbox DCF Engine · CRREM 2024 · IRA §48E/§179D · BPD (LBNL)
   Parameters: IRR [X]% · Utility escalation 3% · Exit year floor [Y] · Value-inclusive IRR
   Limitations: This analysis is based on data available at time of run. CapEx estimates
   carry ±30% uncertainty without site inspection. IRR sensitivity to exit cap rate is high —
@@ -781,7 +780,7 @@ If `switch_customer_account`, `list_buildings`, or `get_building_model_details` 
 error or are not available as tools:
 1. Note at the top of the run: "⚠ Audette MCP unavailable — running on uploaded docs only."
 2. Fall through to uploaded documents as the source for all assets. Doc-sourced figures
-   carry the same certainty as Audette — only CBECS estimates get the `(est.)` label.
+   carry the same certainty as Audette — only BPD MCP benchmark estimates get the `(est.)` label.
 3. Do NOT silently proceed as if Audette ran — surface the gap clearly.
 4. After the run, tell the user: "To include Audette models, ensure the Audette plugin is
    installed for this portfolio in Settings → Plugins."

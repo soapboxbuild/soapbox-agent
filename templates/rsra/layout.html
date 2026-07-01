@@ -922,6 +922,16 @@
     function safe(val) {
       return (val !== undefined && val !== null && val !== '') ? String(val) : '—';
     }
+    /* HTML-escape for innerHTML string builders */
+    function esc(val) {
+      var s = (val !== undefined && val !== null && val !== '') ? String(val) : '—';
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    /* Validate URL — only allow http/https schemes */
+    function safeUrl(url) {
+      if (!url) return null;
+      try { var u = new URL(String(url)); return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : null; } catch(e) { return null; }
+    }
 
     function fmtCurrency(n) {
       if (typeof n !== 'number') return '—';
@@ -1024,13 +1034,13 @@
       plan.forEach(function(m) {
         var incentives = m.incentive_program
           ? m.incentive_program.split(';').map(function(p) {
-              return '<span class="incentive-pill">' + p.trim() + '</span>';
+              return '<span class="incentive-pill">' + esc(p.trim()) + '</span>';
             }).join('')
           : '';
 
         var finImpactParts = [];
-        if (m.financial_impact_value) finImpactParts.push(safe(m.financial_impact_value));
-        if (m.financial_impact_type)  finImpactParts.push(safe(m.financial_impact_type));
+        if (m.financial_impact_value) finImpactParts.push(esc(m.financial_impact_value));
+        if (m.financial_impact_type)  finImpactParts.push(esc(m.financial_impact_type));
         var finStr = finImpactParts.join(' · ');
 
         var emRed = (m.emissions_reduction_pct != null)
@@ -1039,8 +1049,8 @@
 
         html += '<div class="capex-card">';
         html +=   '<div class="capex-card-top">';
-        html +=     '<span class="capex-measure">' + safe(m.measure) + '</span>';
-        html +=     '<span class="timing-badge ' + timingClass(m.timing) + '">' + safe(m.timing) + '</span>';
+        html +=     '<span class="capex-measure">' + esc(m.measure) + '</span>';
+        html +=     '<span class="timing-badge ' + timingClass(m.timing) + '">' + esc(m.timing) + '</span>';
         html +=   '</div>';
         if (incentives) {
           html += '<div class="capex-incentives">' + incentives + '</div>';
@@ -1084,12 +1094,12 @@
     if (unitColHeader) unitColHeader.style.display = isMF ? '' : 'none';
 
     /* ── Emissions Profile ── */
-    setHtml('profile-fuel',      '<strong>' + safe(emiss.fuel_profile) + '</strong>');
-    setHtml('profile-utility',   safe(emiss.utility_structure));
-    setHtml('profile-emissions', safe(emiss.baseline_emissions));
+    setHtml('profile-fuel',      '<strong>' + esc(emiss.fuel_profile) + '</strong>');
+    setHtml('profile-utility',   esc(emiss.utility_structure));
+    setHtml('profile-emissions', esc(emiss.baseline_emissions));
 
     if (emiss.crrem_pathway) {
-      setHtml('profile-crrem', safe(emiss.crrem_pathway));
+      setHtml('profile-crrem', esc(emiss.crrem_pathway));
       showEl('profile-crrem-row');
     }
 
@@ -1100,9 +1110,9 @@
       var regPrefix = parts.length > 1 ? parts[0] : '';
       var regBody   = parts.length > 1 ? parts.slice(1).join(' — ') : emiss.regulation;
       if (regPrefix && rc) {
-        regHtml = '<span class="' + rc + '">' + regPrefix + '</span>' + (regBody ? ' — ' + regBody : '');
+        regHtml = '<span class="' + rc + '">' + esc(regPrefix) + '</span>' + (regBody ? ' — ' + esc(regBody) : '');
       } else {
-        regHtml = safe(emiss.regulation);
+        regHtml = esc(emiss.regulation);
       }
     } else {
       regHtml = '—';
@@ -1232,9 +1242,9 @@
       physRisk.hazards.forEach(function(h) {
         var lvl = (h.risk_level || '').toLowerCase();
         var cls = lvl.indexOf('high') !== -1 ? 'risk-high' : lvl.indexOf('mod') !== -1 ? 'risk-moderate' : 'risk-low';
-        riskHtml += '<tr><td>' + safe(h.hazard) + '</td>';
-        riskHtml += '<td class="' + cls + '">' + safe(h.risk_level) + '</td>';
-        riskHtml += '<td>' + safe(h.finding) + '</td></tr>';
+        riskHtml += '<tr><td>' + esc(h.hazard) + '</td>';
+        riskHtml += '<td class="' + cls + '">' + esc(h.risk_level) + '</td>';
+        riskHtml += '<td>' + esc(h.finding) + '</td></tr>';
       });
       if (physTbody) physTbody.innerHTML = riskHtml;
       if (physRisk.insurance_note) {
@@ -1283,8 +1293,8 @@
       var ghgTbody = document.querySelector('#ghg-table tbody');
       var ghgHtml = '';
       ghg.scopes.forEach(function(s) {
-        ghgHtml += '<tr><td>' + safe(s.scope) + '</td><td>' + safe(s.source) + '</td>';
-        ghgHtml += '<td>' + safe(s.annual_tco2e) + '</td><td>' + safe(s.notes) + '</td></tr>';
+        ghgHtml += '<tr><td>' + esc(s.scope) + '</td><td>' + esc(s.source) + '</td>';
+        ghgHtml += '<td>' + esc(s.annual_tco2e) + '</td><td>' + esc(s.notes) + '</td></tr>';
       });
       if (ghgTbody) ghgTbody.innerHTML = ghgHtml;
       if (ghg.offset_note) {
@@ -1310,7 +1320,7 @@
       wFields.forEach(function(f) {
         if (f[1]) {
           wHtml += '<div class="profile-row"><dt class="profile-dt">' + f[0] + '</dt>';
-          wHtml += '<dd class="profile-dd">' + safe(f[1]) + '</dd></div>';
+          wHtml += '<dd class="profile-dd">' + esc(f[1]) + '</dd></div>';
         }
       });
       if (waterDl && wHtml) { waterDl.innerHTML = wHtml; waterSection.style.display = ''; }
@@ -1346,7 +1356,7 @@
       qFields.forEach(function(f) {
         if (f[1]) {
           qHtml += '<div class="profile-row"><dt class="profile-dt">' + f[0] + '</dt>';
-          qHtml += '<dd class="profile-dd">' + ragDot(f[1]) + safe(f[1]) + '</dd></div>';
+          qHtml += '<dd class="profile-dd">' + ragDot(f[1]) + esc(f[1]) + '</dd></div>';
         }
       });
       if (qolDl && qHtml) { qolDl.innerHTML = qHtml; qolSection.style.display = ''; }
@@ -1371,7 +1381,7 @@
       aFields.forEach(function(f) {
         if (f[1]) {
           aHtml += '<div class="profile-row"><dt class="profile-dt">' + f[0] + '</dt>';
-          aHtml += '<dd class="profile-dd">' + safe(f[1]) + '</dd></div>';
+          aHtml += '<dd class="profile-dd">' + esc(f[1]) + '</dd></div>';
         }
       });
       if (affordDl && aHtml) { affordDl.innerHTML = aHtml; affordSection.style.display = ''; }
@@ -1392,7 +1402,7 @@
       cFields.forEach(function(f) {
         if (f[1]) {
           cHtml += '<div class="profile-row"><dt class="profile-dt">' + f[0] + '</dt>';
-          cHtml += '<dd class="profile-dd">' + safe(f[1]) + '</dd></div>';
+          cHtml += '<dd class="profile-dd">' + esc(f[1]) + '</dd></div>';
         }
       });
       if (certDl && cHtml) { certDl.innerHTML = cHtml; certSection.style.display = ''; }
@@ -1412,7 +1422,7 @@
         var bg=n&&sdgColors[n]?sdgColors[n]:'#64748B';
         var sh=n&&sdgShort[n]?sdgShort[n]:'';
         var tile=n?('<svg viewBox="0 0 40 40" width="40" height="40" style="flex-shrink:0;border-radius:3px" aria-label="SDG '+n+'"><rect width="40" height="40" fill="'+bg+'"/><text x="20" y="15" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.85)" font-weight="600" font-family="-apple-system,Helvetica,Arial,sans-serif">SDG</text><text x="20" y="26" text-anchor="middle" font-size="14" fill="#fff" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">'+n+'</text><text x="20" y="37" text-anchor="middle" font-size="6" fill="rgba(255,255,255,0.85)" font-family="-apple-system,Helvetica,Arial,sans-serif">'+sh+'</text></svg>'):'';
-        sdgHtml+='<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F1F4F8">'+tile+'<div><div style="font-size:12px;font-weight:600;color:#12253A;margin-bottom:2px">'+safe(s.sdg)+'</div><div style="font-size:13px;color:#334155;line-height:1.5">'+safe(s.alignment)+'</div></div></div>';
+        sdgHtml+='<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F1F4F8">'+tile+'<div><div style="font-size:12px;font-weight:600;color:#12253A;margin-bottom:2px">'+esc(s.sdg)+'</div><div style="font-size:13px;color:#334155;line-height:1.5">'+esc(s.alignment)+'</div></div></div>';
       });
       sdgHtml+='</div>';
       if(sdgList) sdgList.innerHTML=sdgHtml;
@@ -1429,7 +1439,7 @@
           qs.forEach(function(q, i) {
             qsHtml += '<li class="question-card">';
             qsHtml += '<span class="seller-q-num">' + (i + 1) + '</span>';
-            qsHtml += '<span class="question-text">' + safe(q) + '</span>';
+            qsHtml += '<span class="question-text">' + esc(q) + '</span>';
             qsHtml += '</li>';
           });
           qsList.innerHTML = qsHtml;
@@ -1450,12 +1460,13 @@
         srcHtml += '<li class="source-item">';
         srcHtml += '<span class="source-num">' + (i + 1) + '</span>';
         srcHtml += '<span class="source-body">';
-        srcHtml += '<span class="source-label">' + safe(s.label) + '</span>';
+        srcHtml += '<span class="source-label">' + esc(s.label) + '</span>';
         if (s.value_cited) {
-          srcHtml += ' <span class="source-value">— ' + safe(s.value_cited) + '</span>';
+          srcHtml += ' <span class="source-value">— ' + esc(s.value_cited) + '</span>';
         }
-        if (s.url) {
-          srcHtml += '<br><a class="source-url" target="_blank" rel="noopener noreferrer" href="' + safe(s.url) + '">' + safe(s.url) + '</a>';
+        var validUrl = safeUrl(s.url);
+        if (validUrl) {
+          srcHtml += '<br><a class="source-url" target="_blank" rel="noopener noreferrer" href="' + esc(validUrl) + '">' + esc(validUrl) + '</a>';
         }
         srcHtml += '</span></li>';
       });
@@ -1467,7 +1478,7 @@
     if (data.data_quality) {
       var confNote = document.getElementById('confidence-note');
       if (confNote) {
-        confNote.innerHTML = '<strong>Data quality:</strong> ' + safe(data.data_quality);
+        confNote.innerHTML = '<strong>Data quality:</strong> ' + esc(data.data_quality);
       }
     }
 

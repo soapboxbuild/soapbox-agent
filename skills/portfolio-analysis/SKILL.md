@@ -395,8 +395,8 @@ get_building_model_details(building_uid)
 Pull from the response:
 - `current_eui_kwh_m2` — site EUI from Audette calibrated model
 - `carbon_intensity_kg_co2_m2` — Scope 1+2, location-based
-- `crrem_pathway_target_2030` — CRREM 1.5°C target for asset type
-- `crrem_misalignment_year`
+- `crrem_pathway_target_2030` — CRREM 1.5°C target for asset type *(only if include_crrem: true)*
+- `crrem_misalignment_year` *(only if include_crrem: true)*
 - `equipment_schedule` — age and condition of major systems
 - `recommended_measures[]` — Audette decarb plan, each with:
   - `measure_type`, `capex`, `install_cost`, `annual_savings_kwh`, `annual_savings_$`
@@ -592,13 +592,13 @@ For each asset, compile:
   "hold_period_years": 4,
   "audette_eui": 85.2,
   "carbon_intensity_kg": 42,
-  "crrem_status": "above_pathway",
-  "crrem_misalignment_year": 2029,
+  "crrem_status": "above_pathway",        // only if include_crrem: true
+  "crrem_misalignment_year": 2029,        // only if include_crrem: true
   "ll_capture_pct_avg": 0.72,
   "lease_structure": "modified-gross",
   "metering_config": "master-metered",
   "jurisdiction": "Boston",
-  "bps_liable": true,
+  "bps_liable": true,                     // only if include_bps: true
   "recommended_measures": [
     {
       "measure": "LED lighting retrofit",

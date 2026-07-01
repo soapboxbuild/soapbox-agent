@@ -373,7 +373,7 @@ After loading Audette data, search Portfolio Docs for energy assessments for thi
 
 ```
 search_portfolio("energy audit [asset name]")
-search_portfolio("Greenrock [asset name]")
+search_portfolio("engineering study [asset name]")
 search_portfolio("capital plan [asset name]")
 ```
 
@@ -387,9 +387,10 @@ Read any matching documents and extract:
 
 Build a unified measure list per asset, reconciling all sources:
 
-**Source certainty:** Audette and uploaded field documents (Greenrock assessments, PCAs,
-energy audits) carry **equal weight**. Neither is authoritative over the other — a
-field-verified Greenrock cost estimate is as reliable as an Audette model figure. Only
+**Source certainty:** Audette and uploaded field documents (energy audits, PCAs,
+engineering studies, drawings, condition assessments) carry **equal weight**. Neither is
+authoritative over the other — a field-verified cost estimate from an engineering study is
+as reliable as an Audette model figure. Only
 BPD MCP benchmark estimates (no Audette, no uploaded doc) are lower certainty and must be labeled `(est.)`.
 
 1. **De-duplicate**: if a measure appears in both Audette and a doc (e.g. LED upgrade),

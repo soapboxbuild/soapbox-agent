@@ -626,8 +626,8 @@ Two-phase artifact: emit a loading skeleton immediately, then update with the fu
   .shimmer{background:linear-gradient(90deg,#e2e8ef 25%,#f1f5f9 50%,#e2e8ef 75%);background-size:200% 100%;animation:sh 1.4s infinite;border-radius:3px;display:block}
   @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
   .section{padding:32px 40px;background:#fff;margin-bottom:2px}
-  .sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
-  .sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+  .section-label,.sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+  .section-title,.sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
   .status{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:12px;color:#64748B;font-weight:500}
   .dot{width:6px;height:6px;border-radius:50%;background:#4CAF82;animation:pu 1.2s ease-in-out infinite;flex-shrink:0}
   .dot:nth-child(2){animation-delay:.4s}.dot:nth-child(3){animation-delay:.8s}
@@ -704,8 +704,8 @@ Two-phase artifact: emit a loading skeleton immediately, then update with the fu
   .shimmer{background:linear-gradient(90deg,#e2e8ef 25%,#f1f5f9 50%,#e2e8ef 75%);background-size:200% 100%;animation:sh 1.4s infinite;border-radius:3px;display:block}
   @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
   .section{padding:32px 40px;background:#fff;margin-bottom:2px}
-  .sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
-  .sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+  .section-label,.sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+  .section-title,.sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
   .status{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:12px;color:#64748B;font-weight:500}
   .dot{width:6px;height:6px;border-radius:50%;background:#4CAF82;animation:pu 1.2s ease-in-out infinite;flex-shrink:0}
   .dot:nth-child(2){animation-delay:.4s}.dot:nth-child(3){animation-delay:.8s}
@@ -783,8 +783,8 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
   .meta-item{display:flex;flex-direction:column;gap:2px}
   .meta-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
   .section{padding:32px 40px;background:#fff;margin-bottom:2px}
-  .sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
-  .sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+  .section-label,.sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+  .section-title,.sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
   .kpi-row{display:flex;gap:2px;margin-bottom:2px}
   .kpi{flex:1;background:#F8F9FB;padding:14px 16px;border:1px solid #E2E8F0}
   .kpi-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B}
@@ -917,7 +917,7 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
 </div>
 ```
 
-**Circular benchmarking rule:** Never place an asset-specific marker on this chart if the asset EUI is a CBECS estimate. The chart shows the peer landscape only.
+**Circular benchmarking rule:** The chart shows the peer landscape only — no subject-building marker, regardless of EUI source.
 
     [CRREM PATHWAY — label as measured or (est.) source]
   </div>
@@ -940,7 +940,7 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
     Label offset r=128; text-anchor: `middle` if top/bottom quadrant (|sin(θ)|>|cos(θ)|), `start` if right half (cos(θ)>0), `end` if left half (cos(θ)<0).
 
     ```html
-    <svg viewBox="0 0 420 280" width="100%" style="display:block;margin-bottom:16px" aria-label="Climate hazard radar chart">
+    <svg viewBox="0 0 420 280" width="100%" style="display:block;overflow:visible;margin-bottom:16px" aria-label="Climate hazard radar chart">
 
       <!-- Ring labels -->
       <text x="144" y="138" font-size="8" fill="#94A3B8">Low</text>

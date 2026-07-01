@@ -145,7 +145,9 @@ uploaded as spreadsheets, IC memos, or fund term sheets. Extract what you can be
 
 ### 1A — Search Portfolio Docs first
 
-Use `search_portfolio` to pull content from uploaded docs. **Never use web_fetch or navigate to any URL to access portfolio docs — `search_portfolio` is the only way to read file content in a portfolio thread.**
+**If the user attaches a file inline in the thread** (e.g. a spreadsheet with exit years), its content is already in the message — read it directly. Do NOT web_fetch the attachment URL or the Supabase signed URL.
+
+For documents already uploaded to the portfolio (not attached inline), use `search_portfolio`. **Never web_fetch any URL to access portfolio docs — `search_portfolio` is the only way to read uploaded file content.**
 
 Call `search_portfolio` with specific terms to find financial parameters:
 ```
@@ -167,52 +169,42 @@ Use `list_portfolio_files` only to see what documents exist — it does not retu
 
 Only ask the user for parameters that couldn't be found in the docs. If you found partial data (e.g. exit years but no cap rates), confirm what you found and ask only for what's missing.
 
-### 1B — Load all assets
+### 1B — Load all assets and build the UUID map
 
-```sql
-SELECT id, name, address, city, state, property_type,
-       audette_property_id, espm_property_id,
-       metadata
-FROM assets
-WHERE portfolio_id = '<portfolio_id>'
-  -- apply fund_filter if not "all":
-  -- AND metadata->>'fund_name' = ANY(ARRAY[<fund_list>])
-ORDER BY name;
+Call `query_portfolio_data()` to get every asset's UUID, name, and current metadata in one call. **Do this before anything else — the UUID map is required for all write-back operations.**
+
+```
+query_portfolio_data(include_metadata: true, analysis_ready_only: false)
 ```
 
-Always include `audette_property_id` and `espm_property_id` in the SELECT — these are the
-top-level columns used to link each Soapbox asset to its Audette building. They are NOT
-stored inside the `metadata` JSONB column.
+This returns all assets with their `id` (UUID), `name`, `audette_property_id`, `espm_property_id`, and metadata fields. Build an internal map: `{ asset_name → { uuid, audette_property_id, espm_property_id, metadata } }`.
 
-Partition into:
-- **Analysis-ready** (`analysis_ready: true`) — proceed directly to Phase 2
-- **Missing params** (`analysis_ready: false` or null) — collect before proceeding
-- **Disposed** (`status: 'disposed'`) — include in emissions inventory only
+- `audette_property_id` and `espm_property_id` are **top-level fields**, NOT inside metadata.
+- Asset UUIDs come ONLY from this tool. Never try to extract UUIDs from file paths, URLs, or any other source.
+
+Partition assets into:
+- **Analysis-ready** (`metadata.analysis_ready: true`) — proceed
+- **Missing params** — collect before proceeding
+- **Disposed** (`metadata.status: 'disposed'`) — emissions inventory only
 
 ### 1C — Bulk-fill from register (if available)
 
-If a spreadsheet or asset register is available (e.g. an asset prioritization sheet),
-parse it first to bulk-populate `exit_year`, `exit_cap_rate`, and `fund_name` before
-prompting asset-by-asset:
+If the user attaches a spreadsheet in the thread, its content is already in the message — read it directly from the message context. Do NOT web_fetch any URL to access an attached file.
 
-```bash
-python3 ~/soapbox-agent/scripts/portfolio_match.py --mode financial --inputs '<json>'
-```
-
-Auto-populate any field that can be read from the register. Only prompt for what's still missing.
-
-**Write back to Soapbox using `update_asset_metadata` or `bulk_update_metadata`:**
+If a spreadsheet or asset register is found (in the message or via `search_portfolio`), match its rows to the UUID map from 1B by asset name (fuzzy match on name). Then write parameters back:
 
 ```
-update_asset_metadata(asset_id: "<uuid>", updates: { fund_name: "<fund>", exit_year: <year>, exit_cap_rate: <rate> })
+update_asset_metadata(asset_id: "<uuid-from-1B>", updates: { fund_name: "<fund>", exit_year: <year>, exit_cap_rate: <rate> })
 ```
 
-Or for multiple assets at once:
+Or in bulk when the same value applies to multiple assets:
 ```
 bulk_update_metadata(asset_ids: ["<uuid1>", "<uuid2>", ...], updates: { exit_year: <year> })
 ```
 
-Always use the asset `id` (UUID) from the SELECT in 1B — never try to resolve a UUID from an asset name alone.
+**Always use UUIDs from the 1B map. Never guess or construct a UUID from any other source.**
+
+Auto-populate any field found in the register. Only prompt for what's still missing.
 
 ### 1D — Collect missing parameters asset-by-asset
 
@@ -347,23 +339,20 @@ pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`), zero Paged.
 
 ## Phase 3: Per-Asset Analysis
 
-**Audette is the mandatory primary data source. Call it for every linked asset before using any other data.**
+**Audette is the mandatory primary data source. Call it for EVERY linked asset. Do not skip Audette and proceed on docs alone — if Audette is skipped, the analysis is incomplete and must say so.**
 
 Process assets in sequence, streaming one progress line per asset as it completes.
 Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures above hurdle, $2.1M CapEx, +$1.4M value`
 
 ### 3A — Pull all sources, reconcile, write back to Audette
 
-Pull from both Audette and uploaded docs for every asset. Reconcile the two into a single
-unified plan. Write the reconciled plan back to Audette — this is the point of the exercise.
-Skipping reconciliation or skipping the write-back is not acceptable even if one source has
-more data than the other.
+For every asset with an `audette_property_id`: call Audette FIRST (Steps 1–3), then search docs (Step 4), then reconcile (Step 5), then write back (Step 6). **The doc search in Step 4 is secondary and supplementary — never a replacement for Audette.**
 
-**If the Audette MCP is available:** call it first for every linked asset (Steps 1–3 below),
-then read uploaded docs, then reconcile. Write the reconciled plan back to Audette.
+If you have already searched docs during Phase 1 (financial params), that does NOT count as Step 4. Step 4 must be a targeted per-asset search for energy measures, equipment data, and utility consumption — separate from the financial param search.
 
-**If the Audette MCP is unavailable at runtime:** read uploaded docs only, build the plan
-from those, note the gap, and skip the write-back steps. Do not silently omit this notice.
+**If the Audette MCP is available:** complete Steps 1–6 for every linked asset. Completing the analysis on docs alone when Audette is available is not acceptable.
+
+**If the Audette MCP is unavailable at runtime:** read uploaded docs only, build the plan from those, note the gap prominently, and skip the write-back steps. Do not silently omit this notice.
 
 #### Step 1 — Switch to the correct Audette account
 

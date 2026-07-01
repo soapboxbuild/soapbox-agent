@@ -81,9 +81,9 @@ All RSRA HTML output must conform to these rules. Claude must apply them on ever
 - External `<img src="https://...">` — all images must be inline SVG or data URIs
 
 **Artifact output rules**
-- Two-phase artifact: Phase 1 = loading skeleton, Phase 2 = full report
+- Two-phase output: Phase 1 = loading skeleton (immediate UX), Phase 2 = dispatch `report-renderer`
 - Both phases use the **identical** file path — one artifact, updated in place
-- Never save the Phase 1 skeleton to asset documents — only the completed Phase 2 report
+- Never save the Phase 1 skeleton to asset documents — only the completed report
 - Numeric precision: 2 significant figures (`$1.4M` not `$1,427,000`; `42 kgCO₂e` not `41.7`)
 - Mark all benchmark-derived estimates inline with `(est.)`
 
@@ -172,14 +172,17 @@ get_eui_percentile(asset_type, climate_zone, eui_value) → percentile rank vs. 
 get_statistics(filters) → peer median EUI + top quartile + buckets
 ```
 
-**Histogram data for chart:** From the `get_statistics()` response, extract:
-- `buckets`: array of `{eui_min, eui_max, count}` objects (kBtu/sqft/yr)
+**Histogram data for dispatch JSON:** From the `get_statistics()` response, populate `emissions_profile.bpd_chart`:
+- `buckets`: array of `{min_kbtu, max_kbtu, count}` (rename from API field names as needed)
+- `min_eui`, `max_eui`: range of the distribution
 - `median_eui`: peer median (kBtu/sqft/yr)
-- `target_2030_eui`: CRREM 2030 target for this asset type and climate zone
+- `target_eui`: CRREM 2030 target for this asset type and climate zone
+- `peer_count`: total buildings in peer set
+- `asset_class`, `climate_zone`, `year`: metadata for the chart label
 
-Set `bpd_chart_available = true` if BPD returns bucket data. If `get_statistics()` returns no bucket data, set `bpd_chart_available = false` and skip the histogram. Do NOT estimate or fabricate bucket values.
+Omit `emissions_profile.bpd_chart` entirely if `get_statistics()` returns no bucket data. Do NOT estimate or fabricate bucket values.
 
-**Subject-building marker:** Only add a subject-building marker to the histogram if actual measured EUI is available from Audette, ESPM, or OM utility bills. If no measured EUI exists, the histogram still appears — showing only the peer distribution, median, and CRREM 2030 target line. Do NOT use a CBECS benchmark estimate as the subject marker.
+**Subject-building marker:** Include `subject_eui` in `bpd_chart` only when actual measured EUI is available from Audette, ESPM, or OM utility bills. If no measured EUI exists, omit `subject_eui` — the histogram still appears showing peer distribution, median, and CRREM target. Do NOT use a CBECS benchmark estimate as the subject marker.
 
 ### 2D — Web Research
 
@@ -603,7 +606,7 @@ Choose one:
 
 ## Phase 10: Report Output
 
-Two-phase artifact: emit a loading skeleton immediately, then update with the full report when done.
+Two-phase output: emit a loading skeleton immediately, then dispatch `report-renderer` with structured JSON when done.
 
 ### Phase 1 — Loading Skeleton (emit BEFORE any research begins)
 
@@ -686,515 +689,122 @@ Two-phase artifact: emit a loading skeleton immediately, then update with the fu
 </div>
 ```
 
-### Phase 2 — Complete Report (update the same file path when done)
+### Phase 2 — Dispatch Report Renderer
 
-```html
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
-  .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
-  .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
-  .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
-  .prop-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
-  .prop-addr{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
-  .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
-  .meta-bar{display:flex;gap:32px;padding:14px 40px;background:#F1F4F8;border-top:1px solid #CBD5E1}
-  .meta-item{display:flex;flex-direction:column;gap:2px}
-  .meta-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
-  .shimmer{background:linear-gradient(90deg,#e2e8ef 25%,#f1f5f9 50%,#e2e8ef 75%);background-size:200% 100%;animation:sh 1.4s infinite;border-radius:3px;display:block}
-  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
-  .section{padding:32px 40px;background:#fff;margin-bottom:2px}
-  .section-label,.sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
-  .section-title,.sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
-  .status{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:12px;color:#64748B;font-weight:500}
-  .dot{width:6px;height:6px;border-radius:50%;background:#4CAF82;animation:pu 1.2s ease-in-out infinite;flex-shrink:0}
-  .dot:nth-child(2){animation-delay:.4s}.dot:nth-child(3){animation-delay:.8s}
-  @keyframes pu{0%,100%{opacity:.25}50%{opacity:1}}
-</style>
-<div class="report">
-  <div class="doc-header">
-    <div class="eyebrow">Rapid Sustainability Risk Analysis</div>
-    <div class="prop-name">[PROPERTY NAME]</div>
-    <div class="prop-addr">[FULL ADDRESS]</div>
-  </div>
-  <div class="meta-strip">
-    <span>Aris · Soapbox Sustainability Intelligence</span>
-    <span>CONFIDENTIAL</span>
-  </div>
-  <div class="meta-bar">
-    <div class="meta-item"><span class="meta-lbl">Asset Type</span><span>[TYPE]</span></div>
-    <div class="meta-item"><span class="meta-lbl">Size</span><span>[SF] SF</span></div>
-    <div class="meta-item"><span class="meta-lbl">Year Built</span><span>[YEAR]</span></div>
-    <div class="meta-item"><span class="meta-lbl">Asking Price</span><span>$[PRICE]</span></div>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Assessment Signal</div>
-    <div class="status"><span class="dot"></span><span class="dot"></span><span class="dot"></span>Researching regulations and energy data…</div>
-    <span class="shimmer" style="width:55%;height:20px;margin-bottom:12px"></span>
-    <span class="shimmer" style="width:100%;height:12px;margin-bottom:7px"></span>
-    <span class="shimmer" style="width:85%;height:12px;margin-bottom:7px"></span>
-    <span class="shimmer" style="width:40%;height:12px"></span>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Capital Planning</div>
-    <div class="sec-title">Sustainability CapEx Estimate</div>
-    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:38px"></span>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Regulatory Exposure</div>
-    <div class="sec-title">Compliance Risk</div>
-    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:30px"></span>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Due Diligence</div>
-    <div class="sec-title">Seller Questions</div>
-    <span class="shimmer" style="width:100%;height:24px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:90%;height:24px"></span>
-  </div>
-</div>
+After completing all research phases, dispatch the `report-renderer` subagent with the structured JSON below. Do NOT generate inline HTML — the renderer reads `templates/rsra/layout.html` from this plugin and produces a consistent, branded artifact.
+
+```json
+{
+  "template": "rsra",
+  "org": "{org slug if known — e.g. stoneweg, greystar; omit if unknown}",
+  "portfolio": "{portfolio slug if known; omit if unknown}",
+  "asset": "{property-slug}",
+  "data": {
+    "property": {
+      "name": "[PROPERTY NAME]",
+      "address": "[FULL ADDRESS]",
+      "type": "[multifamily|office|industrial|retail|hotel]",
+      "units": "[number — MF only]",
+      "gfa_sqft": "[number — CRE only]",
+      "year_built": "[year]",
+      "zip": "[zip code]"
+    },
+    "decarb_plan": [
+      {
+        "measure": "[Measure description]",
+        "timing": "[Early Yr1|Mid Yr3|Late Yr4-5|Ongoing]",
+        "capex_per_unit": "[number — MF only]",
+        "capex_total": "[number]",
+        "incentive_program": "[program name(s) separated by semicolons]",
+        "financial_impact_type": "[impact type]",
+        "financial_impact_value": "[e.g. ~$6,200/yr]",
+        "emissions_reduction_pct": "[number — optional]"
+      }
+    ],
+    "decarb_plan_total": {
+      "capex_per_unit": "[number — MF only]",
+      "capex_total": "[number]",
+      "total_emissions_reduction_pct": "[number — optional]"
+    },
+    "emissions_profile": {
+      "fuel_profile": "[description]",
+      "utility_structure": "[description]",
+      "baseline_emissions": "[e.g. ~68 kgCO₂e/m²yr (est.)]",
+      "crrem_pathway": "[gap description — optional]",
+      "regulation": "[Low|Moderate|High — description]",
+      "bpd_chart": {
+        "buckets": [{"min_kbtu": 40, "max_kbtu": 60, "count": 12}],
+        "min_eui": 40, "max_eui": 180,
+        "median_eui": 90, "target_eui": 75,
+        "subject_eui": "[measured EUI — omit if estimated]",
+        "peer_count": 847,
+        "asset_class": "Multifamily",
+        "climate_zone": "Northeast",
+        "year": 2023
+      }
+    },
+    "deal_signal": {
+      "level": "[Low Risk|Moderate Risk — Opportunity|Moderate Risk — CapEx|High Transition Risk]",
+      "narrative": "[one to two sentences]"
+    },
+    "seller_questions": ["[question 1]", "[question 2]"],
+    "physical_climate_risk": {
+      "hazards": [
+        {"hazard": "[name]", "risk_level": "[Low|Moderate|High]", "finding": "[description]"}
+      ],
+      "insurance_note": "[optional]"
+    },
+    "ghg_scoping": {
+      "scopes": [
+        {"scope": "Scope 1", "source": "[combustion source]", "annual_tco2e": "[number]", "notes": "[optional]"},
+        {"scope": "Scope 2", "source": "[electricity source]", "annual_tco2e": "[number]", "notes": "[optional]"},
+        {"scope": "Scope 3", "source": "[tenant energy]", "annual_tco2e": "[number]", "notes": "[optional]"}
+      ],
+      "offset_note": "[optional REC/offset calculation]"
+    },
+    "water_efficiency": {
+      "wui": "[optional]", "vs_benchmark": "[optional]", "water_stress": "[optional]",
+      "sasb_disclosure": "[optional]", "submeters": "[optional]"
+    },
+    "quality_of_life": {
+      "walk_score": "[e.g. 72 / 100 — Very Walkable]",
+      "bike_score": "[optional]", "transit_score": "[optional]",
+      "google_rating": "[optional]", "ora_ranking": "[optional]"
+    },
+    "affordability": {
+      "avg_rent": "[optional]", "income_required": "[optional]", "tract_mfi": "[optional]",
+      "gap": "[optional]", "tract_income_level": "[optional]", "underserved": "[optional]",
+      "minority_pct": "[optional]", "agency_mission": "[optional]"
+    },
+    "certifications_and_debt": {
+      "energy_star_recommendation": "[optional]", "leed_recommendation": "[optional]",
+      "green_debt": "[optional]", "fund_alignment": "[optional]"
+    },
+    "sdg_alignment": [
+      {"sdg": "SDG 7 — Clean Energy", "alignment": "[description]"}
+    ],
+    "sources": [
+      {"label": "[source name]", "value_cited": "[specific value cited — optional]", "url": "[url — optional]"}
+    ],
+    "data_quality": "[High|Medium|Low] — [brief description]",
+    "prepared_by": "Aris · Soapbox Sustainability Intelligence",
+    "prepared_for": "[client or org name]",
+    "report_date": "[YYYY-MM-DD]",
+    "disposition_mode": false
+  }
+}
+
 ```
 
-The report uses a consulting aesthetic — navy header, pure sans-serif, sharp section dividers, no Paged.js, no external CDN, no serif fonts anywhere.
+After dispatching report-renderer:
+1. Write 3-5 sentence summary in chat covering: deal signal, top CapEx measure, key risk flag.
+2. Offer to add CapEx as a line item in the underwriting model.
+3. The renderer saves the report to asset documents automatically.
 
-**Typography rule:** Every element must use `-apple-system, 'Helvetica Neue', Arial, sans-serif`. Zero exceptions. No `Georgia`, no `serif`, no web font imports.
-
-**Citation links:** All external links must use `target="_blank" rel="noopener noreferrer"`.
-
-**Numeric precision:** Use 2 significant figures on all calculated values (e.g., `$1.4M` not `$1.427M`, `42 kgCO₂e/m²` not `41.7`). Currency: `$1.4M`, `$620K`, `$38` — never write unnecessary decimal places.
+**BPD histogram:** Include `emissions_profile.bpd_chart` with bucket data when available. The layout template generates the SVG automatically. Omit `subject_eui` if EUI is estimated rather than measured.
 
 ---
 
-### ⚠️ TEMPLATE LOCK — READ BEFORE GENERATING OUTPUT
-
-**These rules are non-negotiable. Violating any one of them produces an unusable report.**
-
-1. **Fragment only** — output starts with `<style>`, never with `<!DOCTYPE html>`, `<html>`, `<head>`, or `<body>`. The artifact system wraps it. If you open a `<body>` tag you are wrong.
-2. **No `<img>` tags** — the org logo is NOT part of this report. No `<img src="https://...">` or any other external image reference. Use inline SVG for any visual marks.
-3. **Exact colors — no substitutions:**
-   - Header/section title: `#12253A` (navy) — never orange, never gradient
-   - Accents/eyebrows: `#4CAF82` (green) — never orange, never red
-   - Page bg: `#F8F9FB` — never white-on-white, never custom brand bg
-   - Do NOT use `--brand`, `--dark`, `--accent`, or any CSS custom property for brand colors. Write them inline.
-4. **No external resources** — no CDN scripts, no `@import url(...)`, no `<link rel="stylesheet">`, no `<script src="...">`. Self-contained SVG only.
-5. **Use the CSS below verbatim** — do not invent new class names, do not add gradient hero sections, do not add a colored navigation bar. Copy the template exactly and fill in `[PLACEHOLDERS]`.
-
----
-
-**Template structure:**
-
-```html
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
-  .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
-  .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
-  .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
-  .prop-name{font-size:28px;font-weight:700;margin:8px 0 4px}
-  .prop-addr{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
-  .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
-  .meta-bar{display:flex;gap:32px;padding:14px 40px;background:#F1F4F8;border-top:1px solid #CBD5E1}
-  .meta-item{display:flex;flex-direction:column;gap:2px}
-  .meta-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
-  .section{padding:32px 40px;background:#fff;margin-bottom:2px}
-  .section-label,.sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
-  .section-title,.sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
-  .kpi-row{display:flex;gap:2px;margin-bottom:2px}
-  .kpi{flex:1;background:#F8F9FB;padding:14px 16px;border:1px solid #E2E8F0}
-  .kpi-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B}
-  .kpi-val{font-size:22px;font-weight:700;color:#12253A;margin-top:4px}
-  .risk-badge{display:inline-block;padding:4px 12px;font-size:11px;font-weight:700;letter-spacing:.05em}
-  .risk-low{background:#D1FAE5;color:#065F46}
-  .risk-moderate{background:#FEF3C7;color:#92400E}
-  .risk-high{background:#FEE2E2;color:#991B1B}
-  .risk-critical{background:#12253A;color:#fff}
-  table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
-  th{background:#F1F4F8;text-align:left;padding:8px 12px;font-weight:600;border:1px solid #E2E8F0;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#475569}
-  td{padding:8px 12px;border:1px solid #E2E8F0;vertical-align:top}
-  tr:nth-child(even) td{background:#FAFBFC}
-  .flag{color:#B91C1C;font-weight:600}
-  .ok{color:#065F46;font-weight:600}
-  .warn{color:#92400E;font-weight:600}
-  .recbox{border-left:4px solid #12253A;padding:16px 20px;background:#F8F9FB;margin-top:16px}
-  .footer{padding:24px 40px;font-size:11px;color:#94A3B8;background:#fff;border-top:1px solid #E2E8F0}
-</style>
-<div class="report">
-  <div class="doc-header">
-    <div class="eyebrow">Rapid Sustainability Risk Analysis</div>
-    <div class="prop-name">[PROPERTY NAME]</div>
-    <div class="prop-addr">[FULL ADDRESS]</div>
-  </div>
-  <div class="meta-strip">
-    <span>Aris · Soapbox Sustainability Intelligence · [DATE]</span>
-    <span>CONFIDENTIAL — For internal acquisition review only</span>
-  </div>
-  <div class="meta-bar">
-    <div class="meta-item"><span class="meta-lbl">Asset Type</span><span>[TYPE]</span></div>
-    <div class="meta-item"><span class="meta-lbl">Size</span><span>[SF] SF</span></div>
-    <div class="meta-item"><span class="meta-lbl">Year Built</span><span>[YEAR]</span></div>
-    <div class="meta-item"><span class="meta-lbl">Asking Price</span><span>$[PRICE]</span></div>
-    <div class="meta-item"><span class="meta-lbl">Hold Period</span><span>[X] yr</span></div>
-    <div class="meta-item"><span class="meta-lbl">Exit Cap Rate</span><span>[X]%</span></div>
-  </div>
-
-  <div class="section">
-    <div class="kpi-row">
-      <div class="kpi"><div class="kpi-lbl">Sustainability CapEx (mid)</div><div class="kpi-val">$[X]M</div></div>
-      <div class="kpi"><div class="kpi-lbl">Per SF</div><div class="kpi-val">$[X]/SF</div></div>
-      <div class="kpi"><div class="kpi-lbl">% of Asking Price</div><div class="kpi-val">[X]%</div></div>
-      <div class="kpi"><div class="kpi-lbl">5-Yr NOI Impact</div><div class="kpi-val">±$[X]K</div></div>
-    </div>
-    <div style="margin-top:12px">
-      <span class="risk-badge risk-[LEVEL]">[RISK LABEL]</span>
-      <span style="font-size:13px;color:#475569;margin-left:12px">[ONE SENTENCE RISK SUMMARY]</span>
-    </div>
-    <div style="margin-top:16px;font-size:13px;line-height:1.6;color:#334155">
-      [3–4 sentence executive summary: property, primary risk, capex drivers, recommendation.]
-    </div>
-  </div>
-
-  <!-- Regulatory Compliance -->
-  <div class="section">
-    <div class="sec-lbl">Regulatory Exposure</div>
-    <div class="sec-title">Compliance Risk</div>
-    [COMPLIANCE TABLE]
-  </div>
-
-  <!-- CapEx Estimate -->
-  <div class="section">
-    <div class="sec-lbl">Capital Planning</div>
-    <div class="sec-title">Sustainability CapEx Estimate</div>
-    [CAPEX TABLE — compliance-required and elective with IRR column]
-    [NET CAPEX SUMMARY TABLE including incentives]
-  </div>
-
-  <!-- NOI Impact -->
-  <div class="section">
-    <div class="sec-lbl">Financial Impact</div>
-    <div class="sec-title">NOI Analysis</div>
-    [NOTE utility recovery structure — who pays determines landlord NOI capture]
-    [DOWNSIDE TABLE — cost of inaction]
-    [UPSIDE TABLE — ROI from intervention, only where landlord captures savings]
-  </div>
-
-  <!-- Energy & Carbon -->
-  <div class="section">
-    <div class="sec-lbl">Carbon Characterization</div>
-    <div class="sec-title">Energy &amp; Emissions Profile</div>
-    [If actual EUI available: EUI table + peer comparison + BPD percentile]
-    [Always insert BPD histogram when bpd_chart_available = true — see template below]
-
-**Histogram SVG template** (always insert inside the Energy & Emissions section when `bpd_chart_available = true`):
-
-```html
-<div style="margin-top:20px">
-  <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">
-    Peer EUI Distribution — [ASSET CLASS] ([CLIMATE ZONE]) · [N] buildings
-  </div>
-  <svg viewBox="0 0 560 160" width="100%" style="display:block;overflow:visible" aria-label="EUI distribution histogram">
-    <!-- Y-axis label -->
-    <text x="8" y="80" font-size="9" fill="#94A3B8" text-anchor="middle" transform="rotate(-90,8,80)"># Buildings</text>
-    <!-- Bars: one <rect> per bucket. Claude computes x, width, height from bucket data.
-         Chart area: x=28 to x=548 (width=520), y=10 to y=130 (height=120).
-         Bar x = 28 + (bucket_index / total_buckets) * 520
-         Bar width = 520 / total_buckets - 1
-         Bar height = (count / max_count) * 120
-         Bar y = 130 - bar_height -->
-    [BARS — one <rect> per bucket, fill="#CBD5E1", rx="1"]
-
-    <!-- X-axis line -->
-    <line x1="28" y1="130" x2="548" y2="130" stroke="#E2E8F0" stroke-width="1"/>
-
-    <!-- X-axis labels: min, midpoint, max EUI values -->
-    <text x="28" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">[MIN]</text>
-    <text x="288" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">[MID] kBtu/SF/yr</text>
-    <text x="548" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">[MAX]</text>
-
-    <!-- Median line: x = 28 + ((median_eui - min_eui) / (max_eui - min_eui)) * 520 -->
-    <line x1="[MEDIAN_X]" y1="10" x2="[MEDIAN_X]" y2="130"
-          stroke="#12253A" stroke-width="1.5" stroke-dasharray="4,3"/>
-    <text x="[MEDIAN_X]" y="8" font-size="9" fill="#12253A" text-anchor="middle" font-weight="600">
-      Median [MEDIAN_VAL]
-    </text>
-
-    <!-- 2030 CRREM target line: x = 28 + ((target_eui - min_eui) / (max_eui - min_eui)) * 520 -->
-    <line x1="[TARGET_X]" y1="10" x2="[TARGET_X]" y2="130"
-          stroke="#4CAF82" stroke-width="1.5"/>
-    <text x="[TARGET_X]" y="8" font-size="9" fill="#1F6B45" text-anchor="middle" font-weight="600">
-      2030 CRREM [TARGET_VAL]
-    </text>
-
-    <!-- Subject-building marker: ONLY include this block if actual measured EUI is available
-         (from Audette, ESPM, or OM utility bills). OMIT ENTIRELY if no measured EUI.
-         x = 28 + ((subject_eui - min_eui) / (max_eui - min_eui)) * 520 -->
-    <!-- [IF MEASURED EUI EXISTS:]
-    <line x1="[SUBJECT_X]" y1="10" x2="[SUBJECT_X]" y2="130"
-          stroke="#EF4444" stroke-width="2"/>
-    <text x="[SUBJECT_X]" y="8" font-size="9" fill="#991B1B" text-anchor="middle" font-weight="700">
-      This asset [SUBJECT_VAL]
-    </text>
-    [END IF] -->
-  </svg>
-  <div style="font-size:11px;color:#94A3B8;margin-top:4px">
-    Source: Lawrence Berkeley National Lab Building Performance Database · [YEAR] release
-  </div>
-</div>
-```
-
-**Subject-building marker rule:** The histogram always shows the peer distribution, median, and CRREM 2030 target. Add the red "This asset" marker only when actual measured EUI is available (Audette, ESPM, or OM utility bills). Never use a CBECS benchmark estimate as the subject marker.
-
-    [CRREM PATHWAY — label as measured or (est.) source]
-  </div>
-
-  <!-- Physical Risk -->
-  <div class="section">
-    <div class="sec-lbl">Physical Climate Risk</div>
-    <div class="sec-title">Climate Hazard Exposure</div>
-
-    [RADAR CHART — insert before the hazard table]
-
-    Map each hazard row in the table to a numeric value: Low=1, Moderate=2, High=3. N = total number of hazard rows written.
-
-    Spoke angle for hazard i (0-indexed, starting from top): `θ_i = (2π/N)*i − π/2`
-    Point at value v: `x = 140 + (v/3)*110*cos(θ_i)`, `y = 140 + (v/3)*110*sin(θ_i)`
-
-    Ring polygon point i at radius r: `x = 140 + r*cos(θ_i)`, `y = 140 + r*sin(θ_i)`
-    — Low ring r=36.7, Moderate ring r=73.3, High ring r=110
-
-    Label offset r=128; text-anchor: `middle` if top/bottom quadrant (|sin(θ)|>|cos(θ)|), `start` if right half (cos(θ)>0), `end` if left half (cos(θ)<0).
-
-    ```html
-    <svg viewBox="0 0 420 280" width="100%" style="display:block;overflow:visible;margin-bottom:16px" aria-label="Climate hazard radar chart">
-
-      <!-- Ring labels -->
-      <text x="144" y="138" font-size="8" fill="#94A3B8">Low</text>
-      <text x="144" y="102" font-size="8" fill="#94A3B8">Moderate</text>
-      <text x="144" y="32" font-size="8" fill="#94A3B8">High</text>
-
-      <!-- Low ring (r=36.7): polygon connecting all Low points -->
-      <polygon points="[LOW_RING_POINTS]"
-        fill="none" stroke="#E2E8F0" stroke-width="1"/>
-      <!-- Moderate ring (r=73.3) -->
-      <polygon points="[MED_RING_POINTS]"
-        fill="none" stroke="#E2E8F0" stroke-width="1"/>
-      <!-- High ring (r=110) -->
-      <polygon points="[HIGH_RING_POINTS]"
-        fill="none" stroke="#E2E8F0" stroke-width="1"/>
-
-      <!-- Spokes: one line per hazard from center to High ring -->
-      [SPOKES — one <line x1="140" y1="140" x2="[spoke_x]" y2="[spoke_y]" stroke="#F1F4F8" stroke-width="1"/> per hazard]
-
-      <!-- Data polygon: connect all hazard data points -->
-      <polygon points="[DATA_POINTS]"
-        fill="#4CAF82" fill-opacity="0.4" stroke="#12253A" stroke-width="2"/>
-
-      <!-- Data point dots -->
-      [DATA_DOTS — one <circle cx="[x]" cy="[y]" r="4" fill="#12253A"/> per hazard]
-
-      <!-- Hazard labels at spoke tips (r=128 offset) -->
-      [LABELS — one <text> per hazard, font-size="10", fill="#475569", text-anchor computed from angle quadrant as described above]
-
-    </svg>
-    ```
-
-    [HAZARD TABLE]
-  </div>
-
-  <!-- 5. GHG SCOPING -->
-  <div class="section">
-    <div class="sec-lbl">GHG Scoping</div>
-    <div class="sec-title">Greenhouse Gas Inventory</div>
-
-    [GHG DONUT CHART — insert before the GHG table; see template below]
-
-    [GHG TABLE — id="ghg-table"; three rows: Scope 1 (combustion), Scope 2 (owner-paid electricity), Scope 3 (tenant energy — excluded from owner boundary); columns: Scope, Source, tCO₂e/yr, Boundary]
-  </div>
-
-**GHG donut chart** (insert before the GHG table when Scope 1+2+3 values are known):
-
-Arc math for a slice from `startAngle` to `endAngle` (radians, 0=top, clockwise):
-```
-x1 = cx + r*sin(startAngle),  y1 = cy - r*cos(startAngle)
-x2 = cx + r*sin(endAngle),    y2 = cy - r*cos(endAngle)
-large_arc = (endAngle - startAngle > π) ? 1 : 0
-outer arc: M x1,y1 A r,r,0,large_arc,1,x2,y2
-inner arc (reverse): L ix2,iy2 A ir,ir,0,large_arc,0,ix1,iy1 Z
-(inner r = r - ring_width; ix/iy use inner r)
-```
-
-Use: cx=90, cy=90, r=70, ring_width=28 (inner r=42).
-Total = Scope1 + Scope2 + Scope3. Each slice angle = (value/total) * 2π.
-Scope 1 starts at 0 (top). Scope 2 follows. Scope 3 follows.
-
-```html
-<div style="display:flex;gap:24px;align-items:flex-start;margin-bottom:16px">
-  <svg viewBox="0 0 180 180" width="180" height="180" style="flex-shrink:0" aria-label="GHG scope breakdown donut">
-
-    <!-- Scope 3 slice (draw first — largest, muted grey) -->
-    <path d="[SCOPE3_ARC_PATH]"
-      fill="#CBD5E1" stroke="#fff" stroke-width="2"/>
-
-    <!-- Scope 2 slice (owner-paid electricity, green) -->
-    <path d="[SCOPE2_ARC_PATH]"
-      fill="#4CAF82" stroke="#fff" stroke-width="2"/>
-
-    [IF SCOPE1 > 0: add Scope 1 slice (combustion, navy)] <path d="[SCOPE1_ARC_PATH]"
-      fill="#12253A" stroke="#fff" stroke-width="2"/>
-
-    <!-- Center label -->
-    <text x="90" y="85" text-anchor="middle" font-size="18" font-weight="700" fill="#12253A">[OWNER_TOTAL]</text>
-    <text x="90" y="100" text-anchor="middle" font-size="9" fill="#64748B">tCO₂e/yr</text>
-    <text x="90" y="113" text-anchor="middle" font-size="8" fill="#94A3B8">owner boundary</text>
-
-  </svg>
-
-  <!-- Legend -->
-  <div style="font-size:12px;line-height:2">
-    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#12253A;margin-right:6px;vertical-align:middle"></span>Scope 1 — [S1] tCO₂e</div>
-    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#4CAF82;margin-right:6px;vertical-align:middle"></span>Scope 2 — [S2] tCO₂e (owner boundary)</div>
-    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#CBD5E1;border:1px dashed #94A3B8;margin-right:6px;vertical-align:middle"></span>Scope 3 — [S3] tCO₂e <em style="color:#94A3B8">(excluded — tenant)</em></div>
-  </div>
-</div>
-```
-
-If Scope 1 = 0: omit the Scope 1 slice path entirely. The donut is only Scope 2 (green arc) + Scope 3 (grey arc).
-
-  <!-- 7. QUALITY OF LIFE -->
-  <div class="section">
-    <div class="sec-lbl">Livability &amp; Reputation</div>
-    <div class="sec-title">Quality of Life</div>
-
-    [QOL PROFILE — write a `<dl id="qol-dl">` with one `<div class="profile-row">` per score/metric. Each row: `<dt>` for the label (e.g. Walk Score, Bike Score, Transit Score, Google Rating), `<dd>` for the value/narrative.]
-
-    **Status dots** — prepend a colored dot `<span>` to each `<dd>` value:
-
-    ```html
-    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:[COLOR];margin-right:6px;vertical-align:middle;flex-shrink:0"></span>
-    ```
-
-    Color mapping (apply to the score or narrative Claude writes):
-    - `#4CAF82` (green): Walk/Bike/Transit score ≥ 70 · Google rating "strong" / 4.0+ stars
-    - `#F59E0B` (yellow): score 40–69 · Google rating "moderate" / 3.0–3.9 stars
-    - `#EF4444` (red): score < 40 · flagged concern / negative reviews
-    - `#94A3B8` (grey): no data · not scored · "N/A" · "not applicable"
-
-    Apply one dot per `profile-row`. The Walk Score of 20 = red. Bike Score 40 = yellow boundary — use yellow. Transit "not scored" = grey. Google "strong reviews" = green.
-  </div>
-
-  <!-- Incentives -->
-  <div class="section">
-    <div class="sec-lbl">Incentives &amp; Financing</div>
-    <div class="sec-title">Rebates, Tax Credits &amp; Green Financing</div>
-    [INCENTIVES TABLE]
-  </div>
-
-  <!-- Seller Questions -->
-  <div class="section">
-    <div class="sec-lbl">Due Diligence</div>
-    <div class="sec-title">Seller Questions</div>
-    [QUESTIONS — only those warranted by specific risk flags found above]
-  </div>
-
-  <!-- 10. UN SDG ALIGNMENT -->
-  <div class="section">
-    <div class="sec-lbl">Global Goals</div>
-    <div class="sec-title">UN SDG Alignment</div>
-
-**UN SDG tiles** — replace the plain text first column with a colored tile + name:
-
-For each SDG row, use this tile SVG (40×40px, official UN color, white text):
-
-```html
-<!-- SDG [N] tile — replace [BG] with official color, [N] with number, [SHORT] with abbreviation -->
-<svg viewBox="0 0 40 40" width="40" height="40" style="flex-shrink:0;border-radius:3px" aria-label="SDG [N]">
-  <rect width="40" height="40" fill="[BG]"/>
-  <text x="20" y="15" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.85)" font-weight="600" font-family="-apple-system,Helvetica,Arial,sans-serif">SDG</text>
-  <text x="20" y="26" text-anchor="middle" font-size="14" fill="#fff" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">[N]</text>
-  <text x="20" y="37" text-anchor="middle" font-size="6" fill="rgba(255,255,255,0.85)" font-family="-apple-system,Helvetica,Arial,sans-serif">[SHORT]</text>
-</svg>
-```
-
-**Official SDG colors and short titles** (all 17):
-| SDG | BG color | Short title |
-|-----|----------|-------------|
-| 1 | `#E5243B` | NO POVERTY |
-| 2 | `#DDA63A` | ZERO HUNGER |
-| 3 | `#4C9F38` | GOOD HEALTH |
-| 4 | `#C5192D` | QUALITY EDU |
-| 5 | `#FF3A21` | GENDER EQ. |
-| 6 | `#26BDE2` | CLEAN WATER |
-| 7 | `#FCC30B` | CLEAN ENERGY |
-| 8 | `#A21942` | DECENT WORK |
-| 9 | `#FD6925` | INDUSTRY |
-| 10 | `#DD1367` | REDUCED INEQ |
-| 11 | `#FD9D24` | SUST. CITIES |
-| 12 | `#BF8B2E` | RESP. CONSUMP |
-| 13 | `#3F7E44` | CLIMATE ACT. |
-| 14 | `#0A97D9` | LIFE BELOW |
-| 15 | `#56C02B` | LIFE ON LAND |
-| 16 | `#00689D` | PEACE JUST. |
-| 17 | `#19486A` | PARTNERSHIPS |
-
-Claude picks only the SDGs materially relevant to this property and investment thesis (typically 3–6 for a real estate acquisition). Omit SDGs with no plausible connection to the asset.
-
-**Row structure** — render as flex rows with tile + full title + alignment narrative:
-
-```html
-<div id="sdg-table" style="display:flex;flex-direction:column;gap:8px">
-  <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F1F4F8">
-    [SDG TILE SVG]
-    <div>
-      <div style="font-size:12px;font-weight:600;color:#12253A;margin-bottom:2px">SDG [N] — [FULL TITLE]</div>
-      <div style="font-size:13px;color:#334155;line-height:1.5">[ALIGNMENT NARRATIVE]</div>
-    </div>
-  </div>
-  [REPEAT FOR EACH RELEVANT SDG]
-</div>
-```
-
-  </div>
-
-  <!-- Recommendation -->
-  <div class="section">
-    <div class="recbox">
-      <strong>RSRA Recommendation: [PROCEED / PROCEED WITH CONDITIONS / PRICING ADJUSTMENT REQUIRED / REFER TO IC]</strong>
-      <div style="margin-top:12px;font-size:13px;line-height:1.6">[Detailed rationale]</div>
-      <div style="margin-top:12px;font-size:13px"><strong>Suggested actions:</strong>
-        <ul style="margin-top:8px;padding-left:20px;line-height:1.8">
-          <li>[Action 1]</li>
-          <li>[Action 2]</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">
-    <strong>Data Sources:</strong> [List all sources — Audette, ESPM, BPD, web search, OM, CBECS if used]<br>
-    <strong>Assumptions:</strong> [Key assumptions including utility recovery structure and hold period used for IRR]<br>
-    <strong>Limitations:</strong> This assessment is based on publicly available data and the provided OM. It is not a substitute for a full energy audit or Phase I/II environmental assessment. All CapEx estimates carry ±30% uncertainty without site inspection. Regulatory compliance status should be confirmed with legal counsel prior to closing.
-  </div>
-</div>
-```
-
-After generating the Phase 2 report:
-1. Call Artifact with the **exact same file path** `{property-slug}-rsra.html` — this replaces the loading skeleton in-place. Do NOT use a different file path or a new artifact call.
-2. Save the complete HTML to asset documents: folder `"Reports"`, name `"{property-slug}-rsra.html"`. **Only save once, only the full report.** Never save the loading skeleton.
-3. Write 3–5 sentence summary in chat.
-4. Offer to add CapEx as a line item in the underwriting model.
-
-**Hard rules:**
-- Phase 1 and Phase 2 must use the **identical** file path — one artifact, updated in place
-- **Never save the Phase 1 loading skeleton** — only the complete Phase 2 report goes to "Reports"
-- Zero serif fonts, zero Paged.js, zero external CDN
-- All external links: `target="_blank" rel="noopener noreferrer"`
-- All calculated values: 2 significant figures
-- Mark every estimate from benchmarks with `(est.)` inline
-
----
 
 ## Edge Cases
 

@@ -145,17 +145,25 @@ uploaded as spreadsheets, IC memos, or fund term sheets. Extract what you can be
 
 ### 1A — Search Portfolio Docs first
 
-Use `search_portfolio` and `list_portfolio_files` to check for:
-- Asset registers or spreadsheets with exit years and cap rates (e.g. "exit-year", "cap rate", "hold period", "fund")
-- IC memos, fund term sheets, or investment guidelines with IRR hurdle rates
-- Acquisition models or underwriting summaries with per-asset financial parameters
+Use `search_portfolio` to pull content from uploaded docs. **Never use web_fetch or navigate to any URL to access portfolio docs — `search_portfolio` is the only way to read file content in a portfolio thread.**
 
-For any file that looks relevant, read it and extract:
+Call `search_portfolio` with specific terms to find financial parameters:
+```
+search_portfolio("exit year cap rate hold period")
+search_portfolio("IRR hurdle rate fund")
+search_portfolio("acquisition model underwriting")
+search_portfolio("ESG sustainability net zero emissions target")
+```
+
+Extract from the returned chunks:
 - `exit_year` per asset
 - `exit_cap_rate` per asset or fund
 - `fund_name` assignments
 - IRR hurdle rate
 - Hold period assumptions
+- Any sustainability/emissions goal (e.g. "net zero by 2040")
+
+Use `list_portfolio_files` only to see what documents exist — it does not return file content. Use `search_portfolio` for all content access.
 
 Only ask the user for parameters that couldn't be found in the docs. If you found partial data (e.g. exit years but no cap rates), confirm what you found and ask only for what's missing.
 
@@ -193,20 +201,18 @@ python3 ~/soapbox-agent/scripts/portfolio_match.py --mode financial --inputs '<j
 
 Auto-populate any field that can be read from the register. Only prompt for what's still missing.
 
-**Write back to Soapbox using SQL — do NOT use `update_asset_metadata` (that tool does not exist):**
+**Write back to Soapbox using `update_asset_metadata` or `bulk_update_metadata`:**
 
-```sql
-UPDATE assets
-SET metadata = metadata || jsonb_build_object(
-  'fund_name',    '<fund>',
-  'exit_year',    <year>,
-  'exit_cap_rate', <rate>
-)
-WHERE id = '<asset_uuid>';
+```
+update_asset_metadata(asset_id: "<uuid>", updates: { fund_name: "<fund>", exit_year: <year>, exit_cap_rate: <rate> })
 ```
 
-Run one UPDATE per matched asset. Use the `id` (UUID) from the SELECT in 1B — never
-try to resolve a UUID from an asset name alone; always load it from the database first.
+Or for multiple assets at once:
+```
+bulk_update_metadata(asset_ids: ["<uuid1>", "<uuid2>", ...], updates: { exit_year: <year> })
+```
+
+Always use the asset `id` (UUID) from the SELECT in 1B — never try to resolve a UUID from an asset name alone.
 
 ### 1D — Collect missing parameters asset-by-asset
 
@@ -236,9 +242,9 @@ python3 ~/soapbox-agent/scripts/ll_allocation.py --inputs '{"lease_structure":"<
 If `include_bps: false`, pass `bps_liable: null` — the script treats null as "not assessed"
 and omits fine-avoidance benefit from the LL capture calculation.
 
-Write results to asset metadata using `||` merge (preserves Audette/ESPM IDs and docs):
-```sql
-UPDATE assets SET metadata = metadata || '<params_json>'::jsonb WHERE id = '<asset_id>';
+Write results to asset metadata:
+```
+update_asset_metadata(asset_id: "<asset_id>", updates: <params_object>)
 ```
 
 Show edge-case warnings inline (NNN paradox, solar consent, RUBS recovery, BPS liability).
@@ -409,17 +415,19 @@ list_building_plans(building_uid)
 
 This gives the full measure list with costs, savings, and implementation schedule.
 
-#### Step 4 — Read uploaded documents as secondary source
+#### Step 4 — Search uploaded documents as secondary source
 
-After loading Audette data, search Portfolio Docs for energy assessments for this asset:
+After loading Audette data, call `search_portfolio` with the asset name to pull content from energy assessments. **Do not navigate to URLs or use web_fetch — `search_portfolio` is the only way to access document content in a portfolio thread.**
 
 ```
 search_portfolio("energy audit [asset name]")
 search_portfolio("engineering study [asset name]")
 search_portfolio("capital plan [asset name]")
+search_portfolio("measures recommendations [asset name]")
+search_portfolio("utility consumption EUI [asset name]")
 ```
 
-Read any matching documents and extract:
+From the returned chunks, extract:
 - Measures recommended (type, description, estimated cost, estimated savings)
 - Measures already completed (if noted as "installed", "completed", "replaced")
 - Equipment condition observations that differ from Audette's equipment schedule

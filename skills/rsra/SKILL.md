@@ -81,7 +81,7 @@ All RSRA HTML output must conform to these rules. Claude must apply them on ever
 - External `<img src="https://...">` — all images must be inline SVG or data URIs
 
 **Artifact output rules**
-- Two-phase output: Phase 1 = loading skeleton (immediate UX), Phase 2 = dispatch `report-renderer`
+- Two-phase output: Phase 1 = loading skeleton (immediate UX), Phase 2 = call `get_report_template` and fill in data
 - Both phases use the **identical** file path — one artifact, updated in place
 - Never save the Phase 1 skeleton to asset documents — only the completed report
 - Numeric precision: 2 significant figures (`$1.4M` not `$1,427,000`; `42 kgCO₂e` not `41.7`)
@@ -589,7 +589,7 @@ Generate **only questions that are warranted** by specific risk flags found abov
 
 ## Phase 9: RSRA Recommendation
 
-> **Start Phase 10 template fetch now.** While completing Phase 9, call WebFetch in parallel on both template URLs (layout-pre.html and layout-post.html listed in Phase 10 below). This avoids an extra round-trip at artifact build time.
+> **Start Phase 10 template fetch now.** While completing Phase 9, call `get_report_template("rsra")` so the template is ready when you emit the artifact.
 
 Based on all factors, issue a formal deal recommendation.
 
@@ -621,7 +621,7 @@ Choose one:
 
 ## Phase 10: Report Output
 
-Two-phase output: emit a loading skeleton immediately, then dispatch `report-renderer` with structured JSON when done.
+Two-phase output: emit a loading skeleton immediately, then call `get_report_template("rsra")` and fill in the template with your data.
 
 ### Phase 1 — Loading Skeleton (emit BEFORE any research begins)
 
@@ -706,242 +706,13 @@ Two-phase output: emit a loading skeleton immediately, then dispatch `report-ren
 
 ### Phase 2 — Emit Final Artifact
 
-Emit the final artifact at path `{property-slug}-rsra.html`. The artifact must use **exactly the CSS and HTML structure below** — start with the `<!DOCTYPE html>` block verbatim, substituting your data for every `[[PLACEHOLDER]]`. Do not invent CSS or use different class names.
+Call `get_report_template("rsra")` to retrieve the complete HTML template. Emit the artifact at `{property-slug}-rsra.html` using the returned HTML **verbatim**, substituting every `[[PLACEHOLDER]]` marker with your computed values.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>[[PROPERTY_NAME]] — RSRA</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F2F5F8;color:#1A1A2E}
-/* ── Dark cover ── */
-.signal-hero{background:linear-gradient(135deg,#0f1729 0%,#1a2942 60%,#0d1f38 100%);color:#fff;padding:48px 40px 36px;position:relative}
-.hero-eyebrow{font-size:9px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#4CAF82;margin-bottom:10px}
-.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:24px}
-.hero-top h1{font-size:28px;font-weight:800;line-height:1.2;flex:1}
-.hero-logo{height:36px;object-fit:contain;opacity:.85}
-.hero-address{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:18px}
-.hero-meta{display:flex;flex-wrap:wrap;gap:20px;font-size:11.5px;color:rgba(255,255,255,.5);border-top:1px solid rgba(255,255,255,.1);padding-top:14px}
-.hero-meta span{display:flex;align-items:center;gap:5px}
-.signal-badge{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:4px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;position:absolute;right:40px;top:48px}
-.signal-low{background:rgba(76,175,130,.18);border:1.5px solid rgba(76,175,130,.45);color:#4CAF82}
-.signal-moderate{background:rgba(237,123,46,.18);border:1.5px solid rgba(237,123,46,.45);color:#ed7b2e}
-.signal-high{background:rgba(220,53,69,.18);border:1.5px solid rgba(220,53,69,.5);color:#ff6b6b}
-.signal-critical{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.3);color:#fff}
-/* ── Meta bar ── */
-.meta-bar{background:#1A3550;display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.06)}
-.meta-item{flex:1;padding:14px 20px;border-right:1px solid rgba(255,255,255,.06)}
-.meta-item:last-child{border-right:none}
-.meta-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px}
-.meta-val{font-size:16px;font-weight:700;color:#4CAF82;font-variant-numeric:tabular-nums}
-.meta-sub{font-size:10.5px;color:rgba(255,255,255,.4);margin-top:2px}
-/* ── Report body ── */
-.report-body{max-width:100%;padding:0}
-.section{background:#fff;padding:28px 40px;margin-bottom:2px}
-.sec-eyebrow{font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#4CAF82;margin-bottom:4px}
-.sec-title{font-size:16px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:18px}
-/* ── Deal signal callout ── */
-.deal-signal{padding:18px 24px;border-radius:6px;margin-bottom:18px;display:flex;gap:16px;align-items:flex-start}
-.deal-signal.low{background:#f0fdf4;border-left:4px solid #4CAF82}
-.deal-signal.moderate{background:#fff8f0;border-left:4px solid #ed7b2e}
-.deal-signal.high{background:#fff1f2;border-left:4px solid #dc2626}
-.deal-signal-badge{padding:4px 12px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0;margin-top:2px}
-.deal-signal.low .deal-signal-badge{background:#d1fae5;color:#065f46}
-.deal-signal.moderate .deal-signal-badge{background:#fef3c7;color:#92400e}
-.deal-signal.high .deal-signal-badge{background:#fee2e2;color:#991b1b}
-.deal-signal-text{font-size:13px;line-height:1.6;color:#333}
-/* ── Risk card grid ── */
-.risk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:16px}
-.risk-card{padding:16px;border-radius:5px;border:1px solid transparent}
-.risk-card.low{background:#f0fdf4;border-color:#bbf7d0}
-.risk-card.moderate{background:#fffbeb;border-color:#fde68a}
-.risk-card.high{background:#fff1f2;border-color:#fecdd3}
-.risk-card-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#666;margin-bottom:5px}
-.risk-card-score{font-size:17px;font-weight:800;margin-bottom:6px}
-.risk-card.low .risk-card-score{color:#16a34a}
-.risk-card.moderate .risk-card-score{color:#b45309}
-.risk-card.high .risk-card-score{color:#dc2626}
-.risk-card-desc{font-size:11.5px;color:#555;line-height:1.5}
-/* ── Tables ── */
-table{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0}
-th{background:#f3f4f6;text-align:left;padding:8px 10px;font-weight:600;border:1px solid #e5e7eb;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#555}
-td{padding:7px 10px;border:1px solid #e5e7eb;vertical-align:top;line-height:1.5}
-tr:nth-child(even) td{background:#fafafa}
-/* ── Badges ── */
-.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10.5px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
-.badge-green{background:#d1fae5;color:#065f46}
-.badge-yellow{background:#fef3c7;color:#92400e}
-.badge-red{background:#fee2e2;color:#991b1b}
-.badge-grey{background:#f3f4f6;color:#555}
-/* ── Two-column ── */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-/* ── Opportunity cards ── */
-.opp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:16px}
-.opp-card{background:#fafbfc;border:1px solid #e5e7eb;border-radius:6px;padding:16px}
-.opp-card h4{font-size:12.5px;font-weight:700;color:#12253A;margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid #ed7b2e}
-.opp-card p{font-size:12px;color:#555;line-height:1.55}
-/* ── CVaR callout ── */
-.cvar-box{background:#0f1729;color:#fff;border-radius:6px;padding:20px 24px;margin:16px 0;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
-.cvar-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);margin-bottom:4px}
-.cvar-val{font-size:24px;font-weight:800;color:#4CAF82;font-variant-numeric:tabular-nums}
-.cvar-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px}
-/* ── Footer ── */
-.footer{background:#12253A;color:rgba(255,255,255,.4);font-size:11px;padding:16px 40px;line-height:1.7}
-.footer strong{color:rgba(255,255,255,.7)}
-</style>
-</head>
-<body>
-
-<!-- ── DARK COVER ── -->
-<div class="signal-hero">
-  <div class="hero-eyebrow">Pre-Underwriting Sustainability Analysis</div>
-  <div class="hero-top">
-    <h1>Rapid Sustainability Risk Assessment</h1>
-    <!-- if brand logo URL available: <img src="[[LOGO_URL]]" class="hero-logo" alt="[[ORG_NAME]]"> -->
-  </div>
-  <p class="hero-address">[[PROPERTY_NAME]] — [[FULL_ADDRESS]]</p>
-  <div class="hero-meta">
-    <span>Prepared: [[REPORT_DATE]]</span>
-    <span>Prepared by: Aris (Soapbox AI) for [[ORG_NAME]]</span>
-    <span>Scope: Acquisition</span>
-    <span>CONFIDENTIAL — Internal acquisition review only</span>
-  </div>
-  <!-- RISK_LEVEL_CLASS: use signal-low / signal-moderate / signal-high / signal-critical -->
-  <div class="signal-badge [[RISK_LEVEL_CLASS]]">[[RISK_LEVEL]] RISK</div>
-</div>
-
-<!-- ── META BAR ── substitute with your 4-6 key stats -->
-<div class="meta-bar">
-  <div class="meta-item">
-    <div class="meta-lbl">Sustainability CapEx (mid)</div>
-    <div class="meta-val">[[CAPEX_TOTAL_MID]]</div>
-    <div class="meta-sub">[[CAPEX_RANGE]]</div>
-  </div>
-  <div class="meta-item">
-    <div class="meta-lbl">Of Which Mandatory</div>
-    <div class="meta-val">[[MANDATORY_CAPEX]]</div>
-    <div class="meta-sub">[[MANDATORY_NOTE]]</div>
-  </div>
-  <div class="meta-item">
-    <div class="meta-lbl">Per Unit / Per SF</div>
-    <div class="meta-val">[[CAPEX_PER_UNIT]]</div>
-    <div class="meta-sub">[[CAPEX_PER_SF]] / SF (mid)</div>
-  </div>
-  <div class="meta-item">
-    <div class="meta-lbl">Overall Risk Score</div>
-    <div class="meta-val">[[RISK_SCORE]] / 5</div>
-    <div class="meta-sub">[[RISK_LABEL]]</div>
-  </div>
-</div>
-
-<!-- ── REPORT BODY ── -->
-<div class="report-body">
-
-  <!-- Deal Signal -->
-  <div class="section">
-    <div class="sec-eyebrow">Deal Signal</div>
-    <!-- DEAL_SIGNAL_CLASS: low / moderate / high -->
-    <div class="deal-signal [[DEAL_SIGNAL_CLASS]]">
-      <div class="deal-signal-badge">[[DEAL_SIGNAL_LABEL]]</div>
-      <div class="deal-signal-text">[[DEAL_SIGNAL_NARRATIVE]]</div>
-    </div>
-  </div>
-
-  <!-- Risk Summary Grid -->
-  <div class="section">
-    <div class="sec-eyebrow">Risk Overview</div>
-    <div class="sec-title">Risk Summary</div>
-    <div class="risk-grid">
-      <!-- Repeat for each risk dimension. Use class low/moderate/high on .risk-card -->
-      <div class="risk-card [[RISK_CLASS]]">
-        <div class="risk-card-label">[[RISK_DIMENSION]]</div>
-        <div class="risk-card-score">[[RISK_LEVEL]]</div>
-        <div class="risk-card-desc">[[RISK_DESC]]</div>
-      </div>
-      <!-- ... additional risk cards ... -->
-    </div>
-  </div>
-
-  <!-- CapEx / Decarbonization Plan section -->
-  <div class="section">
-    <div class="sec-eyebrow">Capital Planning</div>
-    <div class="sec-title">Decarbonization Opportunities</div>
-    <!-- Insert CapEx table here -->
-    [[CAPEX_TABLE]]
-  </div>
-
-  <!-- Regulatory section -->
-  <div class="section">
-    <div class="sec-eyebrow">Regulatory &amp; Policy</div>
-    <div class="sec-title">Compliance Scan</div>
-    [[REGULATORY_TABLE]]
-  </div>
-
-  <!-- Energy & Carbon section -->
-  <div class="section">
-    <div class="sec-eyebrow">Carbon Characterization</div>
-    <div class="sec-title">Energy &amp; Carbon Profile</div>
-    [[ENERGY_CONTENT]]
-  </div>
-
-  <!-- Physical Climate Risk section -->
-  <div class="section">
-    <div class="sec-eyebrow">Physical Climate Risk</div>
-    <div class="sec-title">Climate Hazard Assessment</div>
-    [[CLIMATE_RISK_TABLE]]
-    <!-- CVaR callout — include if you have climate_var data -->
-    <div class="cvar-box">
-      <div>
-        <div class="cvar-label">Climate Value-at-Risk (Cumulative, Hold Period)</div>
-        <div class="cvar-val">[[CVAR_PCT]]</div>
-        <div class="cvar-sub">[[CVAR_USD]] NPV loss · [[SCENARIO]] · [[COVERS]]</div>
-      </div>
-      <div>
-        <div class="cvar-label">Primary Driver</div>
-        <div class="cvar-val" style="font-size:14px">[[CVAR_PRIMARY_DRIVER]]</div>
-        <div class="cvar-sub">[[HOLD_PERIOD]]-yr hold · EAL at exit [[EAL_PCT]]</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Incentives section -->
-  <div class="section">
-    <div class="sec-eyebrow">Value Creation</div>
-    <div class="sec-title">Incentives &amp; Opportunities</div>
-    <div class="opp-grid">
-      [[OPP_CARDS]]
-    </div>
-  </div>
-
-  <!-- Key Findings section -->
-  <div class="section">
-    <div class="sec-eyebrow">Findings</div>
-    <div class="sec-title">Key Findings &amp; Recommended Actions</div>
-    [[FINDINGS_TABLE]]
-  </div>
-
-  <!-- Seller Questions section (if applicable) -->
-  <div class="section">
-    <div class="sec-eyebrow">Due Diligence</div>
-    <div class="sec-title">Seller Diligence Questions</div>
-    [[SELLER_QUESTIONS]]
-  </div>
-
-</div><!-- /report-body -->
-
-<div class="footer">
-  <strong>[[ORG_NAME]]</strong> · Prepared using Soapbox Sustainability Intelligence · [[REPORT_DATE]] · CONFIDENTIAL — Internal acquisition review only
-</div>
-
-</body>
-</html>
-```
-
-Substitute every `[[PLACEHOLDER]]` with the appropriate value from your research. Write complete HTML for each `[[SECTION_CONTENT]]` block using the CSS classes defined above (`.risk-card`, `.badge`, `table`, `.opp-card`, etc.). Do not add any `<style>` block — all classes are already defined. The badge colors: `.badge-green` / `.badge-yellow` / `.badge-red` / `.badge-grey`.
+**Rules:**
+- Do not add `<style>` blocks or change CSS class names — all styles are in the template
+- Write complete HTML for `[[CAPEX_TABLE]]`, `[[REGULATORY_TABLE]]`, `[[ENERGY_CONTENT]]`, `[[CLIMATE_RISK_TABLE]]`, `[[OPP_CARDS]]`, `[[FINDINGS_TABLE]]`, `[[SELLER_QUESTIONS]]` using the pre-defined classes: `.risk-card.low/moderate/high`, `.badge-green/.badge-yellow/.badge-red/.badge-grey`, `table/th/td`, `.opp-card`
+- `[[RISK_LEVEL_CLASS]]`: use `signal-low` / `signal-moderate` / `signal-high` / `signal-critical`
+- `[[DEAL_SIGNAL_CLASS]]`: use `low` / `moderate` / `high`
 
 **Reference — data fields to compute and embed in your HTML sections:**
 

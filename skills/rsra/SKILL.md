@@ -816,9 +816,15 @@ The JSON to inject into the `<script id="report-data">` block:
       "insurance_note": "[optional — flag if insurance market withdrawn from jurisdiction]"
     },
     "decarb_sensitivity": [
-      {"spend_per_unit": "[e.g. 500]", "total_spend": "[e.g. 157500]", "emissions_reduction_pct": "[e.g. 4%]", "label": "[e.g. Lighting + controls only]"},
-      {"spend_per_unit": "[e.g. 1400]", "total_spend": "[e.g. 441000]", "emissions_reduction_pct": "[e.g. 12%]", "label": "[e.g. Full early-hold plan]"},
-      {"spend_per_unit": "[e.g. 3200]", "total_spend": "[e.g. 1008000]", "emissions_reduction_pct": "[e.g. 28%]", "label": "[e.g. Full plan incl. fuel switching]"}
+      {
+        "label": "[e.g. LED + controls only]",
+        "spend_per_unit": "[number — MF only]",
+        "total_spend": "[number]",
+        "emissions_reduction_pct": "[number — e.g. 8]",
+        "noi_impact_annual": "[number — annual NOI uplift $ from energy savings + green premium]",
+        "value_delta_pct": "[number — estimated % asset value uplift]",
+        "value_delta_usd": "[number — absolute $ value delta — optional if pct provided]"
+      }
     ],
     "ghg_scoping": {
       "scopes": [

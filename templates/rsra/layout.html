@@ -839,7 +839,16 @@
       {"hazard": "Drought / water stress", "risk_level": "Moderate", "finding": "WRI Aqueduct Medium-High — Portland metro growth"},
       {"hazard": "Seismic", "risk_level": "High", "finding": "USGS Zone D — Cascadia subduction zone; standard Portland exposure"}
     ],
-    "insurance_note": "Seismic exposure is standard for Portland market; no insurer withdrawal concerns. Premium increases from heat stress are likely moderate over a 5-year hold."
+    "insurance_note": "Seismic exposure is standard for Portland market; no insurer withdrawal concerns. Premium increases from heat stress are likely moderate over a 5-year hold.",
+    "climate_var": {
+      "cumulative_var_npv_pct": "2.8%",
+      "cumulative_var_npv_usd": 415000,
+      "expected_annual_loss_pct_exit": "0.45%",
+      "primary_driver": "Seismic — Cascadia subduction zone exposure",
+      "hold_period_years": 5,
+      "scenario": "SSP2-4.5",
+      "covers": "Flood + Wind + Seismic (parametric)"
+    }
   },
   "ghg_scoping": {
     "scopes": [
@@ -886,6 +895,35 @@
     {"sdg": "SDG 11 — Sustainable Cities", "alignment": "Walk Score 72, Transit Score 61; workforce housing pricing (~70% AMI)"},
     {"sdg": "SDG 12 — Responsible Consumption", "alignment": "Recycling program in place; WasteX enrollment planned post-acquisition"},
     {"sdg": "SDG 13 — Climate Action", "alignment": "ESPM benchmarking from Day 1; GHG reduction plan aligned with BCC 50% target"}
+  ],
+  "decarb_sensitivity": [
+    {
+      "label": "LED + Smart thermostats only",
+      "spend_per_unit": 700,
+      "total_spend": 103600,
+      "emissions_reduction_pct": 8,
+      "noi_impact_annual": 14200,
+      "value_delta_pct": 1.2,
+      "value_delta_usd": 178000
+    },
+    {
+      "label": "Phase 1 + Solar + EV",
+      "spend_per_unit": 1450,
+      "total_spend": 214600,
+      "emissions_reduction_pct": 22,
+      "noi_impact_annual": 32000,
+      "value_delta_pct": 2.8,
+      "value_delta_usd": 415000
+    },
+    {
+      "label": "Full plan incl. HPWH + envelope",
+      "spend_per_unit": 3450,
+      "total_spend": 510600,
+      "emissions_reduction_pct": 55,
+      "noi_impact_annual": 48500,
+      "value_delta_pct": 4.2,
+      "value_delta_usd": 623000
+    }
   ],
   "data_quality": "Medium — confirmed fuel profile; CapEx benchmarked",
   "prepared_by": "Soapbox Sustainability Intelligence",
@@ -1101,14 +1139,50 @@
     var sens = data.decarb_sensitivity;
     var sensSection = document.getElementById('sensitivity-section');
     if (sensSection && sens && sens.length > 0) {
+      /* Scatter chart: value delta % vs CO₂ reduction % */
+      var sensChartEl = document.getElementById('sensitivity-chart');
+      var hasVD = sens.some(function(r){ return r.value_delta_pct != null; });
+      if (sensChartEl && hasVD) {
+        var sCo2Vals = sens.map(function(r){ return Number(String(r.emissions_reduction_pct||0).replace('%','')); });
+        var sVdVals  = sens.map(function(r){ return Number(r.value_delta_pct||0); });
+        var sCo2Max  = Math.ceil(Math.max.apply(null,sCo2Vals)*1.25/10)*10||100;
+        var sVdMax   = Math.ceil(Math.max.apply(null,sVdVals)*1.3/2)*2||10;
+        var sCx1=52,sCx2=500,sCy1=20,sCy2=165,sCw=sCx2-sCx1,sCh=sCy2-sCy1;
+        function sX(v){return (sCx1+(v/sCo2Max)*sCw).toFixed(1);}
+        function sY(v){return (sCy2-(v/sVdMax)*sCh).toFixed(1);}
+        var sGrid='',sXLabs='',sYLabs='',sPts='',sLabs='',sLinePts=[];
+        for(var si=0;si<=4;si++){
+          var sGx=Math.round(sCo2Max*si/4),sGy=(sVdMax*si/4).toFixed(1);
+          sGrid+='<line x1="'+sX(sGx)+'" y1="'+sCy1+'" x2="'+sX(sGx)+'" y2="'+sCy2+'" stroke="#F1F4F8" stroke-width="1"/>';
+          sGrid+='<line x1="'+sCx1+'" y1="'+sY(sGy)+'" x2="'+sCx2+'" y2="'+sY(sGy)+'" stroke="#F1F4F8" stroke-width="1"/>';
+          sXLabs+='<text x="'+sX(sGx)+'" y="'+(sCy2+13)+'" font-size="9" fill="#94A3B8" text-anchor="middle">'+sGx+'%</text>';
+          sYLabs+='<text x="'+(sCx1-4)+'" y="'+(Number(sY(sGy))+3).toFixed(1)+'" font-size="9" fill="#94A3B8" text-anchor="end">'+sGy+'%</text>';
+        }
+        sens.forEach(function(row,i){
+          var co2=Number(String(row.emissions_reduction_pct||0).replace('%',''));
+          var vd=Number(row.value_delta_pct||0);
+          var px=sX(co2),py=sY(vd);
+          sLinePts.push(px+','+py);
+          sPts+='<circle cx="'+px+'" cy="'+py+'" r="6" fill="#12253A" stroke="#fff" stroke-width="2"/>';
+          var anch=i<sens.length/2?'start':'end',dx=i<sens.length/2?10:-10;
+          sLabs+='<text x="'+(Number(px)+dx).toFixed(1)+'" y="'+(Number(py)-5).toFixed(1)+'" font-size="9" fill="#475569" text-anchor="'+(dx>0?'start':'end')+'">'+esc(row.label||'')+'</text>';
+        });
+        sensChartEl.innerHTML='<div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Value Delta vs. Carbon Reduction — sensitivity at each investment level</div><svg viewBox="0 0 560 195" width="100%" style="display:block;overflow:visible" aria-label="Value creation vs carbon reduction scatter chart">'+sGrid+sXLabs+sYLabs+'<polyline points="'+sLinePts.join(' ')+'" fill="none" stroke="#12253A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.4"/>'+sPts+sLabs+'<text x="'+(((sCx1+sCx2)/2)).toFixed(0)+'" y="185" font-size="9" fill="#64748B" text-anchor="middle">CO₂ Reduction (%)</text><text x="12" y="92" font-size="9" fill="#64748B" text-anchor="middle" transform="rotate(-90,12,92)">Value Delta (%)</text></svg>';
+      }
+      /* Table */
       var sensTbody = document.querySelector('#sensitivity-table tbody');
       var sensHtml = '';
       sens.forEach(function(row) {
+        var co2Str = row.emissions_reduction_pct != null ? esc(String(row.emissions_reduction_pct).replace(/[^0-9.]/g,''))+'%' : '—';
+        var noiStr = row.noi_impact_annual ? '+'+fmtCurrency(row.noi_impact_annual)+'/yr' : '—';
+        var vdStr  = row.value_delta_pct != null ? (row.value_delta_pct > 0 ? '+' : '')+row.value_delta_pct+'%' : (row.value_delta_usd ? '+'+fmtCurrency(row.value_delta_usd) : '—');
+        var capStr = isMF && row.spend_per_unit ? fmtCurrency(row.spend_per_unit)+'/unit' : fmtCurrency(row.total_spend);
         sensHtml += '<tr>';
-        sensHtml += '<td><strong>' + esc(isMF && row.spend_per_unit ? '$' + Number(row.spend_per_unit).toLocaleString() + '/unit' : fmtCurrency(row.total_spend)) + '</strong></td>';
-        sensHtml += '<td>' + esc(fmtCurrency(row.total_spend)) + '</td>';
-        sensHtml += '<td style="font-weight:600;color:#1F6B45">' + esc(row.emissions_reduction_pct ? row.emissions_reduction_pct + (String(row.emissions_reduction_pct).indexOf('%') === -1 ? '%' : '') + ' reduction' : '—') + '</td>';
-        sensHtml += '<td style="font-size:12px;color:#475569">' + esc(row.label || '—') + '</td>';
+        sensHtml += '<td><strong>' + esc(row.label || '—') + '</strong></td>';
+        sensHtml += '<td>' + esc(capStr) + '</td>';
+        sensHtml += '<td style="font-weight:600;color:#1F6B45">' + esc(co2Str) + '</td>';
+        sensHtml += '<td>' + esc(noiStr) + '</td>';
+        sensHtml += '<td style="font-weight:600;color:#12253A">' + esc(vdStr) + '</td>';
         sensHtml += '</tr>';
       });
       if (sensTbody) sensTbody.innerHTML = sensHtml;
@@ -1606,10 +1680,11 @@
   ════════════════════════════════════ -->
   <div id="sensitivity-section" class="section" style="display:none">
     <div class="section-label">Investment Trade-offs</div>
-    <h2 class="section-title">CapEx vs. Emissions Reduction</h2>
-    <p style="font-size:12px;color:#475569;margin-bottom:16px;line-height:1.6">How much decarbonization progress can be achieved at different spend levels — for investment analysts sizing the sustainability initiative.</p>
+    <h2 class="section-title">Value Creation vs. Carbon Reduction</h2>
+    <p style="font-size:12px;color:#475569;margin-bottom:16px;line-height:1.6">Sensitivity of value creation and carbon reduction at incremental spend levels — for investment analysts sizing the sustainability program.</p>
+    <div id="sensitivity-chart" style="margin-bottom:20px"></div>
     <table class="profile-table" id="sensitivity-table">
-      <thead><tr><th>Spend / Unit</th><th>Total Investment</th><th>Emissions Reduction</th><th>What's Included</th></tr></thead>
+      <thead><tr><th>Scenario</th><th>CapEx</th><th>CO₂ Reduction</th><th>Annual NOI Lift</th><th>Est. Value Delta</th></tr></thead>
       <tbody></tbody>
     </table>
   </div>

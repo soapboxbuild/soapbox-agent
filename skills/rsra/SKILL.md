@@ -767,6 +767,24 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
 
 **Numeric precision:** Use 2 significant figures on all calculated values (e.g., `$1.4M` not `$1.427M`, `42 kgCO₂e/m²` not `41.7`). Currency: `$1.4M`, `$620K`, `$38` — never write unnecessary decimal places.
 
+---
+
+### ⚠️ TEMPLATE LOCK — READ BEFORE GENERATING OUTPUT
+
+**These rules are non-negotiable. Violating any one of them produces an unusable report.**
+
+1. **Fragment only** — output starts with `<style>`, never with `<!DOCTYPE html>`, `<html>`, `<head>`, or `<body>`. The artifact system wraps it. If you open a `<body>` tag you are wrong.
+2. **No `<img>` tags** — the org logo is NOT part of this report. No `<img src="https://...">` or any other external image reference. Use inline SVG for any visual marks.
+3. **Exact colors — no substitutions:**
+   - Header/section title: `#12253A` (navy) — never orange, never gradient
+   - Accents/eyebrows: `#4CAF82` (green) — never orange, never red
+   - Page bg: `#F8F9FB` — never white-on-white, never custom brand bg
+   - Do NOT use `--brand`, `--dark`, `--accent`, or any CSS custom property for brand colors. Write them inline.
+4. **No external resources** — no CDN scripts, no `@import url(...)`, no `<link rel="stylesheet">`, no `<script src="...">`. Self-contained SVG only.
+5. **Use the CSS below verbatim** — do not invent new class names, do not add gradient hero sections, do not add a colored navigation bar. Copy the template exactly and fill in `[PLACEHOLDERS]`.
+
+---
+
 **Template structure:**
 
 ```html

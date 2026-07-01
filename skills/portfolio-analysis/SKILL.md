@@ -765,9 +765,26 @@ After generating the Phase 2 report:
 
 ## Error Handling
 
-**Asset with no Audette link:**
+**Asset with no `audette_property_id`:**
 Include with estimated energy data. Label everything `(est.)`. Skip BPD comparison.
 Never block the run on a missing Audette link.
+
+**Audette MCP tools unavailable at runtime (auth error, network failure, tool not found):**
+If `switch_customer_account`, `list_buildings`, or `get_building_model_details` return an
+error or are not available as tools:
+1. Note at the top of the run: "⚠ Audette MCP unavailable — running on uploaded docs only. Results carry ±40% uncertainty."
+2. Fall through to uploaded documents as primary source for all assets.
+3. Label every energy figure `(est.)` regardless of source — doc-extracted figures are
+   also estimates without Audette calibration.
+4. Do NOT silently proceed as if Audette ran. The data quality drop is material and must
+   be surfaced to the user before they act on the output.
+5. After the run, tell the user: "To get Audette-calibrated results, ensure the Audette
+   plugin is installed for this portfolio in Settings → Plugins."
+
+**`switch_customer_account` fails (wrong slug or account not accessible):**
+Call `list_customer_accounts()` to get the available account list, present names to the
+user, and ask which one to use. Do not guess. Do not proceed with a wrong account —
+data from another client's account would silently corrupt the analysis.
 
 **DCF engine failure:**
 If `dcf_engine.py` returns an error for an asset, mark that asset `analysis_failed`,

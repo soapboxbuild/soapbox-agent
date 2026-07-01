@@ -378,20 +378,27 @@ Read any matching documents and extract:
 
 #### Step 5 — Reconcile Audette vs. uploaded docs
 
-Build a unified measure list per asset, reconciling both sources:
+Build a unified measure list per asset, reconciling all sources:
+
+**Source certainty:** Audette and uploaded field documents (Greenrock assessments, PCAs,
+energy audits) carry **equal weight**. Neither is authoritative over the other — a
+field-verified Greenrock cost estimate is as reliable as an Audette model figure. Only
+CBECS benchmark estimates are lower certainty and must be labeled `(est.)`.
 
 1. **De-duplicate**: if a measure appears in both Audette and a doc (e.g. LED upgrade),
-   keep one entry. Prefer Audette's cost/savings figures — flag the doc source as corroboration.
-   If doc cost differs by > 25%, flag the discrepancy with both figures.
+   keep one entry. Use whichever source has the more detailed or recent cost/savings data.
+   If figures differ by > 25%, show both with their source and note the discrepancy —
+   don't silently pick one.
 
-2. **Mark completed measures**: if a doc shows a measure was already installed (e.g. "LED
-   retrofit completed 2023"), **remove it from forward-looking CapEx** and note it as complete.
-   Do not double-count.
+2. **Mark completed measures**: if any source shows a measure was already installed (e.g.
+   "LED retrofit completed 2023"), **remove it from forward-looking CapEx**. Do not
+   double-count. Doc evidence of completion overrides Audette if Audette still lists it
+   as recommended.
 
 3. **Confidence levels**:
-   - `High` — Audette model + field-verified doc agreement
-   - `Medium` — Audette only, or doc only
-   - `Low` — CBECS benchmark estimate (no Audette, no doc data)
+   - `High` — two or more sources agree (Audette + doc, or two docs)
+   - `Medium` — single source, either Audette or a field doc
+   - `Low` — CBECS benchmark only (no Audette, no uploaded doc)
 
 4. **Feasibility check per measure**:
    - Technically feasible given building vintage and HVAC config?
@@ -406,34 +413,27 @@ Build a unified measure list per asset, reconciling both sources:
 
 #### Step 6 — Write reconciled data back to Audette
 
-Audette is the system of record. After reconciliation, update it:
+Audette is the write-back destination (system of record for future runs). After
+reconciliation, update it with anything the docs revealed that Audette doesn't yet reflect:
 
-1. **Mark completed measures** — for any measure the docs show as already installed,
-   use `update_custom_plan_measures` to remove it from the active decarb plan so it stops
-   appearing in future CapEx totals.
+1. **Mark completed measures** — for any measure docs show as already installed, use
+   `update_custom_plan_measures` to remove it from the active decarb plan.
 
 2. **Submit utility data** — if uploaded utility bills are more recent than Audette's
-   baseline, extract monthly kWh/therms and submit via `add_building_utility_data`.
-   This triggers Audette to recalibrate the carbon reduction plan with current consumption.
+   baseline, submit via `add_building_utility_data` to recalibrate the carbon reduction plan.
 
-3. **Equipment updates** — if docs show equipment replacement (e.g. new chiller 2024) not
-   reflected in Audette's equipment schedule, call `edit_building_attributes` to update it.
+3. **Equipment updates** — if docs show equipment replacement not in Audette's schedule,
+   call `edit_building_attributes` to update it.
 
-4. **Flag calibration gaps** — if the Audette model appears based on design specs rather
-   than measured data (common for new buildings), note in the asset output:
-   "Audette model not yet calibrated — submit utility bills to recalibrate."
+4. **Flag calibration gaps** — if the Audette model is based on design specs rather than
+   measured data, note: "Audette model not yet calibrated — submit utility bills to recalibrate."
 
 **The goal: Audette should be more accurate at the end of the run than at the start.**
 
-**Data hierarchy rule:** Audette is the primary source. Do not replace Audette EUI with
-CBECS estimates if Audette provides a figure — even if it differs from OM stated values.
-Flag discrepancies > 20% but use Audette's number in calculations.
-
-For assets without Audette:
-- Check uploaded documents (PCA, energy audit) for EUI, equipment age, and any measure estimates
-- If no document data: use CBECS median EUI for asset type + climate zone — label every value `(est.)`
+For assets with no Audette link and no uploaded docs:
+- Use CBECS median EUI for asset type + climate zone — label every value `(est.)`
 - **Circular benchmarking rule:** Never use a CBECS benchmark EUI in the BPD peer comparison.
-  If EUI is estimated, skip BPD comparison for that asset.
+  Skip BPD comparison for that asset.
 
 ### 3B — Run DCF base model (use the cashflow MCP tool)
 
@@ -772,14 +772,12 @@ Never block the run on a missing Audette link.
 **Audette MCP tools unavailable at runtime (auth error, network failure, tool not found):**
 If `switch_customer_account`, `list_buildings`, or `get_building_model_details` return an
 error or are not available as tools:
-1. Note at the top of the run: "⚠ Audette MCP unavailable — running on uploaded docs only. Results carry ±40% uncertainty."
-2. Fall through to uploaded documents as primary source for all assets.
-3. Label every energy figure `(est.)` regardless of source — doc-extracted figures are
-   also estimates without Audette calibration.
-4. Do NOT silently proceed as if Audette ran. The data quality drop is material and must
-   be surfaced to the user before they act on the output.
-5. After the run, tell the user: "To get Audette-calibrated results, ensure the Audette
-   plugin is installed for this portfolio in Settings → Plugins."
+1. Note at the top of the run: "⚠ Audette MCP unavailable — running on uploaded docs only."
+2. Fall through to uploaded documents as the source for all assets. Doc-sourced figures
+   carry the same certainty as Audette — only CBECS estimates get the `(est.)` label.
+3. Do NOT silently proceed as if Audette ran — surface the gap clearly.
+4. After the run, tell the user: "To include Audette models, ensure the Audette plugin is
+   installed for this portfolio in Settings → Plugins."
 
 **`switch_customer_account` fails (wrong slug or account not accessible):**
 Call `list_customer_accounts()` to get the available account list, present names to the

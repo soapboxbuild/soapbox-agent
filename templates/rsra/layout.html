@@ -1392,89 +1392,6 @@
       ghgSection.style.display = '';
     }
 
-    /* ── Water Efficiency ── */
-    var water = data.water_efficiency || {};
-    var waterSection = document.getElementById('water-section');
-    if (waterSection && Object.keys(water).length > 0) {
-      var waterDl = document.getElementById('water-dl');
-      var wFields = [
-        ['Water Use Intensity', water.wui],
-        ['vs. Portfolio Benchmark', water.vs_benchmark],
-        ['Water Stress (WRI)', water.water_stress],
-        ['SASB Disclosure Required', water.sasb_disclosure],
-        ['Unit Water Submeters', water.submeters]
-      ];
-      var wHtml = '';
-      wFields.forEach(function(f) {
-        if (f[1]) {
-          wHtml += '<div class="profile-row"><dt class="profile-dt">' + f[0] + '</dt>';
-          wHtml += '<dd class="profile-dd">' + esc(f[1]) + '</dd></div>';
-        }
-      });
-      if (waterDl && wHtml) { waterDl.innerHTML = wHtml; waterSection.style.display = ''; }
-    }
-
-    /* ── Quality of Life ── */
-    var qol = data.quality_of_life || {};
-    var qolSection = document.getElementById('qol-section');
-    if (qolSection && Object.keys(qol).length > 0) {
-      /* RAG dot helper — color based on numeric score or keyword */
-      function ragDot(val) {
-        var s=String(val||'').toLowerCase();
-        var nm=s.match(/\b(\d+)\s*(?:\/\s*100)?\b/);
-        var num=nm?parseInt(nm[1]):null;
-        var c;
-        if(num!=null&&num<=100){c=num>=70?'#4CAF82':num>=40?'#F59E0B':'#EF4444';}
-        else if(s.indexOf('strong')!==-1||/4\.[0-9]/.test(s)){c='#4CAF82';}
-        else if(s.indexOf('moderate')!==-1||/3\.[0-9]/.test(s)){c='#F59E0B';}
-        else if(s.indexOf('n/a')!==-1||s==='—'||s.indexOf('not scored')!==-1||s.indexOf('no data')!==-1){c='#94A3B8';}
-        else{c='#94A3B8';}
-        return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:6px;vertical-align:middle;flex-shrink:0"></span>';
-      }
-
-      var qolDl = document.getElementById('qol-dl');
-      var qFields = [
-        ['Walk Score®', qol.walk_score],
-        ['Bike Score®', qol.bike_score],
-        ['Transit Score®', qol.transit_score],
-        ['Google Rating', qol.google_rating],
-        ['ORA Power Ranking', qol.ora_ranking]
-      ];
-      var qHtml = '';
-      qFields.forEach(function(f) {
-        if (f[1]) {
-          qHtml += '<div class="profile-row"><dt class="profile-dt">' + f[0] + '</dt>';
-          qHtml += '<dd class="profile-dd">' + ragDot(f[1]) + esc(f[1]) + '</dd></div>';
-        }
-      });
-      if (qolDl && qHtml) { qolDl.innerHTML = qHtml; qolSection.style.display = ''; }
-    }
-
-    /* ── Affordability ── */
-    var afford = data.affordability || {};
-    var affordSection = document.getElementById('afford-section');
-    if (affordSection && Object.keys(afford).length > 0) {
-      var affordDl = document.getElementById('afford-dl');
-      var aFields = [
-        ['Avg Proforma Rent', afford.avg_rent],
-        ['Income Required (40x Rule)', afford.income_required],
-        ['Census Tract MFI', afford.tract_mfi],
-        ['Affordability Gap', afford.gap],
-        ['Tract Income Level', afford.tract_income_level],
-        ['Underserved / Distressed Tract', afford.underserved],
-        ['Tract Minority %', afford.minority_pct],
-        ['Agency Mission Eligibility', afford.agency_mission]
-      ];
-      var aHtml = '';
-      aFields.forEach(function(f) {
-        if (f[1]) {
-          aHtml += '<div class="profile-row"><dt class="profile-dt">' + f[0] + '</dt>';
-          aHtml += '<dd class="profile-dd">' + esc(f[1]) + '</dd></div>';
-        }
-      });
-      if (affordDl && aHtml) { affordDl.innerHTML = aHtml; affordSection.style.display = ''; }
-    }
-
     /* ── Certifications & Green Debt ── */
     var cert = data.certifications_and_debt || {};
     var certSection = document.getElementById('cert-section');
@@ -1494,27 +1411,6 @@
         }
       });
       if (certDl && cHtml) { certDl.innerHTML = cHtml; certSection.style.display = ''; }
-    }
-
-    /* ── UN SDG Alignment ── */
-    var sdgs = data.sdg_alignment || [];
-    var sdgSection = document.getElementById('sdg-section');
-    if (sdgSection && sdgs.length > 0) {
-      var sdgColors={1:'#E5243B',2:'#DDA63A',3:'#4C9F38',4:'#C5192D',5:'#FF3A21',6:'#26BDE2',7:'#FCC30B',8:'#A21942',9:'#FD6925',10:'#DD1367',11:'#FD9D24',12:'#BF8B2E',13:'#3F7E44',14:'#0A97D9',15:'#56C02B',16:'#00689D',17:'#19486A'};
-      var sdgShort={1:'NO POVERTY',2:'ZERO HUNGER',3:'GOOD HEALTH',4:'QUALITY EDU',5:'GENDER EQ.',6:'CLEAN WATER',7:'CLEAN ENERGY',8:'DECENT WORK',9:'INDUSTRY',10:'REDUCED INEQ',11:'SUST. CITIES',12:'RESP. CONSUMP',13:'CLIMATE ACT.',14:'LIFE BELOW',15:'LIFE ON LAND',16:'PEACE JUST.',17:'PARTNERSHIPS'};
-      var sdgList=document.getElementById('sdg-list');
-      var sdgHtml='<div style="display:flex;flex-direction:column;gap:8px">';
-      sdgs.forEach(function(s){
-        var nm=String(s.sdg||'').match(/SDG\s*(\d+)/i);
-        var n=nm?parseInt(nm[1]):0;
-        var bg=n&&sdgColors[n]?sdgColors[n]:'#64748B';
-        var sh=n&&sdgShort[n]?sdgShort[n]:'';
-        var tile=n?('<svg viewBox="0 0 40 40" width="40" height="40" style="flex-shrink:0;border-radius:3px" aria-label="SDG '+n+'"><rect width="40" height="40" fill="'+bg+'"/><text x="20" y="15" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.85)" font-weight="600" font-family="-apple-system,Helvetica,Arial,sans-serif">SDG</text><text x="20" y="26" text-anchor="middle" font-size="14" fill="#fff" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">'+n+'</text><text x="20" y="37" text-anchor="middle" font-size="6" fill="rgba(255,255,255,0.85)" font-family="-apple-system,Helvetica,Arial,sans-serif">'+sh+'</text></svg>'):'';
-        sdgHtml+='<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F1F4F8">'+tile+'<div><div style="font-size:12px;font-weight:600;color:#12253A;margin-bottom:2px">'+esc(s.sdg)+'</div><div style="font-size:13px;color:#334155;line-height:1.5">'+esc(s.alignment)+'</div></div></div>';
-      });
-      sdgHtml+='</div>';
-      if(sdgList) sdgList.innerHTML=sdgHtml;
-      sdgSection.style.display='';
     }
 
     /* ── Seller Questions ── */
@@ -1683,7 +1579,7 @@
   ════════════════════════════════════ -->
   <div class="section">
     <div class="section-label">Capital Planning</div>
-    <h2 class="section-title">Decarbonization Capital Plan</h2>
+    <h2 class="section-title">Decarbonization Opportunities</h2>
 
     <!-- Faux table header row -->
     <div class="capex-table-head">
@@ -1761,7 +1657,7 @@
   ════════════════════════════════════ -->
   <div id="physical-risk-section" class="section" style="display:none">
     <div class="section-label">Physical Climate Risk</div>
-    <h2 class="section-title">Climate Hazard Exposure</h2>
+    <h2 class="section-title">Climate Hazard Screening</h2>
     <table class="profile-table" id="physical-risk-table">
       <thead id="physical-risk-thead"><tr><th>Hazard</th><th>Risk Level</th><th>Key Finding</th></tr></thead>
       <tbody></tbody>
@@ -1784,34 +1680,7 @@
   </div>
 
   <!-- ══════════════════════════════════
-       6. WATER EFFICIENCY
-  ════════════════════════════════════ -->
-  <div id="water-section" class="section" style="display:none">
-    <div class="section-label">Water Performance</div>
-    <h2 class="section-title">Water Efficiency &amp; Water Risk</h2>
-    <dl class="profile-dl" id="water-dl"></dl>
-  </div>
-
-  <!-- ══════════════════════════════════
-       7. QUALITY OF LIFE
-  ════════════════════════════════════ -->
-  <div id="qol-section" class="section" style="display:none">
-    <div class="section-label">Quality of Life</div>
-    <h2 class="section-title">Livability &amp; Reputation</h2>
-    <dl class="profile-dl" id="qol-dl"></dl>
-  </div>
-
-  <!-- ══════════════════════════════════
-       8. AFFORDABILITY
-  ════════════════════════════════════ -->
-  <div id="afford-section" class="section" style="display:none">
-    <div class="section-label">Social Impact</div>
-    <h2 class="section-title">Affordability Analysis</h2>
-    <dl class="profile-dl" id="afford-dl"></dl>
-  </div>
-
-  <!-- ══════════════════════════════════
-       9. CERTIFICATIONS & GREEN DEBT
+       6. CERTIFICATIONS & GREEN DEBT
   ════════════════════════════════════ -->
   <div id="cert-section" class="section" style="display:none">
     <div class="section-label">Certifications &amp; Financing</div>
@@ -1820,16 +1689,7 @@
   </div>
 
   <!-- ══════════════════════════════════
-       10. UN SDG ALIGNMENT
-  ════════════════════════════════════ -->
-  <div id="sdg-section" class="section" style="display:none">
-    <div class="section-label">ESG Reporting</div>
-    <h2 class="section-title">UN SDG Alignment</h2>
-    <div id="sdg-list"></div>
-  </div>
-
-  <!-- ══════════════════════════════════
-       11. SELLER QUESTIONS
+       7. SELLER QUESTIONS
   ════════════════════════════════════ -->
   <div id="seller-questions-section" class="section" style="display:none">
     <div class="section-label">Due Diligence</div>

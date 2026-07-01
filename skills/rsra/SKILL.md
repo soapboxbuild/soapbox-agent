@@ -672,7 +672,7 @@ Two-phase output: emit a loading skeleton immediately, then dispatch `report-ren
   </div>
   <div class="section">
     <div class="sec-lbl">Capital Planning</div>
-    <div class="sec-title">Decarbonization Plan</div>
+    <div class="sec-title">Decarbonization Opportunities</div>
     <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
     <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
     <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>

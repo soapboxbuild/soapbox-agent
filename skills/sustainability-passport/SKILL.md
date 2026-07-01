@@ -29,6 +29,57 @@ You are generating a **Sustainability Passport** — the definitive sustainabili
 
 ---
 
+## Design System
+
+All RSRA HTML output must conform to these rules. Claude must apply them on every run — never drift.
+
+**Colors**
+- Navy: `#12253A` — headers, section titles, strong text
+- Green: `#4CAF82` — eyebrows, accents, positive signals, chart fills
+- Muted: `#64748B` — secondary text, axis labels
+- Page bg: `#F8F9FB`
+- Section bg: `#fff`
+- Border: `#E2E8F0`
+- Warn: `#F59E0B` · Danger: `#EF4444`
+
+**Typography**
+- Font stack everywhere: `-apple-system,'Helvetica Neue',Arial,sans-serif`
+- Zero `Georgia`, zero `serif`, zero `@import`, zero web fonts
+- Section label: 9px, weight 600, `letter-spacing:.15em`, `text-transform:uppercase`, color `#1F6B45`
+- Section title: 18px, weight 700, color `#12253A`, `border-bottom:1.5px solid #12253A`, `padding-bottom:8px`
+
+**Section chrome pattern**
+```html
+<div class="section">
+  <div class="section-label">EYEBROW LABEL</div>
+  <h2 class="section-title">Section Title</h2>
+  <!-- content -->
+</div>
+```
+
+**Charts — inline SVG only**
+- Zero external charting libraries (no Chart.js, D3, Plotly, etc.)
+- Zero `<canvas>` elements
+- Zero CDN `<script>` tags
+- All SVG coordinates computed at generation time from the data being reported
+- If data is unavailable for a chart, omit the chart entirely — no placeholder SVG
+
+**Hard prohibitions**
+- `Paged.js` — never reference or import
+- `Georgia` or any serif font
+- Any `@import url(...)` for fonts
+- Any `<link rel="stylesheet">` or `<script src="...">` pointing to an external host
+- External `<img src="https://...">` — all images must be inline SVG or data URIs
+
+**Artifact output rules**
+- Two-phase artifact: Phase 1 = loading skeleton, Phase 2 = full report
+- Both phases use the **identical** file path — one artifact, updated in place
+- Never save the Phase 1 skeleton to asset documents — only the completed Phase 2 report
+- Numeric precision: 2 significant figures (`$1.4M` not `$1,427,000`; `42 kgCO₂e` not `41.7`)
+- Mark all benchmark-derived estimates inline with `(est.)`
+
+---
+
 ## Step 1: Data Inventory & Gap Assessment
 
 Before writing a word, inventory what's available. Surface gaps to the user immediately.
@@ -533,6 +584,36 @@ Navy header with property name and address already filled in. Shimmer placeholde
 Use the same consulting aesthetic as the RSRA loading skeleton: navy `#12253A` header, `#F8F9FB` background, section cards in `#fff`, pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`). Zero Paged.js, zero external CDN.
 
 ### Phase 2 — Full Passport (update the same file path)
+
+The Phase 2 full passport uses this CSS (identical to RSRA):
+
+```css
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+.report{max-width:860px;margin:0 auto;padding:40px 0 80px}
+.doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+.doc-header-eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+.doc-header-property-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
+.doc-header-address{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+.doc-header-meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
+.meta-bar{display:flex;gap:32px;padding:14px 40px;background:#F1F4F8;border-top:1px solid #CBD5E1}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
+.section{padding:32px 40px;background:#fff;margin-bottom:2px}
+.section-label{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+.section-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+.profile-dl{display:grid;gap:0}
+.profile-row{display:grid;grid-template-columns:160px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid #F1F4F8}
+.profile-dt{font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+.profile-dd{font-size:13px;line-height:1.6;color:#334155}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}
+th{background:#F1F4F8;text-align:left;padding:8px 12px;font-weight:600;border:1px solid #E2E8F0;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#475569}
+td{padding:8px 12px;border:1px solid #E2E8F0;vertical-align:top}
+tr:nth-child(even) td{background:#FAFBFC}
+.risk-high{color:#991B1B;font-weight:600}
+.risk-moderate{color:#92400E;font-weight:600}
+.risk-low{color:#065F46;font-weight:600}
+```
 
 **Typography:** Every element must use `-apple-system,'Helvetica Neue',Arial,sans-serif`. Zero `Georgia`, zero `serif`, zero web font imports. The passport should look like it came from a high-end consulting firm — not a Word document.
 

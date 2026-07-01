@@ -38,6 +38,57 @@ If no OM is present: "To run an RSRA, I need the Offering Memorandum. Please upl
 
 ---
 
+## Design System
+
+All RSRA HTML output must conform to these rules. Claude must apply them on every run — never drift.
+
+**Colors**
+- Navy: `#12253A` — headers, section titles, strong text
+- Green: `#4CAF82` — eyebrows, accents, positive signals, chart fills
+- Muted: `#64748B` — secondary text, axis labels
+- Page bg: `#F8F9FB`
+- Section bg: `#fff`
+- Border: `#E2E8F0`
+- Warn: `#F59E0B` · Danger: `#EF4444`
+
+**Typography**
+- Font stack everywhere: `-apple-system,'Helvetica Neue',Arial,sans-serif`
+- Zero `Georgia`, zero `serif`, zero `@import`, zero web fonts
+- Section label: 9px, weight 600, `letter-spacing:.15em`, `text-transform:uppercase`, color `#1F6B45`
+- Section title: 18px, weight 700, color `#12253A`, `border-bottom:1.5px solid #12253A`, `padding-bottom:8px`
+
+**Section chrome pattern**
+```html
+<div class="section">
+  <div class="section-label">EYEBROW LABEL</div>
+  <h2 class="section-title">Section Title</h2>
+  <!-- content -->
+</div>
+```
+
+**Charts — inline SVG only**
+- Zero external charting libraries (no Chart.js, D3, Plotly, etc.)
+- Zero `<canvas>` elements
+- Zero CDN `<script>` tags
+- All SVG coordinates computed at generation time from the data being reported
+- If data is unavailable for a chart, omit the chart entirely — no placeholder SVG
+
+**Hard prohibitions**
+- `Paged.js` — never reference or import
+- `Georgia` or any serif font
+- Any `@import url(...)` for fonts
+- Any `<link rel="stylesheet">` or `<script src="...">` pointing to an external host
+- External `<img src="https://...">` — all images must be inline SVG or data URIs
+
+**Artifact output rules**
+- Two-phase artifact: Phase 1 = loading skeleton, Phase 2 = full report
+- Both phases use the **identical** file path — one artifact, updated in place
+- Never save the Phase 1 skeleton to asset documents — only the completed Phase 2 report
+- Numeric precision: 2 significant figures (`$1.4M` not `$1,427,000`; `42 kgCO₂e` not `41.7`)
+- Mark all benchmark-derived estimates inline with `(est.)`
+
+---
+
 ## Phase 1: Document Triage
 
 ### 1A — Locate the OM

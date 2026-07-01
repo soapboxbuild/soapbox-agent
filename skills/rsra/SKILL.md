@@ -704,14 +704,25 @@ Two-phase output: emit a loading skeleton immediately, then dispatch `report-ren
 
 ### Phase 2 — Inject Data and Emit Artifact
 
-After completing all research phases, produce the final report by:
+After completing all research phases, produce the final report by fetching two template parts and concatenating them with the JSON in between:
 
-1. **Fetch** the template using WebFetch at this URL:
-   `https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main/templates/rsra/layout.html`
-2. **Replace** the entire content of the `<script id="report-data" type="application/json">` block — everything between the opening `<script id="report-data" type="application/json">` tag and the first standalone `</script>` closing tag that follows it — with your assembled JSON data object.
-3. **Emit** the modified HTML as an artifact at path `{property-slug}-rsra.html` (same path as the Phase 1 skeleton, so it overwrites in place).
+1. **Fetch the pre-block** via WebFetch:
+   `https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main/templates/rsra/layout-pre.html`
 
-Do NOT generate your own HTML. Do NOT add Paged.js. Do NOT add any external scripts or stylesheets. The template is self-contained — your only job is to swap the data block. If the WebFetch fails, retry once before giving up.
+2. **Fetch the post-block** via WebFetch:
+   `https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main/templates/rsra/layout-post.html`
+
+3. **Emit the artifact** at path `{property-slug}-rsra.html` with this exact structure — the pre block, then the data script tag with your JSON, then the post block:
+
+```
+{content of layout-pre.html}
+<script id="report-data" type="application/json">
+{your assembled JSON object}
+</script>
+{content of layout-post.html}
+```
+
+Do NOT generate your own HTML. Do NOT add Paged.js. Do NOT add any external scripts or stylesheets. The template parts are self-contained — your only job is to assemble them around the data block.
 
 The JSON to inject into the `<script id="report-data">` block:
 

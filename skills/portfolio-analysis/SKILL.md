@@ -303,11 +303,18 @@ pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`), zero Paged.
 Process assets in sequence, streaming one progress line per asset as it completes.
 Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures above hurdle, $2.1M CapEx, +$1.4M value`
 
-### 3A — Pull from Audette (mandatory first step for every linked asset)
+### 3A — Pull all sources, reconcile, write back to Audette
 
-**DO THIS BEFORE reading any uploaded documents.** The Audette MCP is installed for this
-portfolio. Call it for every asset with a non-null `audette_property_id`. Do not skip
-Audette and jump to PDFs — uploaded docs are the secondary source, not the primary.
+Pull from both Audette and uploaded docs for every asset. Reconcile the two into a single
+unified plan. Write the reconciled plan back to Audette — this is the point of the exercise.
+Skipping reconciliation or skipping the write-back is not acceptable even if one source has
+more data than the other.
+
+**If the Audette MCP is available:** call it first for every linked asset (Steps 1–3 below),
+then read uploaded docs, then reconcile. Write the reconciled plan back to Audette.
+
+**If the Audette MCP is unavailable at runtime:** read uploaded docs only, build the plan
+from those, note the gap, and skip the write-back steps. Do not silently omit this notice.
 
 #### Step 1 — Switch to the correct Audette account
 

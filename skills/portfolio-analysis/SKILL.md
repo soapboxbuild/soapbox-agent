@@ -9,7 +9,7 @@ description: >
   configurable per run. Spec 2 of 2 — portfolio ingestion (Spec 1) is a prerequisite.
   Triggers on: "run portfolio analysis", "analyze the portfolio", "portfolio decarbonization",
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
-  "portfolio CapEx", "run analysis on [client]", "Greystar analysis", "BCLC analysis",
+  "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
 version: 1.2.0
 ---
@@ -21,8 +21,7 @@ a fully-ingested Soapbox portfolio into a presentation-ready view of required su
 capital, value creation, and emissions trajectory across all assets.
 
 **Works for any client portfolio.** All parameters are set per run — there are no
-hardcoded client assumptions. Greystar, BCLC, or any future client each get their own
-parameter set confirmed at the start.
+hardcoded client assumptions.
 
 **This skill replaces client-specific helper spreadsheets.** Audette provides the physics
 (energy measures, decarb plan, EUI), the Soapbox DCF engine provides the finance (IRR,
@@ -40,7 +39,7 @@ zero by 2040", "carbon neutral by 2035", "50% Scope 1+2 reduction by 2030"). Ext
 find, then only ask for what's missing.
 
 After checking docs, establish the run parameters. Accept them inline if the user
-provided them ("run Greystar analysis with 15% hurdle"), or confirm what was found in docs first.
+provided them (e.g. "run with 15% hurdle"), or confirm what was found in docs first.
 
 ### Parameters
 
@@ -62,28 +61,8 @@ provided them ("run Greystar analysis with 15% hurdle"), or confirm what was fou
 | `include_bps` | false | Include Building Performance Standards exposure analysis: BPS liability per asset, compliance cost if no action, fine avoidance as a measure benefit |
 | `org_goal` | null | Custom organizational sustainability goal (e.g. "net zero by 2040", "50% emissions reduction by 2035"). If not provided, search Portfolio Docs for ESG policy statements, fund mandates, or investor commitments before asking. When set, all report sections that reference emissions trajectory or CRREM add a line showing gap/progress vs. this goal. |
 
-### Preset configurations
-
-If the user says a client name without specifying parameters, apply the known preset
-if one exists, then confirm before proceeding:
-
-**Greystar:**
-```
-irr_hurdle: 15%, exit_year_floor: 2028, retrofit_lead_months: 18,
-target_years: [2030, 2035], utility_escalation: 3%, discount_rate: 8%,
-value_method: inclusive, audette_account: greystar,
-include_crrem: false, include_bps: false
-```
-
-**BCLC:**
-```
-irr_hurdle: 12%, exit_year_floor: 2027, target_years: [2030, 2035, 2040],
-utility_escalation: 3%, discount_rate: 7%, value_method: inclusive,
-audette_account: bclc, include_crrem: false, include_bps: false
-```
-
-New clients: prompt for each required parameter. Save the confirmed set to a comment
-in the portfolio thread for future runs.
+Prompt for each required parameter. Save the confirmed set to a comment in the portfolio
+thread so future runs can reuse them without re-entering.
 
 ### Confirm before proceeding
 
@@ -153,7 +132,7 @@ Partition into:
 
 ### 1C — Bulk-fill from register (if available)
 
-If a spreadsheet or asset register is available (e.g. Greystar asset prioritization sheet),
+If a spreadsheet or asset register is available (e.g. an asset prioritization sheet),
 parse it first to bulk-populate `exit_year`, `exit_cap_rate`, and `fund_name` before
 prompting asset-by-asset:
 
@@ -335,8 +314,7 @@ from those, note the gap, and skip the write-back steps. Do not silently omit th
 switch_customer_account("<audette_account_slug>")
 ```
 
-For Greystar: `"greystar"`. For BCLC: `"bclc"`. Use `list_customer_accounts()` if unsure
-which slug applies — pick the account whose name matches the client.
+Use `list_customer_accounts()` if unsure which slug applies — pick the account whose name matches the client.
 
 #### Step 2 — Load all Audette buildings for this account
 
@@ -789,8 +767,8 @@ After generating the Phase 2 report:
 4. Offer:
    - **"Build per-asset RSRA threads"** — create individual asset threads pre-loaded with their
      analysis results for deeper due diligence
-   - **"Export to XLSX"** — run `build_xlsx.py` to generate the Greystar-format spreadsheet
-     with all measure tables and fund-level pivot
+   - **"Export to XLSX"** — run `build_xlsx.py` to generate a spreadsheet with all measure
+     tables and fund-level pivot
    - **"Export to PPTX"** — run `build_pptx.py` for the presentation deck
    - **"Re-run with different parameters"** — change IRR hurdle, exit year floor, or target year
    - **"Filter to one fund"** — re-aggregate for a specific fund only

@@ -165,21 +165,21 @@ Cross-reference: stated GFA vs. footprint × floors. Large discrepancies warrant
 
 ### 2C — Building Performance Database (BPD)
 
-Only query BPD when actual EUI is available from Audette, ESPM, or OM utility data. BPD peer comparison on estimated EUI is circular — skip it if no measured baseline exists.
+Always query BPD — the peer distribution histogram is included in every report regardless of whether actual EUI data is available.
 
 ```
 get_eui_percentile(asset_type, climate_zone, eui_value) → percentile rank vs. verified building population
-get_statistics(filters) → peer median EUI + top quartile
+get_statistics(filters) → peer median EUI + top quartile + buckets
 ```
-
-Report the property's EUI percentile only when the input EUI is from actual bills or ESPM — not a CBECS estimate.
 
 **Histogram data for chart:** From the `get_statistics()` response, extract:
 - `buckets`: array of `{eui_min, eui_max, count}` objects (kBtu/sqft/yr)
 - `median_eui`: peer median (kBtu/sqft/yr)
 - `target_2030_eui`: CRREM 2030 target for this asset type and climate zone
 
-If `get_statistics()` returns no bucket data, set `bpd_chart_available = false` and skip the histogram. Do NOT estimate or fabricate bucket values.
+Set `bpd_chart_available = true` if BPD returns bucket data. If `get_statistics()` returns no bucket data, set `bpd_chart_available = false` and skip the histogram. Do NOT estimate or fabricate bucket values.
+
+**Subject-building marker:** Only add a subject-building marker to the histogram if actual measured EUI is available from Audette, ESPM, or OM utility bills. If no measured EUI exists, the histogram still appears — showing only the peer distribution, median, and CRREM 2030 target line. Do NOT use a CBECS benchmark estimate as the subject marker.
 
 ### 2D — Web Research
 
@@ -886,10 +886,9 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
     <div class="sec-lbl">Carbon Characterization</div>
     <div class="sec-title">Energy &amp; Emissions Profile</div>
     [If actual EUI available: EUI table + peer comparison + BPD percentile]
-    [If no actual EUI: "Measured EUI unavailable — peer comparison not shown to avoid circular benchmarking. CRREM analysis below uses asset-type benchmark (est.)."]
-    [If bpd_chart_available = true: insert histogram SVG below]
+    [Always insert BPD histogram when bpd_chart_available = true — see template below]
 
-**Histogram SVG template** (insert inside the Energy & Emissions section when `bpd_chart_available = true`):
+**Histogram SVG template** (always insert inside the Energy & Emissions section when `bpd_chart_available = true`):
 
 ```html
 <div style="margin-top:20px">
@@ -922,12 +921,23 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
       Median [MEDIAN_VAL]
     </text>
 
-    <!-- 2030 target line: x = 28 + ((target_eui - min_eui) / (max_eui - min_eui)) * 520 -->
+    <!-- 2030 CRREM target line: x = 28 + ((target_eui - min_eui) / (max_eui - min_eui)) * 520 -->
     <line x1="[TARGET_X]" y1="10" x2="[TARGET_X]" y2="130"
           stroke="#4CAF82" stroke-width="1.5"/>
     <text x="[TARGET_X]" y="8" font-size="9" fill="#1F6B45" text-anchor="middle" font-weight="600">
-      2030 target [TARGET_VAL]
+      2030 CRREM [TARGET_VAL]
     </text>
+
+    <!-- Subject-building marker: ONLY include this block if actual measured EUI is available
+         (from Audette, ESPM, or OM utility bills). OMIT ENTIRELY if no measured EUI.
+         x = 28 + ((subject_eui - min_eui) / (max_eui - min_eui)) * 520 -->
+    <!-- [IF MEASURED EUI EXISTS:]
+    <line x1="[SUBJECT_X]" y1="10" x2="[SUBJECT_X]" y2="130"
+          stroke="#EF4444" stroke-width="2"/>
+    <text x="[SUBJECT_X]" y="8" font-size="9" fill="#991B1B" text-anchor="middle" font-weight="700">
+      This asset [SUBJECT_VAL]
+    </text>
+    [END IF] -->
   </svg>
   <div style="font-size:11px;color:#94A3B8;margin-top:4px">
     Source: Lawrence Berkeley National Lab Building Performance Database · [YEAR] release
@@ -935,7 +945,7 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
 </div>
 ```
 
-**Circular benchmarking rule:** The chart shows the peer landscape only — no subject-building marker, regardless of EUI source.
+**Subject-building marker rule:** The histogram always shows the peer distribution, median, and CRREM 2030 target. Add the red "This asset" marker only when actual measured EUI is available (Audette, ESPM, or OM utility bills). Never use a CBECS benchmark estimate as the subject marker.
 
     [CRREM PATHWAY — label as measured or (est.) source]
   </div>

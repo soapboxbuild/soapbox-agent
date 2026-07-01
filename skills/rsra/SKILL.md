@@ -702,17 +702,20 @@ Two-phase output: emit a loading skeleton immediately, then dispatch `report-ren
 </div>
 ```
 
-### Phase 2 — Dispatch Report Renderer
+### Phase 2 — Inject Data and Emit Artifact
 
-After completing all research phases, dispatch the `report-renderer` subagent with the structured JSON below. Do NOT generate inline HTML — the renderer reads `templates/rsra/layout.html` from this plugin and produces a consistent, branded artifact.
+After completing all research phases, produce the final report by:
+
+1. **Read** the template file at `templates/rsra/layout.html` (relative to this plugin's base directory — use the Read tool with the full path).
+2. **Replace** the entire content of the `<script id="report-data" type="application/json">` block — everything between the opening and closing `</script>` tags — with your assembled JSON data object.
+3. **Emit** the modified HTML as an artifact at path `{property-slug}-rsra.html` (same path as the Phase 1 skeleton, so it overwrites in place).
+
+Do NOT generate your own HTML. Do NOT add Paged.js. Do NOT add any external scripts or stylesheets. The template is self-contained — your only job is to swap the data block.
+
+The JSON to inject into the `<script id="report-data">` block:
 
 ```json
 {
-  "template": "rsra",
-  "org": "{org slug if known — e.g. stoneweg, greystar; omit if unknown}",
-  "portfolio": "{portfolio slug if known; omit if unknown}",
-  "asset": "{property-slug}",
-  "data": {
     "property": {
       "name": "[PROPERTY NAME]",
       "address": "[FULL ADDRESS]",
@@ -821,7 +824,7 @@ After completing all research phases, dispatch the `report-renderer` subagent wi
       {"label": "[source name]", "value_cited": "[specific value cited — optional]", "url": "[url — optional]"}
     ],
     "data_quality": "[High|Medium|Low] — [brief description]",
-    "prepared_by": "Aris · Soapbox Sustainability Intelligence",
+    "prepared_by": "Soapbox Sustainability Intelligence",
     "prepared_for": "[client or org name]",
     "report_date": "[YYYY-MM-DD]",
     "disposition_mode": false
@@ -830,12 +833,11 @@ After completing all research phases, dispatch the `report-renderer` subagent wi
 
 ```
 
-After dispatching report-renderer:
-1. Write 3-5 sentence summary in chat covering: deal signal, top CapEx measure, key risk flag.
-2. Offer to add CapEx as a line item in the underwriting model.
-3. The renderer saves the report to asset documents automatically.
+After emitting the artifact:
+1. Write a 3–5 sentence summary in chat: deal signal, top CapEx measure, key risk flag.
+2. Offer to add the CapEx estimate as a line item in the underwriting model.
 
-**BPD histogram:** Include `emissions_profile.bpd_chart` with bucket data when available. The layout template generates the SVG automatically. Omit `subject_eui` if EUI is estimated rather than measured.
+**BPD histogram:** Include `emissions_profile.bpd_chart` with bucket data when available. The template generates the SVG automatically. Omit `subject_eui` if EUI is estimated rather than measured.
 
 ---
 

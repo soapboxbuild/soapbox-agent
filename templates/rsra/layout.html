@@ -1093,6 +1093,24 @@
     if (totalRow) totalRow.innerHTML = '';
     if (unitColHeader) unitColHeader.style.display = isMF ? '' : 'none';
 
+    /* ── Sensitivity Table ── */
+    var sens = data.decarb_sensitivity;
+    var sensSection = document.getElementById('sensitivity-section');
+    if (sensSection && sens && sens.length > 0) {
+      var sensTbody = document.querySelector('#sensitivity-table tbody');
+      var sensHtml = '';
+      sens.forEach(function(row) {
+        sensHtml += '<tr>';
+        sensHtml += '<td><strong>' + esc(isMF && row.spend_per_unit ? '$' + Number(row.spend_per_unit).toLocaleString() + '/unit' : fmtCurrency(row.total_spend)) + '</strong></td>';
+        sensHtml += '<td>' + esc(fmtCurrency(row.total_spend)) + '</td>';
+        sensHtml += '<td style="font-weight:600;color:#1F6B45">' + esc(row.emissions_reduction_pct ? row.emissions_reduction_pct + (String(row.emissions_reduction_pct).indexOf('%') === -1 ? '%' : '') + ' reduction' : '—') + '</td>';
+        sensHtml += '<td style="font-size:12px;color:#475569">' + esc(row.label || '—') + '</td>';
+        sensHtml += '</tr>';
+      });
+      if (sensTbody) sensTbody.innerHTML = sensHtml;
+      sensSection.style.display = '';
+    }
+
     /* ── Emissions Profile ── */
     setHtml('profile-fuel',      '<strong>' + esc(emiss.fuel_profile) + '</strong>');
     setHtml('profile-utility',   esc(emiss.utility_structure));
@@ -1237,16 +1255,86 @@
         if (physTable) physTable.parentNode.insertBefore(radarDiv,physTable);
       }
 
+      /* Detect format: new physrisk (risk_2030/risk_2050) vs legacy (risk_level/finding) */
+      var isPhysriskFormat = physRisk.hazards.some(function(h){ return h.risk_2030 !== undefined || h.risk_2050 !== undefined; });
+
+      /* Update table header for physrisk format */
+      var physThead = document.getElementById('physical-risk-thead');
+      if (isPhysriskFormat && physThead) {
+        physThead.innerHTML = '<tr><th>Hazard</th><th>2030</th><th>2050</th><th>Data Source</th></tr>';
+      }
+
+      function riskClass(lvl) {
+        lvl = (lvl || '').toLowerCase();
+        return lvl.indexOf('high') !== -1 || lvl.indexOf('red') !== -1 ? 'risk-high'
+             : lvl.indexOf('mod') !== -1 ? 'risk-moderate'
+             : (lvl.indexOf('low') !== -1 || lvl.indexOf('no ') !== -1) ? 'risk-low' : '';
+      }
+
       var physTbody = document.querySelector('#physical-risk-table tbody');
       var riskHtml = '';
       physRisk.hazards.forEach(function(h) {
-        var lvl = (h.risk_level || '').toLowerCase();
-        var cls = lvl.indexOf('high') !== -1 ? 'risk-high' : lvl.indexOf('mod') !== -1 ? 'risk-moderate' : 'risk-low';
-        riskHtml += '<tr><td>' + esc(h.hazard) + '</td>';
-        riskHtml += '<td class="' + cls + '">' + esc(h.risk_level) + '</td>';
-        riskHtml += '<td>' + esc(h.finding) + '</td></tr>';
+        if (isPhysriskFormat) {
+          riskHtml += '<tr><td>' + esc(h.hazard) + '</td>';
+          riskHtml += '<td class="' + riskClass(h.risk_2030) + '">' + esc(h.risk_2030 || '—') + '</td>';
+          riskHtml += '<td class="' + riskClass(h.risk_2050) + '">' + esc(h.risk_2050 || '—') + '</td>';
+          riskHtml += '<td style="font-size:11px;color:#64748B">' + esc(h.data_source || '—') + '</td></tr>';
+        } else {
+          var lvl = (h.risk_level || '').toLowerCase();
+          riskHtml += '<tr><td>' + esc(h.hazard) + '</td>';
+          riskHtml += '<td class="' + riskClass(lvl) + '">' + esc(h.risk_level) + '</td>';
+          riskHtml += '<td>' + esc(h.finding) + '</td></tr>';
+        }
       });
       if (physTbody) physTbody.innerHTML = riskHtml;
+
+      /* Climate VaR callout box */
+      var cVar = physRisk.climate_var;
+      var varBox = document.getElementById('climate-var-box');
+      if (varBox && cVar && cVar.cumulative_var_npv_pct) {
+        var varPct = esc(cVar.cumulative_var_npv_pct);
+        var ealExit = esc(cVar.expected_annual_loss_pct_exit || cVar.expected_annual_loss_pct_2030 || '—');
+        var driver = esc(cVar.primary_driver || '—');
+        var holdYrs = cVar.hold_period_years ? cVar.hold_period_years + '-yr hold' : '';
+        var scenarioStr = esc(physRisk.scenario || cVar.scenario || 'SSP2-4.5');
+        var npvUsd = cVar.cumulative_var_npv_usd ? '$' + Number(cVar.cumulative_var_npv_usd).toLocaleString() : '';
+        var heatIdx = (cVar.operational_risk && cVar.operational_risk !== undefined) ? null : null;
+        /* operational risk may be on physRisk or embedded in cVar object from tool output */
+        var opRisk = physRisk.operational_risk || {};
+        var heatVal = opRisk.heat_impact_index_exit != null ? opRisk.heat_impact_index_exit : null;
+        var waterVal = opRisk.water_stress_index_exit != null ? opRisk.water_stress_index_exit : null;
+
+        var opHtml = '';
+        if (heatVal != null || waterVal != null) {
+          opHtml = '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #E2E8F0;font-size:11px;color:#64748B">';
+          opHtml += '<strong>Operational risk indices (not asset value loss):</strong> ';
+          if (heatVal != null) opHtml += 'Heat disruption: <strong>' + esc(String(heatVal)) + '</strong>&nbsp;&nbsp;';
+          if (waterVal != null) opHtml += 'Water stress: <strong>' + esc(String(waterVal)) + '</strong>';
+          opHtml += '</div>';
+        }
+
+        varBox.innerHTML =
+          '<div style="display:flex;align-items:flex-start;gap:16px">' +
+            '<div style="flex:0 0 auto;background:#12253A;color:#fff;border-radius:8px;padding:10px 14px;text-align:center;min-width:80px">' +
+              '<div style="font-size:22px;font-weight:700;letter-spacing:-0.5px">' + varPct + '</div>' +
+              '<div style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;opacity:0.75;margin-top:2px">Climate VaR</div>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:13px;font-weight:600;color:#12253A;margin-bottom:4px">Expected Loss at Risk' + (holdYrs ? ' · ' + holdYrs : '') + '</div>' +
+              '<div style="font-size:12px;color:#475569;line-height:1.6">' +
+                'NPV of cumulative flood + wind damage under <strong>' + scenarioStr + '</strong>. ' +
+                'Annual expected loss at exit: <strong>' + ealExit + '</strong> of asset value' +
+                (npvUsd ? ' (' + npvUsd + ' NPV)' : '') + '. ' +
+                'Primary driver: <strong>' + driver + '</strong>.' +
+              '</div>' +
+              '<div style="margin-top:6px;font-size:10px;color:#94A3B8">' +
+                'Physical risk only · Transition VaR not modeled · Model uncertainty ±30–50% · ' + esc(cVar.covers || 'Flood + Wind') +
+              '</div>' +
+            '</div>' +
+          '</div>' + opHtml;
+        varBox.style.display = '';
+      }
+
       if (physRisk.insurance_note) {
         var pNote = document.getElementById('physical-risk-note');
         if (pNote) pNote.textContent = physRisk.insurance_note;
@@ -1544,7 +1632,7 @@
   <div id="signal-hero-wrapper">
 
     <div class="doc-header">
-      <div class="doc-header-eyebrow">Rapid Sustainability Risk Assessment</div>
+      <div class="doc-header-eyebrow">Pre-Underwriting Sustainability Analysis</div>
       <div class="doc-header-property-name" id="cover-property-name">Property Name</div>
       <div class="doc-header-address" id="cover-property-address">Address</div>
 
@@ -1614,6 +1702,19 @@
   </div>
 
   <!-- ══════════════════════════════════
+       2b. SENSITIVITY TABLE
+  ════════════════════════════════════ -->
+  <div id="sensitivity-section" class="section" style="display:none">
+    <div class="section-label">Investment Trade-offs</div>
+    <h2 class="section-title">CapEx vs. Emissions Reduction</h2>
+    <p style="font-size:12px;color:#475569;margin-bottom:16px;line-height:1.6">How much decarbonization progress can be achieved at different spend levels — for investment analysts sizing the sustainability initiative.</p>
+    <table class="profile-table" id="sensitivity-table">
+      <thead><tr><th>Spend / Unit</th><th>Total Investment</th><th>Emissions Reduction</th><th>What's Included</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════════════
        3. EMISSIONS PROFILE
   ════════════════════════════════════ -->
   <div class="section">
@@ -1640,7 +1741,7 @@
         <!-- CRREM row — hidden by default; JS shows the dt via showEl('profile-crrem-row')
              We hide the entire row via the dt's display; dd is always rendered when row is visible -->
         <div class="profile-row" id="profile-crrem-row" style="display:none">
-          <dt class="profile-dt">vs. CRREM Pathway</dt>
+          <dt class="profile-dt">Carbon Pathway Alignment</dt>
           <dd class="profile-dd" id="profile-crrem">—</dd>
         </div>
 
@@ -1662,9 +1763,10 @@
     <div class="section-label">Physical Climate Risk</div>
     <h2 class="section-title">Climate Hazard Exposure</h2>
     <table class="profile-table" id="physical-risk-table">
-      <thead><tr><th>Hazard</th><th>Risk Level</th><th>Key Finding</th></tr></thead>
+      <thead id="physical-risk-thead"><tr><th>Hazard</th><th>Risk Level</th><th>Key Finding</th></tr></thead>
       <tbody></tbody>
     </table>
+    <div id="climate-var-box" style="display:none;margin-top:20px;border-radius:8px;border:1.5px solid #12253A;background:#F8FAFC;padding:16px 20px"></div>
     <div id="physical-risk-note" style="margin-top:12px;font-size:12px;color:#475569;line-height:1.6"></div>
   </div>
 

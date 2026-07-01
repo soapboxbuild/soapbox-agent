@@ -195,6 +195,60 @@
       }
     },
 
+    "physical_climate_risk": {
+      "type": "object",
+      "description": "Physical climate hazard assessment from os-climate physrisk engine. Include when physrisk MCP data is available for the asset location.",
+      "additionalProperties": false,
+      "properties": {
+        "hazards": {
+          "type": "array",
+          "description": "Per-hazard risk levels at 2030 and 2050 under the assessed scenario.",
+          "items": {
+            "type": "object",
+            "required": ["hazard", "risk_2030", "risk_2050"],
+            "additionalProperties": true,
+            "properties": {
+              "hazard": { "type": "string", "description": "Hazard name (e.g., 'Riverine flood', 'Coastal flood', 'Extreme heat', 'Wind / hurricane', 'Water stress')." },
+              "hazard_key": { "type": "string", "description": "Internal physrisk hazard key (e.g., 'RiverineInundation')." },
+              "risk_2030": { "type": "string", "description": "Risk level at 2030: No risk | Low | Moderate | High | Red flag." },
+              "risk_2050": { "type": "string", "description": "Risk level at 2050: No risk | Low | Moderate | High | Red flag." },
+              "score_2030": { "type": "number", "description": "Numeric score 0–4 at 2030." },
+              "score_2050": { "type": "number", "description": "Numeric score 0–4 at 2050." },
+              "impact_mean_2030": { "type": "number", "description": "Mean annual impact fraction at 2030 from physrisk. For flood/wind: EAL fraction of asset value. For heat/water: disruption index." },
+              "impact_mean_2050": { "type": "number", "description": "Mean annual impact fraction at 2050 from physrisk." },
+              "data_source": { "type": "string" }
+            }
+          }
+        },
+        "overall_risk_2050": { "type": "string", "description": "Highest risk level across all hazards at 2050." },
+        "primary_hazard": { "type": "string", "description": "The hazard with the highest 2050 score." },
+        "scenario": { "type": "string", "description": "IPCC scenario assessed (e.g., 'SSP2-4.5 (moderate emissions)')." },
+        "climate_var": {
+          "type": "object",
+          "description": "Climate physical Value at Risk — expected cumulative financial loss from flood and wind hazards over the hold period.",
+          "additionalProperties": false,
+          "properties": {
+            "expected_annual_loss_pct_2030": { "type": "string", "description": "Expected annual loss as % of asset value at 2030 (e.g., '0.210%')." },
+            "expected_annual_loss_pct_exit": { "type": "string", "description": "Expected annual loss as % of asset value at exit year." },
+            "expected_annual_loss_usd_2030": { "type": "number", "description": "Expected annual loss in USD at 2030." },
+            "expected_annual_loss_usd_exit": { "type": "number", "description": "Expected annual loss in USD at exit year." },
+            "cumulative_var_npv_pct": { "type": "string", "description": "NPV of cumulative expected loss over hold period as % of asset value (e.g., '2.1%'). The headline Climate VaR metric." },
+            "cumulative_var_npv_usd": { "type": "number", "description": "NPV of cumulative expected loss over hold period in USD." },
+            "primary_driver": { "type": "string", "description": "Hazard contributing most to the financial VaR." },
+            "covers": { "type": "string" },
+            "excludes": { "type": "string" },
+            "hold_period_years": { "type": "number" },
+            "exit_year": { "type": "number" },
+            "asset_value_usd": { "type": "number" },
+            "discount_rate": { "type": "number" },
+            "scenario": { "type": "string" },
+            "methodology": { "type": "string" },
+            "confidence": { "type": "string" }
+          }
+        }
+      }
+    },
+
     "deal_signal": {
       "type": "object",
       "description": "Top-line investment signal — the single most decision-useful output of the RSRA.",

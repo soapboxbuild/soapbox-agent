@@ -281,9 +281,23 @@ search_knowledge("minimum energy")
 
 ## Phase 4: Physical Climate Risk
 
-Assess the property's exposure to physical climate hazards using available data. This is increasingly scrutinized by lenders, insurers, and institutional buyers under TCFD.
+Physical risk is now expressed as a **dollar value at risk** — not abstract hazard scores. This aligns with ISSB/TCFD expectations and gives the investment team a number they can underwrite.
 
-### 4A — Hazard Exposure Assessment
+### 4A — physrisk MCP (primary source when lat/lon available)
+
+If you have the property's lat/lon coordinates (geocode the address if needed):
+
+1. Call `assess_physical_risk(lat, lon, address)` → returns flood, heat, wind, water stress scores at 2030 + 2050 under SSP2-4.5
+2. If `asset_value_usd` is available (from OM asking price or AUM estimate), call `calculate_climate_var(lat, lon, asset_value_usd, hold_years=10, scenario="ssp245")` → returns:
+   - **`climate_var.cumulative_var_npv_pct`** — headline metric: expected % of asset value at risk over hold period (flood + wind only, NPV-discounted)
+   - **`climate_var.expected_annual_loss_pct_exit`** — annualized rate at exit year
+   - **`operational_risk`** — heat and water disruption indices (separate from financial VaR)
+
+Use these results verbatim to populate `physical_climate_risk` in the dispatch JSON — do not retype or summarize the scores.
+
+**If asset_value is not yet known:** run `assess_physical_risk` only; omit `climate_var` from the dispatch JSON. Note in the physical risk section: "Call `calculate_climate_var` with purchase price to generate dollar-denominated VaR."
+
+### 4B — Fallback: Manual Sources (use when lat/lon unavailable)
 
 | Hazard | Risk Level | Data Source | Horizon |
 |--------|-----------|------------|---------|
@@ -293,19 +307,18 @@ Assess the property's exposure to physical climate hazards using available data.
 | **Extreme heat** | | NOAA / First Street | 2050 |
 | **Drought / water stress** | | WRI Aqueduct | 2050 |
 | **Hurricane / wind** | | NOAA HURDAT | 100-year |
-| **Freeze / winter storm** | | NOAA | Historical |
 | **Seismic** | | USGS | 2% in 50yr |
 
-### 4B — Risk Flags
+### 4C — Risk Flags
 
 Flag if:
+- physrisk score ≥ 3 (High) on any hazard at 2050
+- Climate VaR > 3% of asset value over hold period
 - Property is in FEMA flood zone AE, AO, VE (high risk)
-- First Street Foundation flood factor ≥ 7 (major risk)
-- Heat index days exceed 10+ extreme heat days/year by 2050
-- Property is in California wildfire "Very High" zone
 - Insurance market has recently withdrawn from jurisdiction (FL, CA coastal)
+- climate_var.primary_driver is "Coastal flood" — flag for Fannie/Freddie financing eligibility
 
-### 4C — Insurance & Financing Implications
+### 4D — Insurance & Financing Implications
 
 If elevated physical risk:
 - Note insurer withdrawals from the market (State Farm CA, Citizens FL)
@@ -638,7 +651,7 @@ Two-phase output: emit a loading skeleton immediately, then dispatch `report-ren
 </style>
 <div class="report">
   <div class="doc-header">
-    <div class="eyebrow">Rapid Sustainability Risk Analysis</div>
+    <div class="eyebrow">Pre-Underwriting Sustainability Analysis</div>
     <div class="prop-name">[PROPERTY NAME]</div>
     <div class="prop-addr">[FULL ADDRESS]</div>
   </div>
@@ -730,7 +743,7 @@ After completing all research phases, dispatch the `report-renderer` subagent wi
       "fuel_profile": "[description]",
       "utility_structure": "[description]",
       "baseline_emissions": "[e.g. ~68 kgCO₂e/m²yr (est.)]",
-      "crrem_pathway": "[gap description — optional]",
+      "crrem_pathway": "[Paris/CRREM alignment — e.g. 'Asset is ~18% above the 2030 carbon-reduction pathway for this asset type — planned measures close the gap by Yr3']",
       "regulation": "[Low|Moderate|High — description]",
       "bpd_chart": {
         "buckets": [{"min_kbtu": 40, "max_kbtu": 60, "count": 12}],
@@ -749,11 +762,49 @@ After completing all research phases, dispatch the `report-renderer` subagent wi
     },
     "seller_questions": ["[question 1]", "[question 2]"],
     "physical_climate_risk": {
+      "scenario": "SSP2-4.5 (moderate emissions)",
+      "overall_risk_2050": "[No risk|Low|Moderate|High|Red flag]",
+      "primary_hazard": "[hazard name]",
       "hazards": [
-        {"hazard": "[name]", "risk_level": "[Low|Moderate|High]", "finding": "[description]"}
+        {
+          "hazard": "[name]",
+          "hazard_key": "[CoastalInundation|RiverineInundation|ChronicHeat|Wind|WaterRisk]",
+          "risk_2030": "[No risk|Low|Moderate|High|Red flag]",
+          "risk_2050": "[No risk|Low|Moderate|High|Red flag]",
+          "score_2030": 1,
+          "score_2050": 2,
+          "data_source": "[WRI Aqueduct Floods v2|NASA NEX-GDDP-CMIP6|IRIS synthetic TC catalog|WRI Aqueduct Water Risk]"
+        }
       ],
-      "insurance_note": "[optional]"
+      "climate_var": {
+        "expected_annual_loss_pct_2030": "[e.g. 0.043%]",
+        "expected_annual_loss_pct_exit": "[e.g. 0.071%]",
+        "expected_annual_loss_usd_2030": "[number]",
+        "expected_annual_loss_usd_exit": "[number]",
+        "cumulative_var_npv_pct": "[e.g. 0.52%] — HEADLINE METRIC",
+        "cumulative_var_npv_usd": "[number]",
+        "primary_driver": "[hazard name]",
+        "covers": "Flood (coastal + riverine) + Wind structural damage",
+        "hold_period_years": 10,
+        "exit_year": 2036,
+        "asset_value_usd": "[number]",
+        "discount_rate": 0.06,
+        "scenario": "[SSP2-4.5 label]",
+        "methodology": "[from calculate_climate_var output]",
+        "confidence": "[from calculate_climate_var output]"
+      },
+      "operational_risk": {
+        "heat_impact_index_exit": "[number from calculate_climate_var]",
+        "water_stress_index_exit": "[number from calculate_climate_var]",
+        "note": "Heat and water indices represent chronic disruption risk — not structural asset value loss."
+      },
+      "insurance_note": "[optional — flag if insurance market withdrawn from jurisdiction]"
     },
+    "decarb_sensitivity": [
+      {"spend_per_unit": "[e.g. 500]", "total_spend": "[e.g. 157500]", "emissions_reduction_pct": "[e.g. 4%]", "label": "[e.g. Lighting + controls only]"},
+      {"spend_per_unit": "[e.g. 1400]", "total_spend": "[e.g. 441000]", "emissions_reduction_pct": "[e.g. 12%]", "label": "[e.g. Full early-hold plan]"},
+      {"spend_per_unit": "[e.g. 3200]", "total_spend": "[e.g. 1008000]", "emissions_reduction_pct": "[e.g. 28%]", "label": "[e.g. Full plan incl. fuel switching]"}
+    ],
     "ghg_scoping": {
       "scopes": [
         {"scope": "Scope 1", "source": "[combustion source]", "annual_tco2e": "[number]", "notes": "[optional]"},
@@ -762,27 +813,10 @@ After completing all research phases, dispatch the `report-renderer` subagent wi
       ],
       "offset_note": "[optional REC/offset calculation]"
     },
-    "water_efficiency": {
-      "wui": "[optional]", "vs_benchmark": "[optional]", "water_stress": "[optional]",
-      "sasb_disclosure": "[optional]", "submeters": "[optional]"
-    },
-    "quality_of_life": {
-      "walk_score": "[e.g. 72 / 100 — Very Walkable]",
-      "bike_score": "[optional]", "transit_score": "[optional]",
-      "google_rating": "[optional]", "ora_ranking": "[optional]"
-    },
-    "affordability": {
-      "avg_rent": "[optional]", "income_required": "[optional]", "tract_mfi": "[optional]",
-      "gap": "[optional]", "tract_income_level": "[optional]", "underserved": "[optional]",
-      "minority_pct": "[optional]", "agency_mission": "[optional]"
-    },
     "certifications_and_debt": {
       "energy_star_recommendation": "[optional]", "leed_recommendation": "[optional]",
       "green_debt": "[optional]", "fund_alignment": "[optional]"
     },
-    "sdg_alignment": [
-      {"sdg": "SDG 7 — Clean Energy", "alignment": "[description]"}
-    ],
     "sources": [
       {"label": "[source name]", "value_cited": "[specific value cited — optional]", "url": "[url — optional]"}
     ],

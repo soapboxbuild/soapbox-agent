@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-build_xlsx.py — RSRA Excel companion builder for soapbox-report-skill.
+build_xlsx.py — RSRA Excel companion builder.
 
-Called by the report-renderer agent after every render. Reads xlsx.json from the
-template directory, applies brand colors, and emits a production-quality .xlsx.
+Reads xlsx.json from an optional spec file, applies brand colors, and emits
+a production-quality .xlsx.
 
 Usage (inline JSON args):
     python build_xlsx.py \\
         --template rsra \\
         --data '{"property": {...}, ...}' \\
         --brand '{"primary_color": "#1B2A3B", ...}' \\
-        --output /path/to/output.xlsx \\
-        --templates-dir /path/to/soapbox-report-skill/templates
+        --output /path/to/output.xlsx
 
 Usage (JSON config file):
     python build_xlsx.py --config /path/to/render_config.json
 
-Where render_config.json keys: template, data, brand, output, templates_dir.
+Where render_config.json keys: template, data, brand, output.
 data and brand may be JSON strings or pre-parsed objects.
 """
 
@@ -785,20 +784,19 @@ def build_workbook(
     data: dict,
     brand: dict,
     output_path: str,
-    templates_dir: str,
 ) -> None:
     """
     Build and save the Excel workbook.
 
     1. Ensure decarb_plan_total is computed.
-    2. Load xlsx.json if present; otherwise auto-derive.
+    2. Load xlsx.json if present alongside this script; otherwise auto-derive.
     3. Build each sheet in order, skipping empty omit_if_empty sheets.
     4. Apply workbook-level style (tab colors, print settings).
     5. Save to output_path.
     """
     ensure_decarb_plan_total(data)
 
-    xlsx_spec_path = os.path.join(templates_dir, template, "xlsx.json")
+    xlsx_spec_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), template, "xlsx.json")
     if os.path.exists(xlsx_spec_path):
         with open(xlsx_spec_path, encoding="utf-8") as fh:
             xlsx_spec: dict = json.load(fh)
@@ -887,13 +885,13 @@ def _load_json_file(path: str, label: str) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build a branded .xlsx companion for a soapbox-report-skill report.",
+        description="Build a branded .xlsx companion for an RSRA report.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
     parser.add_argument(
         "--config",
-        help="JSON config file containing template, data, brand, output, templates_dir.",
+        help="JSON config file containing template, data, brand, output.",
     )
     parser.add_argument("--template", help="Template name (e.g. 'rsra').")
     parser.add_argument(
@@ -905,12 +903,6 @@ def main() -> None:
         help="Brand config as a JSON string (or path to JSON file if prefixed with @).",
     )
     parser.add_argument("--output", help="Output path for the .xlsx file.")
-    parser.add_argument(
-        "--templates-dir",
-        dest="templates_dir",
-        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "templates"),
-        help="Path to the templates directory (default: ../templates relative to this script).",
-    )
 
     args = parser.parse_args()
 
@@ -922,7 +914,6 @@ def main() -> None:
 
     template: Optional[str] = args.template or cfg.get("template")
     output: Optional[str] = args.output or cfg.get("output")
-    templates_dir: str = args.templates_dir or cfg.get("templates_dir", args.templates_dir)
 
     # data / brand: accept JSON string, pre-parsed object, or @filepath notation
     raw_data = args.data or cfg.get("data", "{}")
@@ -954,7 +945,6 @@ def main() -> None:
             data=data,
             brand=brand,
             output_path=output,
-            templates_dir=os.path.abspath(templates_dir),
         )
     except Exception as exc:
         import traceback

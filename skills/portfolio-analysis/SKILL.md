@@ -82,15 +82,32 @@ All RSRA HTML output must conform to these rules. Claude must apply them on ever
 
 ## Step 0: Resolve Run Configuration
 
-**First, search Portfolio Docs for existing financial parameters and sustainability commitments before prompting the user.**
-Check for spreadsheets, IC memos, fund term sheets, or asset registers that contain exit years,
-cap rates, IRR hurdles, or hold periods. Also look for ESG policy statements, investor letters,
-fund mandates, or sustainability reports that express an organizational emissions goal (e.g. "net
-zero by 2040", "carbon neutral by 2035", "50% Scope 1+2 reduction by 2030"). Extract what you
-find, then only ask for what's missing.
+### 0A — Kickoff gate (run this before anything else)
 
-After checking docs, establish the run parameters. Accept them inline if the user
-provided them (e.g. "run with 15% hurdle"), or confirm what was found in docs first.
+Check for a prior kickoff file:
+```
+search_portfolio("portfolio analysis kickoff parameters IRR hurdle")
+```
+
+**If a kickoff file is found:** extract the confirmed parameters from it (IRR hurdle, exit
+params, utility escalation, value method, add-ons, Audette account, scope). Skip to the
+"Confirm before proceeding" block below — present the kickoff params as a summary and ask
+the user to confirm or adjust before running.
+
+**If no kickoff file exists:** do not proceed with the analysis yet. Tell the user:
+> "Before I start the analysis, let me collect the run parameters. This will only take a minute."
+
+Then follow the **`project-kickoff` skill** for project type **`portfolio-analysis`** — read
+`skills/project-kickoff/project-types/portfolio-analysis.md` and work through all 6 questions
+one at a time. The kickoff skill will save a parameter file; once it's saved, return here and
+continue from "Confirm before proceeding."
+
+**If the user explicitly provides all parameters inline** (e.g. "run with 15% hurdle, 2028
+floor, CRREM on, account slug: greystar") and there is no prior kickoff file: accept the inline
+values, skip the kickoff Q&A, but still present the "Confirm before proceeding" summary before
+starting the analysis.
+
+---
 
 ### Parameters
 
@@ -177,10 +194,24 @@ Call `query_portfolio_data()` to get every asset's UUID, name, and current metad
 query_portfolio_data(include_metadata: true, analysis_ready_only: false)
 ```
 
-This returns all assets with their `id` (UUID), `name`, `audette_property_id`, `espm_property_id`, and metadata fields. Build an internal map: `{ asset_name → { uuid, audette_property_id, espm_property_id, metadata } }`.
+The tool returns a **pipe-delimited text block**, one asset per line, in this format:
+```
+ID: <uuid> | Asset: <name> | Address: <addr> | Type: <type> | Built: <year> | GFA: <m²> | Audette: <audette_property_id> | ESPM: <espm_property_id> | Fund: <fund> | Exit: <year> @ <cap_rate>% | Lease: <lease_structure> | Metering: <metering_config> | Analysis ready: yes/no
+```
 
-- `audette_property_id` and `espm_property_id` are **top-level fields**, NOT inside metadata.
-- Asset UUIDs come ONLY from this tool. Never try to extract UUIDs from file paths, URLs, or any other source.
+Fields only appear when they have a value — a missing `Fund:` or `Exit:` field means that metadata has not been set yet.
+
+**Parse each line** and build an internal map:
+```
+{ asset_name → { uuid, audette_property_id, espm_property_id, fund_name, exit_year, exit_cap_rate, lease_structure, metering_config, analysis_ready } }
+```
+
+Critical rules:
+- `ID:` is always the first field — that is the asset UUID to use for all write-back calls.
+- Asset UUIDs come ONLY from the `ID:` field in this response. Never extract UUIDs from file paths, URLs, Audette IDs, or any other source.
+- `audette_property_id` is a top-level field (prefixed `Audette:` in the output), NOT inside the metadata block.
+- `exit_year` and `exit_cap_rate` are in the metadata section (prefixed `Exit:`). If absent, these fields are unset and must be collected from docs or the user.
+- Do NOT call `get_asset_record` per asset — `query_portfolio_data` already returns everything in one call.
 
 Partition assets into:
 - **Analysis-ready** (`metadata.analysis_ready: true`) — proceed
@@ -362,30 +393,47 @@ switch_customer_account("<audette_account_slug>")
 
 Use `list_customer_accounts()` if unsure which slug applies — pick the account whose name matches the client.
 
-#### Step 2 — Load all Audette buildings for this account
+#### Step 2 — Build the property map
 
 ```
-list_buildings()
+list_properties()
 ```
 
-This returns every building in the account. Build a lookup map:
-`{ property_uid → { building_uid, building_name, property_name } }`
+Returns `{ property_uid, property_name }` pairs for the active account. Build:
+`{ property_uid → property_name }`
 
-#### Step 3 — Match each Soapbox asset to its Audette building
+Each asset's `audette_property_id` is a **property UID** in this map. Properties and
+building models are different objects: analysis tools take a `building_model_uid`,
+and one property can contain **multiple** building models.
+
+**NEVER call bare `list_buildings()`** — large accounts contain thousands of buildings
+and the result will not fit. Use `audette__find_buildings` instead (Step 3).
+
+#### Step 3 — Resolve each asset's property to its building models
 
 For each Soapbox asset where `audette_property_id` is not null:
 
 ```
-# audette_property_id is the property_uid in Audette's system
-# Use list_properties() to find the building_uid for this property
-list_properties()   → find property where property_uid == asset.audette_property_id
-                    → get building_uid for that property
+property_name = property_map[asset.audette_property_id]
+audette__find_buildings(name: property_name)
+→ returns all building models whose property_name or building_name matches,
+  each with building_model_uid, gross_floor_area, fund_name, modelling_status
 ```
 
-Then call:
+Then for **every** returned building model:
 ```
-get_building_model_details(building_uid)
+get_building_model_details(building_model_uid)
 ```
+
+**Multi-building properties — aggregate to the asset level:**
+- CapEx, annual savings, and emissions reductions: **sum** across the property's buildings
+- EUI and carbon intensity: **floor-area-weighted average** (weight by `gross_floor_area`)
+- Measures: union the lists; prefix each with the building name when a property has >1 building (e.g. "Bldg A — LED retrofit")
+- CRREM status: use the weighted carbon intensity for the property-level comparison
+- Never report just one building of a multi-building property as if it were the whole asset
+
+If `audette__find_buildings` returns no match for the property name, note the gap and
+fall back to the BPD benchmark path — do not guess a different building.
 
 Pull from the response:
 - `current_eui_kwh_m2` — site EUI from Audette calibrated model
@@ -398,7 +446,7 @@ Pull from the response:
 
 Also pull the capital plan:
 ```
-list_building_plans(building_uid)
+list_building_plans(building_model_uid)   # once per building model in the property
 → get_carbon_reduction_plan_by_id(plan_id)   # for the active plan
 ```
 
@@ -830,7 +878,7 @@ Include with estimated energy data. Label everything `(est.)`. Skip BPD comparis
 Never block the run on a missing Audette link.
 
 **Audette MCP tools unavailable at runtime (auth error, network failure, tool not found):**
-If `switch_customer_account`, `list_buildings`, or `get_building_model_details` return an
+If `switch_customer_account`, `list_properties`, or `get_building_model_details` return an
 error or are not available as tools:
 1. Note at the top of the run: "⚠ Audette MCP unavailable — running on uploaded docs only."
 2. Fall through to uploaded documents as the source for all assets. Doc-sourced figures

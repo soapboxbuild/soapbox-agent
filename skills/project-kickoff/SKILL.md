@@ -6,8 +6,10 @@ description: >
   Adapts questions to the project type. Checks existing asset data before requesting it.
   Saves a structured + narrative project file to projects/<asset-key>/.
   Triggers on: "kick off", "project kickoff", "start a project", "kickoff for",
-  "begin a [type] project", "run a kickoff", "kickoff [asset]".
-version: 1.0.0
+  "begin a [type] project", "run a kickoff", "kickoff [asset]",
+  "run a portfolio analysis", "run portfolio analysis", "analyze the portfolio",
+  "portfolio decarbonization", "portfolio analysis".
+version: 1.1.0
 ---
 
 # Project Kickoff
@@ -26,18 +28,24 @@ Extract from the invocation text:
 
 **Project Type Registry:**
 
-| Trigger keywords | Project Type | Type key |
-|-----------------|-------------|----------|
-| retrofit, retrofit analysis, energy retrofit, mechanical retrofit, building retrofit | Retrofit Analysis | retrofit-analysis |
+| Trigger keywords | Project Type | Type key | Default scope |
+|-----------------|-------------|----------|---------------|
+| retrofit, retrofit analysis, energy retrofit, mechanical retrofit, building retrofit | Retrofit Analysis | retrofit-analysis | asset |
+| portfolio analysis, run portfolio analysis, analyze portfolio, analyze the portfolio, portfolio decarbonization | Portfolio Analysis | portfolio-analysis | portfolio |
 
 If the project type does not match any entry: ask via AskUserQuestion:
 > "What type of project are we kicking off?"
-> Options: Retrofit Analysis | Other (describe)
+> Options: Retrofit Analysis | Portfolio Analysis | Other (describe)
 
-If the asset name is missing from the invocation: ask via AskUserQuestion free text:
+**For `portfolio-analysis` type:** scope is always **portfolio** — do not ask the scope question.
+The "asset name" becomes the portfolio or client name (e.g. "Greystar Q3" or "BCLC").
+If no client/portfolio name is given: ask via AskUserQuestion free text:
+> "What is the name of this portfolio or client?"
+
+**For all other types:** if the asset name is missing from the invocation: ask via AskUserQuestion free text:
 > "What is the name of the asset (or portfolio)?"
 
-If scope is ambiguous: ask via AskUserQuestion:
+If scope is ambiguous (non-portfolio-analysis type): ask via AskUserQuestion:
 > "Is this for a single asset or a portfolio?"
 > Options: Single asset | Portfolio
 
@@ -56,7 +64,12 @@ Follow the question definitions in that file for Steps 3–4.
 
 ## Step 2: Pre-flight Data Scan
 
-Scan for existing data before asking any questions. Run:
+**For `portfolio-analysis` type:** Skip the bash scans below. Instead, follow the pre-flight
+instructions at the top of `skills/project-kickoff/project-types/portfolio-analysis.md` —
+they use portfolio MCP tools (`query_portfolio_data`, `search_portfolio`) rather than
+filesystem commands. Then return here for re-run handling and proceed to the Q&A loop.
+
+**For all other project types**, scan for existing data before asking any questions. Run:
 
 ```bash
 ls .cashflow-models/<asset-key>.json 2>/dev/null && echo "HAS_CASHFLOW" || true

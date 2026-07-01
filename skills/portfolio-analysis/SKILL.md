@@ -11,7 +11,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]", "Greystar analysis", "BCLC analysis",
   after portfolio-ingest completes.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Portfolio Analysis
@@ -122,7 +122,9 @@ Only ask the user for parameters that couldn't be found in the docs. If you foun
 ### 1B — Load all assets
 
 ```sql
-SELECT id, name, address, property_type, metadata
+SELECT id, name, address, city, state, property_type,
+       audette_property_id, espm_property_id,
+       metadata
 FROM assets
 WHERE portfolio_id = '<portfolio_id>'
   -- apply fund_filter if not "all":
@@ -130,12 +132,16 @@ WHERE portfolio_id = '<portfolio_id>'
 ORDER BY name;
 ```
 
+Always include `audette_property_id` and `espm_property_id` in the SELECT — these are the
+top-level columns used to link each Soapbox asset to its Audette building. They are NOT
+stored inside the `metadata` JSONB column.
+
 Partition into:
 - **Analysis-ready** (`analysis_ready: true`) — proceed directly to Phase 2
 - **Missing params** (`analysis_ready: false` or null) — collect before proceeding
 - **Disposed** (`status: 'disposed'`) — include in emissions inventory only
 
-### 1B — Bulk-fill from register (if available)
+### 1C — Bulk-fill from register (if available)
 
 If a spreadsheet or asset register is available (e.g. Greystar asset prioritization sheet),
 parse it first to bulk-populate `exit_year`, `exit_cap_rate`, and `fund_name` before
@@ -147,7 +153,22 @@ python3 ~/soapbox-agent/scripts/portfolio_match.py --mode financial --inputs '<j
 
 Auto-populate any field that can be read from the register. Only prompt for what's still missing.
 
-### 1C — Collect missing parameters asset-by-asset
+**Write back to Soapbox using SQL — do NOT use `update_asset_metadata` (that tool does not exist):**
+
+```sql
+UPDATE assets
+SET metadata = metadata || jsonb_build_object(
+  'fund_name',    '<fund>',
+  'exit_year',    <year>,
+  'exit_cap_rate', <rate>
+)
+WHERE id = '<asset_uuid>';
+```
+
+Run one UPDATE per matched asset. Use the `id` (UUID) from the SELECT in 1B — never
+try to resolve a UUID from an asset name alone; always load it from the database first.
+
+### 1D — Collect missing parameters asset-by-asset
 
 For each asset still missing required fields, present a focused card:
 
@@ -179,7 +200,7 @@ UPDATE assets SET metadata = metadata || '<params_json>'::jsonb WHERE id = '<ass
 
 Show edge-case warnings inline (NNN paradox, solar consent, RUBS recovery, BPS liability).
 
-### 1D — Readiness summary
+### 1E — Readiness summary
 
 Report before proceeding:
 ```
@@ -206,16 +227,14 @@ Confirm:
 > "Found [N_ready] analysis-ready assets. [N_skipped] assets skipped — missing [fields].
 > Ready to run? (y to proceed, or list specific assets to exclude)"
 
-### 1B — Identify Audette gaps
+### 1F — Identify Audette gaps
 
-For each asset, check `metadata.audette_building_id`. Assets without an Audette link will
-have lower-quality energy data.
+For each asset loaded in 1B, check the `audette_property_id` column (NOT `metadata.audette_building_id` — that field does not exist). Assets without an Audette link will have lower-quality energy data.
 
 | Status | Count | Treatment |
 |--------|-------|-----------|
-| Audette-linked | N | Full physics model from Audette |
-| No Audette link | N | Use documents (PCA/audit) + CBECS benchmark estimates — label all values `(est.)` |
-| Audette linked but disconnected | N | Flag and exclude from analysis; do not use stale data |
+| `audette_property_id` not null | N | Full physics model from Audette MCP |
+| `audette_property_id` is null | N | Use documents (PCA/audit) + CBECS benchmark estimates — label all values `(est.)` |
 
 Report the gap count before proceeding. Do not stop — assets without Audette are included with
 lower confidence, clearly labeled.
@@ -284,59 +303,131 @@ pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`), zero Paged.
 Process assets in sequence, streaming one progress line per asset as it completes.
 Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures above hurdle, $2.1M CapEx, +$1.4M value`
 
-### 3A — Load Audette data (mandatory first step — do this before anything else)
+### 3A — Pull from Audette (mandatory first step for every linked asset)
 
-**If Audette is connected, call it for every linked asset.** Then cross-check Audette figures against other available sources — uploaded Greenrock assessments, utility bills, ESPM scores — and reconcile discrepancies before presenting numbers.
+**DO THIS BEFORE reading any uploaded documents.** The Audette MCP is installed for this
+portfolio. Call it for every asset with a non-null `audette_property_id`. Do not skip
+Audette and jump to PDFs — uploaded docs are the secondary source, not the primary.
 
-**Measure blending — synthesize across all sources, assess feasibility critically:**
-
-1. **Compile all recommended measures** from every source: Audette decarb plan, Greenrock utility assessment, PCA capital items, ESPM recommendations. Build a unified measure list per asset.
-
-2. **De-duplicate**: if a measure appears in multiple sources (e.g. LED upgrade in both Audette and Greenrock), keep one entry. Use the most detailed cost estimate and flag which source it came from.
-
-3. **Mark completion status**: if the Greenrock assessment shows a measure was already completed, remove it from the forward-looking CapEx — do not double-count.
-
-4. **Critical feasibility check per measure**:
-   - Is it technically feasible given building vintage, HVAC configuration, and fuel type?
-   - Can it be permitted and built within the hold period? (Heat pumps / envelope: 18+ months lead time; LED/controls: 3–6 months)
-   - Does the LL/TT allocation actually flow savings to the landlord? (NNN tenant-pays = near-zero NOI capture on in-unit measures)
-   - Does it require tenant cooperation or consent (solar on leased roof, sub-metering, RUBS rollout)?
-
-5. **Confidence levels**: label each measure as High / Medium / Low confidence based on data quality. Audette + field-verified Greenrock = High. Audette only or Greenrock only = Medium. CBECS benchmark = Low.
-
-6. **IRR screen last**: only after measures are compiled, de-duped, feasibility-checked, and allocated — then apply the IRR hurdle. A measure that fails on feasibility should be excluded before the IRR screen, not after.
-
-**Audette is the system of record for reconciled plans and calibrated energy models.**
-
-After reconciliation, write findings back to Audette so the model stays current:
-
-1. **Submit utility consumption data** — if utility bills are uploaded and more recent than Audette's baseline, extract monthly consumption and submit to Audette via the energy command. This triggers Audette to re-model the carbon reduction plan with current data.
-
-2. **Mark completed measures** — if Greenrock or PCA documents show a measure was already installed (LED retrofit done, HVAC replaced), mark it complete in Audette so it's removed from the forward-looking decarb plan and not counted in CapEx.
-
-3. **Update equipment records** — if field documents show equipment has been replaced (e.g. new chiller installed 2024) and Audette's equipment schedule doesn't reflect it, update the record so future calibrations are accurate.
-
-4. **Note calibration gaps** — if the Audette model appears based on design specs rather than measured data (common for new buildings), flag this and recommend submitting actual utility bills to recalibrate.
-
-The goal: by the end of the analysis, Audette should be more accurate than when you started. The Audette model is the living system of record — not a static snapshot to read from once.
-
-For each Audette-linked asset:
+#### Step 1 — Switch to the correct Audette account
 
 ```
-switch_customer_account(<client_account_slug>)
-list_buildings() → match by audette_building_id
-get_building_model_details(building_id) → pull:
-  - current_eui_kwh_m2 (actual site EUI from Audette calibrated model)
-  - carbon_intensity_kg_co2_m2 (Scope 1+2, location-based)
-  - crrem_pathway_target_2030 (kgCO2e/m² — CRREM 1.5°C target for asset type)
-  - crrem_misalignment_year
-  - equipment_schedule (age + condition of major systems)
-  - recommended_measures[] (Audette decarb plan — each with capex, annual_savings_kwh, install_cost, measure_type)
+switch_customer_account("<audette_account_slug>")
 ```
 
-**Data hierarchy rule:** Audette is the primary source. Do not replace Audette-provided energy
-data with CBECS estimates. If Audette provides EUI, use it — even if it differs from what the OM
-stated. Flag the discrepancy in the asset report if > 20%.
+For Greystar: `"greystar"`. For BCLC: `"bclc"`. Use `list_customer_accounts()` if unsure
+which slug applies — pick the account whose name matches the client.
+
+#### Step 2 — Load all Audette buildings for this account
+
+```
+list_buildings()
+```
+
+This returns every building in the account. Build a lookup map:
+`{ property_uid → { building_uid, building_name, property_name } }`
+
+#### Step 3 — Match each Soapbox asset to its Audette building
+
+For each Soapbox asset where `audette_property_id` is not null:
+
+```
+# audette_property_id is the property_uid in Audette's system
+# Use list_properties() to find the building_uid for this property
+list_properties()   → find property where property_uid == asset.audette_property_id
+                    → get building_uid for that property
+```
+
+Then call:
+```
+get_building_model_details(building_uid)
+```
+
+Pull from the response:
+- `current_eui_kwh_m2` — site EUI from Audette calibrated model
+- `carbon_intensity_kg_co2_m2` — Scope 1+2, location-based
+- `crrem_pathway_target_2030` — CRREM 1.5°C target for asset type
+- `crrem_misalignment_year`
+- `equipment_schedule` — age and condition of major systems
+- `recommended_measures[]` — Audette decarb plan, each with:
+  - `measure_type`, `capex`, `install_cost`, `annual_savings_kwh`, `annual_savings_$`
+
+Also pull the capital plan:
+```
+list_building_plans(building_uid)
+→ get_carbon_reduction_plan_by_id(plan_id)   # for the active plan
+```
+
+This gives the full measure list with costs, savings, and implementation schedule.
+
+#### Step 4 — Read uploaded documents as secondary source
+
+After loading Audette data, search Portfolio Docs for energy assessments for this asset:
+
+```
+search_portfolio("energy audit [asset name]")
+search_portfolio("Greenrock [asset name]")
+search_portfolio("capital plan [asset name]")
+```
+
+Read any matching documents and extract:
+- Measures recommended (type, description, estimated cost, estimated savings)
+- Measures already completed (if noted as "installed", "completed", "replaced")
+- Equipment condition observations that differ from Audette's equipment schedule
+- Utility consumption data if more recent than Audette's baseline
+
+#### Step 5 — Reconcile Audette vs. uploaded docs
+
+Build a unified measure list per asset, reconciling both sources:
+
+1. **De-duplicate**: if a measure appears in both Audette and a doc (e.g. LED upgrade),
+   keep one entry. Prefer Audette's cost/savings figures — flag the doc source as corroboration.
+   If doc cost differs by > 25%, flag the discrepancy with both figures.
+
+2. **Mark completed measures**: if a doc shows a measure was already installed (e.g. "LED
+   retrofit completed 2023"), **remove it from forward-looking CapEx** and note it as complete.
+   Do not double-count.
+
+3. **Confidence levels**:
+   - `High` — Audette model + field-verified doc agreement
+   - `Medium` — Audette only, or doc only
+   - `Low` — CBECS benchmark estimate (no Audette, no doc data)
+
+4. **Feasibility check per measure**:
+   - Technically feasible given building vintage and HVAC config?
+   - Can it be permitted and built within the hold period?
+     (Heat pumps / envelope: 18+ months lead; LED/controls: 3–6 months)
+   - Does LL/TT allocation flow savings to landlord?
+     (NNN tenant-pays = near-zero NOI capture on in-unit measures)
+   - Requires tenant cooperation? (solar on leased roof, sub-metering, RUBS rollout)
+
+5. **IRR screen last** — apply IRR hurdle only after measures are compiled, de-duped,
+   feasibility-checked, and LL/TT allocated. Exclude feasibility failures before IRR screen.
+
+#### Step 6 — Write reconciled data back to Audette
+
+Audette is the system of record. After reconciliation, update it:
+
+1. **Mark completed measures** — for any measure the docs show as already installed,
+   use `update_custom_plan_measures` to remove it from the active decarb plan so it stops
+   appearing in future CapEx totals.
+
+2. **Submit utility data** — if uploaded utility bills are more recent than Audette's
+   baseline, extract monthly kWh/therms and submit via `add_building_utility_data`.
+   This triggers Audette to recalibrate the carbon reduction plan with current consumption.
+
+3. **Equipment updates** — if docs show equipment replacement (e.g. new chiller 2024) not
+   reflected in Audette's equipment schedule, call `edit_building_attributes` to update it.
+
+4. **Flag calibration gaps** — if the Audette model appears based on design specs rather
+   than measured data (common for new buildings), note in the asset output:
+   "Audette model not yet calibrated — submit utility bills to recalibrate."
+
+**The goal: Audette should be more accurate at the end of the run than at the start.**
+
+**Data hierarchy rule:** Audette is the primary source. Do not replace Audette EUI with
+CBECS estimates if Audette provides a figure — even if it differs from OM stated values.
+Flag discrepancies > 20% but use Audette's number in calculations.
 
 For assets without Audette:
 - Check uploaded documents (PCA, energy audit) for EUI, equipment age, and any measure estimates

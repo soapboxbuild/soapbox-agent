@@ -589,6 +589,8 @@ Generate **only questions that are warranted** by specific risk flags found abov
 
 ## Phase 9: RSRA Recommendation
 
+> **Start Phase 10 template fetch now.** While completing Phase 9, call WebFetch in parallel on both template URLs (layout-pre.html and layout-post.html listed in Phase 10 below). This avoids an extra round-trip at artifact build time.
+
 Based on all factors, issue a formal deal recommendation.
 
 ### 9A — Risk Score
@@ -704,25 +706,34 @@ Two-phase output: emit a loading skeleton immediately, then dispatch `report-ren
 
 ### Phase 2 — Inject Data and Emit Artifact
 
-After completing all research phases, produce the final report by fetching two template parts and concatenating them with the JSON in between:
+⚠️ **CRITICAL — READ BEFORE WRITING THE ARTIFACT:**
 
-1. **Fetch the pre-block** via WebFetch:
+The final artifact is a **pre-built HTML template** that you assemble — you do NOT write HTML. There is no "Get Report Resources" tool for this. The only way to get the template is two direct WebFetch calls.
+
+**Mandatory steps — do not skip, do not substitute:**
+
+1. **Call WebFetch** on this exact URL:
    `https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main/templates/rsra/layout-pre.html`
+   → Store the full response as `PRE_BLOCK`. This is ~3KB of raw HTML.
 
-2. **Fetch the post-block** via WebFetch:
+2. **Call WebFetch** on this exact URL:
    `https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main/templates/rsra/layout-post.html`
+   → Store the full response as `POST_BLOCK`. This is ~43KB of raw HTML + JS.
 
-3. **Emit the artifact** at path `{property-slug}-rsra.html` with this exact structure — the pre block, then the data script tag with your JSON, then the post block:
+3. **Emit the artifact** at path `{property-slug}-rsra.html` by concatenating:
+   ```
+   {full content of PRE_BLOCK — do not modify it}
+   <script id="report-data" type="application/json">
+   {your assembled JSON object}
+   </script>
+   {full content of POST_BLOCK — do not modify it}
+   ```
 
-```
-{content of layout-pre.html}
-<script id="report-data" type="application/json">
-{your assembled JSON object}
-</script>
-{content of layout-post.html}
-```
+**If either WebFetch returns an error**, retry once. If it still fails, write the artifact with only the data block and a note; do NOT fall back to custom HTML.
 
-Do NOT generate your own HTML. Do NOT add Paged.js. Do NOT add any external scripts or stylesheets. The template parts are self-contained — your only job is to assemble them around the data block.
+❌ Do NOT generate your own HTML. ❌ Do NOT write a `<style>` block. ❌ Do NOT write a `<body>`. The template already has all styling, charts, and layout. Your only job is to sandwich the JSON data between the two fetched blocks.
+
+The artifact will appear blank or broken if you skip the WebFetch calls. The dark-cover template with charts will NOT render if you generate your own HTML.
 
 The JSON to inject into the `<script id="report-data">` block:
 

@@ -706,11 +706,12 @@ Two-phase output: emit a loading skeleton immediately, then dispatch `report-ren
 
 After completing all research phases, produce the final report by:
 
-1. **Read** the template file at `templates/rsra/layout.html` (relative to this plugin's base directory — use the Read tool with the full path).
-2. **Replace** the entire content of the `<script id="report-data" type="application/json">` block — everything between the opening and closing `</script>` tags — with your assembled JSON data object.
+1. **Fetch** the template using WebFetch at this URL:
+   `https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main/templates/rsra/layout.html`
+2. **Replace** the entire content of the `<script id="report-data" type="application/json">` block — everything between the opening `<script id="report-data" type="application/json">` tag and the first standalone `</script>` closing tag that follows it — with your assembled JSON data object.
 3. **Emit** the modified HTML as an artifact at path `{property-slug}-rsra.html` (same path as the Phase 1 skeleton, so it overwrites in place).
 
-Do NOT generate your own HTML. Do NOT add Paged.js. Do NOT add any external scripts or stylesheets. The template is self-contained — your only job is to swap the data block.
+Do NOT generate your own HTML. Do NOT add Paged.js. Do NOT add any external scripts or stylesheets. The template is self-contained — your only job is to swap the data block. If the WebFetch fails, retry once before giving up.
 
 The JSON to inject into the `<script id="report-data">` block:
 

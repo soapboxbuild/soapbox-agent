@@ -174,6 +174,13 @@ get_statistics(filters) → peer median EUI + top quartile
 
 Report the property's EUI percentile only when the input EUI is from actual bills or ESPM — not a CBECS estimate.
 
+**Histogram data for chart:** From the `get_statistics()` response, extract:
+- `buckets`: array of `{eui_min, eui_max, count}` objects (kBtu/sqft/yr)
+- `median_eui`: peer median (kBtu/sqft/yr)
+- `target_2030_eui`: CRREM 2030 target for this asset type and climate zone
+
+If `get_statistics()` returns no bucket data, set `bpd_chart_available = false` and skip the histogram. Do NOT estimate or fabricate bucket values.
+
 ### 2D — Web Research
 
 Search for:
@@ -862,6 +869,56 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
     <div class="sec-title">Energy &amp; Emissions Profile</div>
     [If actual EUI available: EUI table + peer comparison + BPD percentile]
     [If no actual EUI: "Measured EUI unavailable — peer comparison not shown to avoid circular benchmarking. CRREM analysis below uses asset-type benchmark (est.)."]
+    [If bpd_chart_available = true: insert histogram SVG below]
+
+**Histogram SVG template** (insert inside the Energy & Emissions section when `bpd_chart_available = true`):
+
+```html
+<div style="margin-top:20px">
+  <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">
+    Peer EUI Distribution — [ASSET CLASS] ([CLIMATE ZONE]) · [N] buildings
+  </div>
+  <svg viewBox="0 0 560 160" width="100%" style="display:block;overflow:visible" aria-label="EUI distribution histogram">
+    <!-- Y-axis label -->
+    <text x="8" y="80" font-size="9" fill="#94A3B8" text-anchor="middle" transform="rotate(-90,8,80)"># Buildings</text>
+    <!-- Bars: one <rect> per bucket. Claude computes x, width, height from bucket data.
+         Chart area: x=28 to x=548 (width=520), y=10 to y=130 (height=120).
+         Bar x = 28 + (bucket_index / total_buckets) * 520
+         Bar width = 520 / total_buckets - 1
+         Bar height = (count / max_count) * 120
+         Bar y = 130 - bar_height -->
+    [BARS — one <rect> per bucket, fill="#CBD5E1", rx="1"]
+
+    <!-- X-axis line -->
+    <line x1="28" y1="130" x2="548" y2="130" stroke="#E2E8F0" stroke-width="1"/>
+
+    <!-- X-axis labels: min, midpoint, max EUI values -->
+    <text x="28" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">[MIN]</text>
+    <text x="288" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">[MID] kBtu/SF/yr</text>
+    <text x="548" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">[MAX]</text>
+
+    <!-- Median line: x = 28 + ((median_eui - min_eui) / (max_eui - min_eui)) * 520 -->
+    <line x1="[MEDIAN_X]" y1="10" x2="[MEDIAN_X]" y2="130"
+          stroke="#12253A" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="[MEDIAN_X]" y="8" font-size="9" fill="#12253A" text-anchor="middle" font-weight="600">
+      Median [MEDIAN_VAL]
+    </text>
+
+    <!-- 2030 target line: x = 28 + ((target_eui - min_eui) / (max_eui - min_eui)) * 520 -->
+    <line x1="[TARGET_X]" y1="10" x2="[TARGET_X]" y2="130"
+          stroke="#4CAF82" stroke-width="1.5"/>
+    <text x="[TARGET_X]" y="8" font-size="9" fill="#1F6B45" text-anchor="middle" font-weight="600">
+      2030 target [TARGET_VAL]
+    </text>
+  </svg>
+  <div style="font-size:11px;color:#94A3B8;margin-top:4px">
+    Source: Lawrence Berkeley National Lab Building Performance Database · [YEAR] release
+  </div>
+</div>
+```
+
+**Circular benchmarking rule:** Never place an asset-specific marker on this chart if the asset EUI is a CBECS estimate. The chart shows the peer landscape only.
+
     [CRREM PATHWAY — label as measured or (est.) source]
   </div>
 

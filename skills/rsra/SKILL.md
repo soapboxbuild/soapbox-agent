@@ -1036,6 +1036,28 @@ If Scope 1 = 0: omit the Scope 1 slice path entirely. The donut is only Scope 2 
     [HAZARD TABLE]
   </div>
 
+  <!-- 7. QUALITY OF LIFE -->
+  <div class="section">
+    <div class="sec-lbl">Livability &amp; Reputation</div>
+    <div class="sec-title">Quality of Life</div>
+
+    [QOL PROFILE — write a `<dl id="qol-dl">` with one `<div class="profile-row">` per score/metric. Each row: `<dt>` for the label (e.g. Walk Score, Bike Score, Transit Score, Google Rating), `<dd>` for the value/narrative.]
+
+    **Status dots** — prepend a colored dot `<span>` to each `<dd>` value:
+
+    ```html
+    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:[COLOR];margin-right:6px;vertical-align:middle;flex-shrink:0"></span>
+    ```
+
+    Color mapping (apply to the score or narrative Claude writes):
+    - `#4CAF82` (green): Walk/Bike/Transit score ≥ 70 · Google rating "strong" / 4.0+ stars
+    - `#F59E0B` (yellow): score 40–69 · Google rating "moderate" / 3.0–3.9 stars
+    - `#EF4444` (red): score < 40 · flagged concern / negative reviews
+    - `#94A3B8` (grey): no data · not scored · "N/A" · "not applicable"
+
+    Apply one dot per `profile-row`. The Walk Score of 20 = red. Bike Score 40 = yellow boundary — use yellow. Transit "not scored" = grey. Google "strong reviews" = green.
+  </div>
+
   <!-- Incentives -->
   <div class="section">
     <div class="sec-lbl">Incentives &amp; Financing</div>

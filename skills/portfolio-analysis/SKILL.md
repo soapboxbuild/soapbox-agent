@@ -32,9 +32,12 @@ value creation, NOI uplift).
 
 ## Step 0: Resolve Run Configuration
 
-**First, search Portfolio Docs for existing financial parameters before prompting the user.**
+**First, search Portfolio Docs for existing financial parameters and sustainability commitments before prompting the user.**
 Check for spreadsheets, IC memos, fund term sheets, or asset registers that contain exit years,
-cap rates, IRR hurdles, or hold periods. Extract what you find, then only ask for what's missing.
+cap rates, IRR hurdles, or hold periods. Also look for ESG policy statements, investor letters,
+fund mandates, or sustainability reports that express an organizational emissions goal (e.g. "net
+zero by 2040", "carbon neutral by 2035", "50% Scope 1+2 reduction by 2030"). Extract what you
+find, then only ask for what's missing.
 
 After checking docs, establish the run parameters. Accept them inline if the user
 provided them ("run Greystar analysis with 15% hurdle"), or confirm what was found in docs first.
@@ -55,6 +58,9 @@ provided them ("run Greystar analysis with 15% hurdle"), or confirm what was fou
 | `value_method` | inclusive | `inclusive` = NOI uplift capitalised at exit cap + added to terminal CF; `standalone` = IRR on savings only without exit value |
 | `top_n_assets` | 10 | Number of assets shown in "Top N by value creation" table |
 | `audette_account` | (ask if not known) | Audette customer account slug for `switch_customer_account` |
+| `include_crrem` | false | Include CRREM pathway analysis: emissions trajectory chart, stranding analysis, pathway-alignment KPIs |
+| `include_bps` | false | Include Building Performance Standards exposure analysis: BPS liability per asset, compliance cost if no action, fine avoidance as a measure benefit |
+| `org_goal` | null | Custom organizational sustainability goal (e.g. "net zero by 2040", "50% emissions reduction by 2035"). If not provided, search Portfolio Docs for ESG policy statements, fund mandates, or investor commitments before asking. When set, all report sections that reference emissions trajectory or CRREM add a line showing gap/progress vs. this goal. |
 
 ### Preset configurations
 
@@ -65,14 +71,15 @@ if one exists, then confirm before proceeding:
 ```
 irr_hurdle: 15%, exit_year_floor: 2028, retrofit_lead_months: 18,
 target_years: [2030, 2035], utility_escalation: 3%, discount_rate: 8%,
-value_method: inclusive, audette_account: greystar
+value_method: inclusive, audette_account: greystar,
+include_crrem: false, include_bps: false
 ```
 
 **BCLC:**
 ```
 irr_hurdle: 12%, exit_year_floor: 2027, target_years: [2030, 2035, 2040],
 utility_escalation: 3%, discount_rate: 7%, value_method: inclusive,
-audette_account: bclc
+audette_account: bclc, include_crrem: false, include_bps: false
 ```
 
 New clients: prompt for each required parameter. Save the confirmed set to a comment
@@ -93,6 +100,9 @@ Utility escal.: [X]%/yr
 Discount rate:  [X]%
 Value method:   [inclusive / standalone]
 Audette acct:   [slug]
+CRREM analysis: [yes / no]
+BPS analysis:   [yes / no]
+Org goal:       [goal statement / none]
 ```
 
 ---
@@ -182,6 +192,7 @@ For each asset still missing required fields, present a focused card:
   Lease structure → gross / nnn / modified-gross / rubs / green-lease
   Metering config → master / individual / submeter-passthrough
   Jurisdiction    → [auto-detected or blank]
+  BPS liable      → [yes / no / unknown]   ← only shown if include_bps: true
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -190,8 +201,10 @@ Only show missing fields. `skip` leaves null and excludes the asset from analysi
 
 Run LL/TT allocation once inputs are known:
 ```bash
-python3 ~/soapbox-agent/scripts/ll_allocation.py --inputs '{"lease_structure":"<val>","metering_config":"<val>","jurisdiction":"<val>","bps_liable":<bool>,"measure_category":"in_unit_hvac"}'
+python3 ~/soapbox-agent/scripts/ll_allocation.py --inputs '{"lease_structure":"<val>","metering_config":"<val>","jurisdiction":"<val>","bps_liable":<bool_or_null>,"measure_category":"in_unit_hvac"}'
 ```
+If `include_bps: false`, pass `bps_liable: null` — the script treats null as "not assessed"
+and omits fine-avoidance benefit from the LL capture calculation.
 
 Write results to asset metadata using `||` merge (preserves Audette/ESPM IDs and docs):
 ```sql
@@ -600,8 +613,8 @@ After all assets complete:
 | Total NOI uplift (annual) | Σ annual_noi_uplift |
 | Total emissions reduction | Σ emissions_reduction_t_co2 |
 | Assets above hurdle | Count where any recommended measure exists |
-| Assets fully pathway-aligned (2035) | Count where carbon_intensity ≤ CRREM 2035 target after measures |
-| Compliance exposure (no action) | Σ compliance_cost_if_no_action |
+| Assets fully pathway-aligned (2035) | Count where carbon_intensity ≤ CRREM 2035 target after measures — **only if `include_crrem: true`** |
+| Compliance exposure (no action) | Σ compliance_cost_if_no_action — **only if `include_bps: true`** |
 
 Report all values with 2 significant figures: `$14M`, `$2.1M`, `68 tCO₂e`, `22 assets`.
 
@@ -635,7 +648,9 @@ Roll up recommended measures across all assets by category:
 | EV charging | 19 | $1.9M | $1.1M | — |
 | Envelope | 6 | $5.8M | $4.2M | 180 tCO₂ |
 
-### 4E — Emissions trajectory: three-scenario time series (2025–2050)
+### 4E — Emissions trajectory: three-scenario time series (2025–2050) *(only if `include_crrem: true`)*
+
+Skip this section entirely if `include_crrem: false`. Do not produce the chart, the scenario JSON, or the stranding flag.
 
 Build a year-by-year portfolio emissions model for three scenarios and the CRREM 1.5°C pathway. This is the centrepiece of the report — it shows where the portfolio is going and what each investment strategy delivers.
 
@@ -695,10 +710,13 @@ Update the same `{client-slug}-portfolio-analysis.html` artifact. Do not create 
 
 [KPI bar — 4 metrics]
   Total CapEx (net)  |  Value Creation  |  Emissions Reduction  |  Assets Above Hurdle
+  If org_goal is set: add a 5th tile showing % of goal achieved under the 15% IRR pathway
 
 [Section: Executive Summary]
-  3–4 sentences: portfolio scope, primary opportunity, headline CapEx and value creation,
-  emissions trajectory vs. CRREM 2035 target.
+  3–4 sentences: portfolio scope, primary opportunity, headline CapEx and value creation.
+  If include_crrem: true, add emissions trajectory vs. CRREM 2035 target.
+  If include_bps: true, add compliance exposure summary.
+  If org_goal is set, add one sentence on gap/progress vs. that goal under each scenario.
 
 [Section: Fund-Level Summary]
   Table: fund | assets | CapEx net | value creation | emissions reduction | avg IRR
@@ -709,23 +727,32 @@ Update the same `{client-slug}-portfolio-analysis.html` artifact. Do not create 
 [Section: Measure Category Summary]
   Table: category | assets | CapEx net | value creation | tCO₂ reduced
 
-[Section: Emissions Trajectory (2025–2050)]
+[Section: Emissions Trajectory (2025–2050)]  ← only if include_crrem: true
   Inline SVG line chart — three scenario lines + CRREM target:
     · BAU (grey dashed)
     · 15% IRR Decarb Pathway (blue solid)  
     · Maximum Decarb (green solid)
     · CRREM 1.5°C Target (red dashed)
+    · Org goal marker (orange dotted vertical line at target year) — only if org_goal is set
   Stranding risk zone shaded between BAU and CRREM lines.
   Below chart: table of portfolio-weighted kgCO₂e/m² at 2030, 2035, 2040, 2050 per scenario.
+  If org_goal is set: add row showing % gap vs. goal at the goal's target year for each scenario.
 
-[Section: CRREM Pathway Analysis]
+[Section: CRREM Pathway Analysis]  ← only if include_crrem: true
   Portfolio emissions trajectory table (current vs. measures, vs. 2030/2035/2040 targets)
   Number of stranding assets today vs. with measures
   Note any assets excluded from pathway analysis (estimated EUI)
 
+[Section: Building Performance Standards Exposure]  ← only if include_bps: true
+  Per-asset BPS liability status (liable / not liable / unknown)
+  Compliance cost if no action (Σ projected fines at target years)
+  Fine avoidance as a measure benefit — shown alongside IRR for each qualifying measure
+
 [Section: Asset-by-Asset Detail]
   One row per asset:
-    Asset name | Fund | Exit | CapEx Net | Value Created | Avg IRR | CRREM Status
+    Asset name | Fund | Exit | CapEx Net | Value Created | Avg IRR
+    + CRREM Status column if include_crrem: true
+    + BPS Exposure column if include_bps: true
   Expandable / linked to per-asset RSRA thread
 
 [Section: Below-Hurdle Measures (reference table)]

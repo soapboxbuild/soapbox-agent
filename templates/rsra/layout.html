@@ -1146,13 +1146,13 @@
     var chartContainer = document.getElementById('emissions-benchmark-chart');
     var bpdChart = emiss.bpd_chart;
     if (chartContainer && bpdChart && bpdChart.buckets && bpdChart.buckets.length > 0) {
-      var bMinE = bpdChart.min_eui || 0;
-      var bMaxE = bpdChart.max_eui || 150;
-      var bMedE = bpdChart.median_eui;
-      var bTgtE = bpdChart.target_eui;
-      var bSubE = (bpdChart.subject_eui != null) ? bpdChart.subject_eui : null;
-      var bPeerN = bpdChart.peer_count || bpdChart.buckets.reduce(function(s,b){return s+(b.count||0);},0);
-      var bAcLabel = (bpdChart.asset_class||'') + (bpdChart.climate_zone ? ' ('+bpdChart.climate_zone+')' : '');
+      var bMinE = Number(bpdChart.min_eui) || 0;
+      var bMaxE = Number(bpdChart.max_eui) || 150;
+      var bMedE = (bpdChart.median_eui != null) ? Number(bpdChart.median_eui) : null;
+      var bTgtE = (bpdChart.target_eui != null) ? Number(bpdChart.target_eui) : null;
+      var bSubE = (bpdChart.subject_eui != null) ? Number(bpdChart.subject_eui) : null;
+      var bPeerN = Number(bpdChart.peer_count || bpdChart.buckets.reduce(function(s,b){return s+(b.count||0);},0));
+      var bAcLabel = esc((bpdChart.asset_class||'') + (bpdChart.climate_zone ? ' ('+bpdChart.climate_zone+')' : ''));
       var bMaxCount = Math.max.apply(null, bpdChart.buckets.map(function(b){return b.count||0;}));
       var bNb = bpdChart.buckets.length;
       var bCx1=28, bCx2=548, bCy1=10, bCy2=130, bCw=520, bCh=120;
@@ -1167,11 +1167,11 @@
       });
       var bMedX=bpdX(bMedE).toFixed(1);
       var bTgtX=bpdX(bTgtE).toFixed(1);
-      var bMedLine=bMedE!=null?'<line x1="'+bMedX+'" y1="'+bCy1+'" x2="'+bMedX+'" y2="'+bCy2+'" stroke="#12253A" stroke-width="1.5" stroke-dasharray="4,3"/><text x="'+bMedX+'" y="8" font-size="9" fill="#12253A" text-anchor="middle" font-weight="600">Median '+bMedE+'</text>':'';
-      var bTgtLine=bTgtE!=null?'<line x1="'+bTgtX+'" y1="'+bCy1+'" x2="'+bTgtX+'" y2="'+bCy2+'" stroke="#4CAF82" stroke-width="1.5"/><text x="'+bTgtX+'" y="'+(bMedE!=null?20:8)+'" font-size="9" fill="#1F6B45" text-anchor="middle" font-weight="600">2030 CRREM '+bTgtE+'</text>':'';
-      var bSubLine=bSubE!=null?'<line x1="'+bpdX(bSubE).toFixed(1)+'" y1="'+bCy1+'" x2="'+bpdX(bSubE).toFixed(1)+'" y2="'+bCy2+'" stroke="#EF4444" stroke-width="2"/><text x="'+bpdX(bSubE).toFixed(1)+'" y="'+(bMedE!=null&&bTgtE!=null?32:8)+'" font-size="9" fill="#991B1B" text-anchor="middle" font-weight="700">This asset '+bSubE+'</text>':'';
+      var bMedLine=Number.isFinite(bMedE)?'<line x1="'+bMedX+'" y1="'+bCy1+'" x2="'+bMedX+'" y2="'+bCy2+'" stroke="#12253A" stroke-width="1.5" stroke-dasharray="4,3"/><text x="'+bMedX+'" y="8" font-size="9" fill="#12253A" text-anchor="middle" font-weight="600">Median '+bMedE+'</text>':'';
+      var bTgtLine=Number.isFinite(bTgtE)?'<line x1="'+bTgtX+'" y1="'+bCy1+'" x2="'+bTgtX+'" y2="'+bCy2+'" stroke="#4CAF82" stroke-width="1.5"/><text x="'+bTgtX+'" y="'+(Number.isFinite(bMedE)?20:8)+'" font-size="9" fill="#1F6B45" text-anchor="middle" font-weight="600">2030 CRREM '+bTgtE+'</text>':'';
+      var bSubLine=Number.isFinite(bSubE)?'<line x1="'+bpdX(bSubE).toFixed(1)+'" y1="'+bCy1+'" x2="'+bpdX(bSubE).toFixed(1)+'" y2="'+bCy2+'" stroke="#EF4444" stroke-width="2"/><text x="'+bpdX(bSubE).toFixed(1)+'" y="'+(Number.isFinite(bMedE)&&Number.isFinite(bTgtE)?32:8)+'" font-size="9" fill="#991B1B" text-anchor="middle" font-weight="700">This asset '+bSubE+'</text>':'';
       var bMid=((bMinE+bMaxE)/2).toFixed(0);
-      chartContainer.innerHTML='<div style="margin-top:20px"><div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Peer EUI Distribution'+(bAcLabel?' — '+bAcLabel:'')+(bPeerN?' · '+bPeerN+' buildings':'')+'</div><svg viewBox="0 0 560 160" width="100%" style="display:block;overflow:visible" aria-label="EUI distribution histogram"><text x="8" y="80" font-size="9" fill="#94A3B8" text-anchor="middle" transform="rotate(-90,8,80)"># Buildings</text>'+bBars+'<line x1="'+bCx1+'" y1="'+bCy2+'" x2="'+bCx2+'" y2="'+bCy2+'" stroke="#E2E8F0" stroke-width="1"/><text x="'+bCx1+'" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">'+bMinE+'</text><text x="288" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">'+bMid+' kBtu/SF/yr</text><text x="'+bCx2+'" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">'+bMaxE+'</text>'+bMedLine+bTgtLine+bSubLine+'</svg><div style="font-size:11px;color:#94A3B8;margin-top:4px">Source: Lawrence Berkeley National Lab Building Performance Database'+(bpdChart.year?' · '+bpdChart.year+' release':'')+'</div></div>';
+      chartContainer.innerHTML='<div style="margin-top:20px"><div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Peer EUI Distribution'+(bAcLabel?' — '+bAcLabel:'')+(Number.isFinite(bPeerN)?' · '+bPeerN+' buildings':'')+'</div><svg viewBox="0 0 560 160" width="100%" style="display:block;overflow:visible" aria-label="EUI distribution histogram"><text x="8" y="80" font-size="9" fill="#94A3B8" text-anchor="middle" transform="rotate(-90,8,80)"># Buildings</text>'+bBars+'<line x1="'+bCx1+'" y1="'+bCy2+'" x2="'+bCx2+'" y2="'+bCy2+'" stroke="#E2E8F0" stroke-width="1"/><text x="'+bCx1+'" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">'+bMinE+'</text><text x="288" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">'+bMid+' kBtu/SF/yr</text><text x="'+bCx2+'" y="145" font-size="9" fill="#94A3B8" text-anchor="middle">'+bMaxE+'</text>'+bMedLine+bTgtLine+bSubLine+'</svg><div style="font-size:11px;color:#94A3B8;margin-top:4px">Source: Lawrence Berkeley National Lab Building Performance Database'+(bpdChart.year?' · '+esc(String(bpdChart.year))+' release':'')+'</div></div>';
       chartContainer.style.display='';
     }
 
@@ -1251,7 +1251,7 @@
           var th=(2*Math.PI/rN)*i-Math.PI/2;
           var anchor=Math.abs(Math.sin(th))>Math.abs(Math.cos(th))?'middle':Math.cos(th)>0?'start':'end';
           var lbl=h.hazard.split('/')[0].trim();
-          rLabels+='<text x="'+lpt.x+'" y="'+lpt.y+'" font-size="10" fill="#475569" text-anchor="'+anchor+'">'+lbl+'</text>';
+          rLabels+='<text x="'+lpt.x+'" y="'+lpt.y+'" font-size="10" fill="#475569" text-anchor="'+anchor+'">'+esc(lbl)+'</text>';
         });
         var radarDiv=document.createElement('div');
         radarDiv.innerHTML='<svg viewBox="-90 0 510 280" width="100%" style="display:block;overflow:visible;margin-bottom:16px" aria-label="Climate hazard radar chart"><text x="144" y="138" font-size="8" fill="#94A3B8">Low</text><text x="144" y="102" font-size="8" fill="#94A3B8">Moderate</text><text x="144" y="32" font-size="8" fill="#94A3B8">High</text><polygon points="'+rRing(36.7)+'" fill="none" stroke="#E2E8F0" stroke-width="1"/><polygon points="'+rRing(73.3)+'" fill="none" stroke="#E2E8F0" stroke-width="1"/><polygon points="'+rRing(110)+'" fill="none" stroke="#E2E8F0" stroke-width="1"/>'+rSpokes+'<polygon points="'+rDataPoly+'" fill="#4CAF82" fill-opacity="0.4" stroke="#12253A" stroke-width="2"/>'+rDots+rLabels+'</svg>';
@@ -1299,7 +1299,7 @@
         var varPct = esc(cVar.cumulative_var_npv_pct);
         var ealExit = esc(cVar.expected_annual_loss_pct_exit || cVar.expected_annual_loss_pct_2030 || '—');
         var driver = esc(cVar.primary_driver || '—');
-        var holdYrs = cVar.hold_period_years ? cVar.hold_period_years + '-yr hold' : '';
+        var holdYrs = Number.isFinite(Number(cVar.hold_period_years)) && cVar.hold_period_years ? Number(cVar.hold_period_years) + '-yr hold' : '';
         var scenarioStr = esc(physRisk.scenario || cVar.scenario || 'SSP2-4.5');
         var npvUsd = cVar.cumulative_var_npv_usd ? '$' + Number(cVar.cumulative_var_npv_usd).toLocaleString() : '';
         var heatIdx = (cVar.operational_risk && cVar.operational_risk !== undefined) ? null : null;

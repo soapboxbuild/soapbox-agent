@@ -1071,6 +1071,65 @@ If Scope 1 = 0: omit the Scope 1 slice path entirely. The donut is only Scope 2 
     [QUESTIONS — only those warranted by specific risk flags found above]
   </div>
 
+  <!-- 10. UN SDG ALIGNMENT -->
+  <div class="section">
+    <div class="sec-lbl">Global Goals</div>
+    <div class="sec-title">UN SDG Alignment</div>
+
+**UN SDG tiles** — replace the plain text first column with a colored tile + name:
+
+For each SDG row, use this tile SVG (40×40px, official UN color, white text):
+
+```html
+<!-- SDG [N] tile — replace [BG] with official color, [N] with number, [SHORT] with abbreviation -->
+<svg viewBox="0 0 40 40" width="40" height="40" style="flex-shrink:0;border-radius:3px" aria-label="SDG [N]">
+  <rect width="40" height="40" fill="[BG]"/>
+  <text x="20" y="15" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.85)" font-weight="600" font-family="-apple-system,Helvetica,Arial,sans-serif">SDG</text>
+  <text x="20" y="26" text-anchor="middle" font-size="14" fill="#fff" font-weight="700" font-family="-apple-system,Helvetica,Arial,sans-serif">[N]</text>
+  <text x="20" y="37" text-anchor="middle" font-size="6" fill="rgba(255,255,255,0.85)" font-family="-apple-system,Helvetica,Arial,sans-serif">[SHORT]</text>
+</svg>
+```
+
+**Official SDG colors and short titles** (all 17):
+| SDG | BG color | Short title |
+|-----|----------|-------------|
+| 1 | `#E5243B` | NO POVERTY |
+| 2 | `#DDA63A` | ZERO HUNGER |
+| 3 | `#4C9F38` | GOOD HEALTH |
+| 4 | `#C5192D` | QUALITY EDU |
+| 5 | `#FF3A21` | GENDER EQ. |
+| 6 | `#26BDE2` | CLEAN WATER |
+| 7 | `#FCC30B` | CLEAN ENERGY |
+| 8 | `#A21942` | DECENT WORK |
+| 9 | `#FD6925` | INDUSTRY |
+| 10 | `#DD1367` | REDUCED INEQ |
+| 11 | `#FD9D24` | SUST. CITIES |
+| 12 | `#BF8B2E` | RESP. CONSUMP |
+| 13 | `#3F7E44` | CLIMATE ACT. |
+| 14 | `#0A97D9` | LIFE BELOW |
+| 15 | `#56C02B` | LIFE ON LAND |
+| 16 | `#00689D` | PEACE JUST. |
+| 17 | `#19486A` | PARTNERSHIPS |
+
+Claude picks only the SDGs materially relevant to this property and investment thesis (typically 3–6 for a real estate acquisition). Omit SDGs with no plausible connection to the asset.
+
+**Row structure** — render as flex rows with tile + full title + alignment narrative:
+
+```html
+<div id="sdg-table" style="display:flex;flex-direction:column;gap:8px">
+  <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F1F4F8">
+    [SDG TILE SVG]
+    <div>
+      <div style="font-size:12px;font-weight:600;color:#12253A;margin-bottom:2px">SDG [N] — [FULL TITLE]</div>
+      <div style="font-size:13px;color:#334155;line-height:1.5">[ALIGNMENT NARRATIVE]</div>
+    </div>
+  </div>
+  [REPEAT FOR EACH RELEVANT SDG]
+</div>
+```
+
+  </div>
+
   <!-- Recommendation -->
   <div class="section">
     <div class="recbox">

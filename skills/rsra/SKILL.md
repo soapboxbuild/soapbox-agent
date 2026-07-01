@@ -926,6 +926,53 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
   <div class="section">
     <div class="sec-lbl">Physical Climate Risk</div>
     <div class="sec-title">Climate Hazard Exposure</div>
+
+    [RADAR CHART — insert before the hazard table]
+
+    Map each hazard row in the table to a numeric value: Low=1, Moderate=2, High=3. N = total number of hazard rows written.
+
+    Spoke angle for hazard i (0-indexed, starting from top): `θ_i = (2π/N)*i − π/2`
+    Point at value v: `x = 140 + (v/3)*110*cos(θ_i)`, `y = 140 + (v/3)*110*sin(θ_i)`
+
+    Ring polygon point i at radius r: `x = 140 + r*cos(θ_i)`, `y = 140 + r*sin(θ_i)`
+    — Low ring r=36.7, Moderate ring r=73.3, High ring r=110
+
+    Label offset r=128; text-anchor: `middle` if top/bottom quadrant (|sin(θ)|>|cos(θ)|), `start` if right half (cos(θ)>0), `end` if left half (cos(θ)<0).
+
+    ```html
+    <svg viewBox="0 0 420 280" width="100%" style="display:block;margin-bottom:16px" aria-label="Climate hazard radar chart">
+
+      <!-- Ring labels -->
+      <text x="144" y="138" font-size="8" fill="#94A3B8">Low</text>
+      <text x="144" y="102" font-size="8" fill="#94A3B8">Moderate</text>
+      <text x="144" y="32" font-size="8" fill="#94A3B8">High</text>
+
+      <!-- Low ring (r=36.7): polygon connecting all Low points -->
+      <polygon points="[LOW_RING_POINTS]"
+        fill="none" stroke="#E2E8F0" stroke-width="1"/>
+      <!-- Moderate ring (r=73.3) -->
+      <polygon points="[MED_RING_POINTS]"
+        fill="none" stroke="#E2E8F0" stroke-width="1"/>
+      <!-- High ring (r=110) -->
+      <polygon points="[HIGH_RING_POINTS]"
+        fill="none" stroke="#E2E8F0" stroke-width="1"/>
+
+      <!-- Spokes: one line per hazard from center to High ring -->
+      [SPOKES — one <line x1="140" y1="140" x2="[spoke_x]" y2="[spoke_y]" stroke="#F1F4F8" stroke-width="1"/> per hazard]
+
+      <!-- Data polygon: connect all hazard data points -->
+      <polygon points="[DATA_POINTS]"
+        fill="#4CAF82" fill-opacity="0.4" stroke="#12253A" stroke-width="2"/>
+
+      <!-- Data point dots -->
+      [DATA_DOTS — one <circle cx="[x]" cy="[y]" r="4" fill="#12253A"/> per hazard]
+
+      <!-- Hazard labels at spoke tips (r=128 offset) -->
+      [LABELS — one <text> per hazard, font-size="10", fill="#475569", text-anchor computed from angle quadrant as described above]
+
+    </svg>
+    ```
+
     [HAZARD TABLE]
   </div>
 

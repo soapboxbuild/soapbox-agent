@@ -605,17 +605,12 @@ Choose one:
 
 Two-phase artifact: emit a loading skeleton immediately, then update with the full report when done.
 
-> **⚡ OUTPUT FORMAT — BOTH ARTIFACTS START WITH `<style>`, NOTHING BEFORE IT**
->
-> - Never open with `<!DOCTYPE html>`, `<html>`, `<body>`, `<div>`, or any other tag before `<style>`.
-> - Never use `<img>` — no org logo, no external images. Inline SVG only.
-> - **If you generate any of these class names, you have invented the wrong template and must restart:** `.main`, `.header`, `.container`, `.property-strip`, `.risk-banner`, `.grid-4`, `.grid-2`, `.grid-3`, `.stat-card`, `.card`, `.card-header`, `.finding`, `.finding-dot`, `.climate-cell`, `.rec`, `.rec-num`, `.rec-body`, `.verdict-banner`, `.verdict-text`, `.stat-row`, `.risk-grid`, `.risk-card`, `.detail-card`.
-
 ### Phase 1 — Loading Skeleton (emit BEFORE any research begins)
 
 **Before running any searches or reading any documents**, emit the artifact at `{property-slug}-rsra.html` using exactly the HTML below. This gives the user immediate visual feedback. Do not emit plain text — use this HTML verbatim, substituting only [PROPERTY NAME], [FULL ADDRESS], and the org name in the meta-strip:
 
 ```html
+<!doctype html>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
@@ -691,16 +686,106 @@ Two-phase artifact: emit a loading skeleton immediately, then update with the fu
 </div>
 ```
 
-### Phase 2 — Complete Report (overwrite the same file when all data is gathered)
+### Phase 2 — Complete Report (update the same file path when done)
 
-> **⚠️ HARD FORMAT RULES — any violation produces a broken report:**
-> 1. Output starts with `<style>` — never `<!DOCTYPE html>`, `<html>`, `<head>`, `<body>`, or ANY tag before `<style>`
-> 2. No `<img>` tags ever — the org logo is NOT in this report; use inline SVG for any marks
-> 3. Colors only: `#12253A` navy · `#4CAF82` green — no orange, no gradient, no CSS variables
-> 4. No external resources — no CDN, no `@import`, no `<script src>`, no `<link>`
-> 5. Use ONLY class names defined in the CSS below — do not invent `.header`, `.container`, `.card`, `.grid-4`, `.risk-banner`, `.stat-card`, `.finding`, `.climate-cell`, `.property-strip`, or any other class not in the template
+```html
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+  .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
+  .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+  .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+  .prop-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
+  .prop-addr{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+  .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
+  .meta-bar{display:flex;gap:32px;padding:14px 40px;background:#F1F4F8;border-top:1px solid #CBD5E1}
+  .meta-item{display:flex;flex-direction:column;gap:2px}
+  .meta-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
+  .shimmer{background:linear-gradient(90deg,#e2e8ef 25%,#f1f5f9 50%,#e2e8ef 75%);background-size:200% 100%;animation:sh 1.4s infinite;border-radius:3px;display:block}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .section{padding:32px 40px;background:#fff;margin-bottom:2px}
+  .section-label,.sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+  .section-title,.sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+  .status{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:12px;color:#64748B;font-weight:500}
+  .dot{width:6px;height:6px;border-radius:50%;background:#4CAF82;animation:pu 1.2s ease-in-out infinite;flex-shrink:0}
+  .dot:nth-child(2){animation-delay:.4s}.dot:nth-child(3){animation-delay:.8s}
+  @keyframes pu{0%,100%{opacity:.25}50%{opacity:1}}
+</style>
+<div class="report">
+  <div class="doc-header">
+    <div class="eyebrow">Rapid Sustainability Risk Analysis</div>
+    <div class="prop-name">[PROPERTY NAME]</div>
+    <div class="prop-addr">[FULL ADDRESS]</div>
+  </div>
+  <div class="meta-strip">
+    <span>Aris · Soapbox Sustainability Intelligence</span>
+    <span>CONFIDENTIAL</span>
+  </div>
+  <div class="meta-bar">
+    <div class="meta-item"><span class="meta-lbl">Asset Type</span><span>[TYPE]</span></div>
+    <div class="meta-item"><span class="meta-lbl">Size</span><span>[SF] SF</span></div>
+    <div class="meta-item"><span class="meta-lbl">Year Built</span><span>[YEAR]</span></div>
+    <div class="meta-item"><span class="meta-lbl">Asking Price</span><span>$[PRICE]</span></div>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Assessment Signal</div>
+    <div class="status"><span class="dot"></span><span class="dot"></span><span class="dot"></span>Researching regulations and energy data…</div>
+    <span class="shimmer" style="width:55%;height:20px;margin-bottom:12px"></span>
+    <span class="shimmer" style="width:100%;height:12px;margin-bottom:7px"></span>
+    <span class="shimmer" style="width:85%;height:12px;margin-bottom:7px"></span>
+    <span class="shimmer" style="width:40%;height:12px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Capital Planning</div>
+    <div class="sec-title">Sustainability CapEx Estimate</div>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:38px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Regulatory Exposure</div>
+    <div class="sec-title">Compliance Risk</div>
+    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:100%;height:30px"></span>
+  </div>
+  <div class="section">
+    <div class="sec-lbl">Due Diligence</div>
+    <div class="sec-title">Seller Questions</div>
+    <span class="shimmer" style="width:100%;height:24px;margin-bottom:2px"></span>
+    <span class="shimmer" style="width:90%;height:24px"></span>
+  </div>
+</div>
+```
 
-**Begin the artifact with these exact bytes — copy the `<style>` block verbatim, then fill in [PLACEHOLDERS]:**
+The report uses a consulting aesthetic — navy header, pure sans-serif, sharp section dividers, no Paged.js, no external CDN, no serif fonts anywhere.
+
+**Typography rule:** Every element must use `-apple-system, 'Helvetica Neue', Arial, sans-serif`. Zero exceptions. No `Georgia`, no `serif`, no web font imports.
+
+**Citation links:** All external links must use `target="_blank" rel="noopener noreferrer"`.
+
+**Numeric precision:** Use 2 significant figures on all calculated values (e.g., `$1.4M` not `$1.427M`, `42 kgCO₂e/m²` not `41.7`). Currency: `$1.4M`, `$620K`, `$38` — never write unnecessary decimal places.
+
+---
+
+### ⚠️ TEMPLATE LOCK — READ BEFORE GENERATING OUTPUT
+
+**These rules are non-negotiable. Violating any one of them produces an unusable report.**
+
+1. **Fragment only** — output starts with `<style>`, never with `<!DOCTYPE html>`, `<html>`, `<head>`, or `<body>`. The artifact system wraps it. If you open a `<body>` tag you are wrong.
+2. **No `<img>` tags** — the org logo is NOT part of this report. No `<img src="https://...">` or any other external image reference. Use inline SVG for any visual marks.
+3. **Exact colors — no substitutions:**
+   - Header/section title: `#12253A` (navy) — never orange, never gradient
+   - Accents/eyebrows: `#4CAF82` (green) — never orange, never red
+   - Page bg: `#F8F9FB` — never white-on-white, never custom brand bg
+   - Do NOT use `--brand`, `--dark`, `--accent`, or any CSS custom property for brand colors. Write them inline.
+4. **No external resources** — no CDN scripts, no `@import url(...)`, no `<link rel="stylesheet">`, no `<script src="...">`. Self-contained SVG only.
+5. **Use the CSS below verbatim** — do not invent new class names, do not add gradient hero sections, do not add a colored navigation bar. Copy the template exactly and fill in `[PLACEHOLDERS]`.
+
+---
+
+**Template structure:**
 
 ```html
 <style>

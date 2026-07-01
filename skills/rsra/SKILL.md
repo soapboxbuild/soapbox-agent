@@ -922,66 +922,6 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
     [CRREM PATHWAY — label as measured or (est.) source]
   </div>
 
-  <!-- 5. GHG SCOPING -->
-  <div class="section">
-    <div class="sec-lbl">GHG Scoping</div>
-    <div class="sec-title">Greenhouse Gas Inventory</div>
-
-    [GHG DONUT CHART — insert before the GHG table; see template below]
-
-    [GHG TABLE — id="ghg-table"; three rows: Scope 1 (combustion), Scope 2 (owner-paid electricity), Scope 3 (tenant energy — excluded from owner boundary); columns: Scope, Source, tCO₂e/yr, Boundary]
-  </div>
-
-**GHG donut chart** (insert before the GHG table when Scope 1+2+3 values are known):
-
-Arc math for a slice from `startAngle` to `endAngle` (radians, 0=top, clockwise):
-```
-x1 = cx + r*sin(startAngle),  y1 = cy - r*cos(startAngle)
-x2 = cx + r*sin(endAngle),    y2 = cy - r*cos(endAngle)
-large_arc = (endAngle - startAngle > π) ? 1 : 0
-outer arc: M x1,y1 A r,r,0,large_arc,1,x2,y2
-inner arc (reverse): L ix2,iy2 A ir,ir,0,large_arc,0,ix1,iy1 Z
-(inner r = r - ring_width; ix/iy use inner r)
-```
-
-Use: cx=90, cy=90, r=70, ring_width=28 (inner r=42).
-Total = Scope1 + Scope2 + Scope3. Each slice angle = (value/total) * 2π.
-Scope 1 starts at 0 (top). Scope 2 follows. Scope 3 follows.
-
-```html
-<div style="display:flex;gap:24px;align-items:flex-start;margin-bottom:16px">
-  <svg viewBox="0 0 180 180" width="180" height="180" style="flex-shrink:0" aria-label="GHG scope breakdown donut">
-
-    <!-- Scope 3 slice (draw first — largest, muted grey) -->
-    <path d="[SCOPE3_ARC_PATH]"
-      fill="#CBD5E1" stroke="#fff" stroke-width="2"/>
-
-    <!-- Scope 2 slice (owner-paid electricity, green) -->
-    <path d="[SCOPE2_ARC_PATH]"
-      fill="#4CAF82" stroke="#fff" stroke-width="2"/>
-
-    [IF SCOPE1 > 0: add Scope 1 slice (combustion, navy)]
-    <path d="[SCOPE1_ARC_PATH]"
-      fill="#12253A" stroke="#fff" stroke-width="2"/>
-
-    <!-- Center label -->
-    <text x="90" y="85" text-anchor="middle" font-size="18" font-weight="700" fill="#12253A">[OWNER_TOTAL]</text>
-    <text x="90" y="100" text-anchor="middle" font-size="9" fill="#64748B">tCO₂e/yr</text>
-    <text x="90" y="113" text-anchor="middle" font-size="8" fill="#94A3B8">owner boundary</text>
-
-  </svg>
-
-  <!-- Legend -->
-  <div style="font-size:12px;line-height:2">
-    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#12253A;margin-right:6px;vertical-align:middle"></span>Scope 1 — [S1] tCO₂e</div>
-    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#4CAF82;margin-right:6px;vertical-align:middle"></span>Scope 2 — [S2] tCO₂e (owner boundary)</div>
-    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#CBD5E1;border:1px dashed #94A3B8;margin-right:6px;vertical-align:middle"></span>Scope 3 — [S3] tCO₂e <em style="color:#94A3B8">(excluded — tenant)</em></div>
-  </div>
-</div>
-```
-
-If Scope 1 = 0: omit the Scope 1 slice path entirely. The donut is only Scope 2 (green arc) + Scope 3 (grey arc).
-
   <!-- Physical Risk -->
   <div class="section">
     <div class="sec-lbl">Physical Climate Risk</div>
@@ -1035,6 +975,65 @@ If Scope 1 = 0: omit the Scope 1 slice path entirely. The donut is only Scope 2 
 
     [HAZARD TABLE]
   </div>
+
+  <!-- 5. GHG SCOPING -->
+  <div class="section">
+    <div class="sec-lbl">GHG Scoping</div>
+    <div class="sec-title">Greenhouse Gas Inventory</div>
+
+    [GHG DONUT CHART — insert before the GHG table; see template below]
+
+    [GHG TABLE — id="ghg-table"; three rows: Scope 1 (combustion), Scope 2 (owner-paid electricity), Scope 3 (tenant energy — excluded from owner boundary); columns: Scope, Source, tCO₂e/yr, Boundary]
+  </div>
+
+**GHG donut chart** (insert before the GHG table when Scope 1+2+3 values are known):
+
+Arc math for a slice from `startAngle` to `endAngle` (radians, 0=top, clockwise):
+```
+x1 = cx + r*sin(startAngle),  y1 = cy - r*cos(startAngle)
+x2 = cx + r*sin(endAngle),    y2 = cy - r*cos(endAngle)
+large_arc = (endAngle - startAngle > π) ? 1 : 0
+outer arc: M x1,y1 A r,r,0,large_arc,1,x2,y2
+inner arc (reverse): L ix2,iy2 A ir,ir,0,large_arc,0,ix1,iy1 Z
+(inner r = r - ring_width; ix/iy use inner r)
+```
+
+Use: cx=90, cy=90, r=70, ring_width=28 (inner r=42).
+Total = Scope1 + Scope2 + Scope3. Each slice angle = (value/total) * 2π.
+Scope 1 starts at 0 (top). Scope 2 follows. Scope 3 follows.
+
+```html
+<div style="display:flex;gap:24px;align-items:flex-start;margin-bottom:16px">
+  <svg viewBox="0 0 180 180" width="180" height="180" style="flex-shrink:0" aria-label="GHG scope breakdown donut">
+
+    <!-- Scope 3 slice (draw first — largest, muted grey) -->
+    <path d="[SCOPE3_ARC_PATH]"
+      fill="#CBD5E1" stroke="#fff" stroke-width="2"/>
+
+    <!-- Scope 2 slice (owner-paid electricity, green) -->
+    <path d="[SCOPE2_ARC_PATH]"
+      fill="#4CAF82" stroke="#fff" stroke-width="2"/>
+
+    [IF SCOPE1 > 0: add Scope 1 slice (combustion, navy)] <path d="[SCOPE1_ARC_PATH]"
+      fill="#12253A" stroke="#fff" stroke-width="2"/>
+
+    <!-- Center label -->
+    <text x="90" y="85" text-anchor="middle" font-size="18" font-weight="700" fill="#12253A">[OWNER_TOTAL]</text>
+    <text x="90" y="100" text-anchor="middle" font-size="9" fill="#64748B">tCO₂e/yr</text>
+    <text x="90" y="113" text-anchor="middle" font-size="8" fill="#94A3B8">owner boundary</text>
+
+  </svg>
+
+  <!-- Legend -->
+  <div style="font-size:12px;line-height:2">
+    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#12253A;margin-right:6px;vertical-align:middle"></span>Scope 1 — [S1] tCO₂e</div>
+    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#4CAF82;margin-right:6px;vertical-align:middle"></span>Scope 2 — [S2] tCO₂e (owner boundary)</div>
+    <div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#CBD5E1;border:1px dashed #94A3B8;margin-right:6px;vertical-align:middle"></span>Scope 3 — [S3] tCO₂e <em style="color:#94A3B8">(excluded — tenant)</em></div>
+  </div>
+</div>
+```
+
+If Scope 1 = 0: omit the Scope 1 slice path entirely. The donut is only Scope 2 (green arc) + Scope 3 (grey arc).
 
   <!-- 7. QUALITY OF LIFE -->
   <div class="section">

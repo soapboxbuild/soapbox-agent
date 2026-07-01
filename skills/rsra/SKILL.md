@@ -605,12 +605,19 @@ Choose one:
 
 Two-phase artifact: emit a loading skeleton immediately, then update with the full report when done.
 
+> **⚡ OUTPUT FORMAT ENFORCEMENT — READ BEFORE GENERATING ANYTHING**
+>
+> Both Phase 1 and Phase 2 artifacts are **HTML fragments** — the system wraps them in a full document.
+> - Phase 1 (skeleton) **starts with `<style>`** — never `<!doctype html>`, `<html>`, `<body>`, or a `<div>`.
+> - Phase 2 (complete report) **starts with `<style>`** — never anything else.
+> - **Forbidden class names** — if you use any of these you have generated the wrong template and must restart: `.main`, `.verdict-banner`, `.verdict-icon`, `.verdict-text`, `.stat-row`, `.stat-box`, `.s-val`, `.s-label`, `.risk-grid`, `.risk-card`, `.rc-label`, `.rc-title`, `.two-col`, `.detail-card`, `.incentive-row`, `.rec-list`, `.rec-item`, `.rec-num`, `.rec-body`, `.flag-banner`, `.findings-table`.
+> - The **only** valid class names are those defined in the template under §TEMPLATE LOCK.
+
 ### Phase 1 — Loading Skeleton (emit BEFORE any research begins)
 
 **Before running any searches or reading any documents**, emit the artifact at `{property-slug}-rsra.html` using exactly the HTML below. This gives the user immediate visual feedback. Do not emit plain text — use this HTML verbatim, substituting only [PROPERTY NAME], [FULL ADDRESS], and the org name in the meta-strip:
 
 ```html
-<!doctype html>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
@@ -781,11 +788,11 @@ The report uses a consulting aesthetic — navy header, pure sans-serif, sharp s
    - Page bg: `#F8F9FB` — never white-on-white, never custom brand bg
    - Do NOT use `--brand`, `--dark`, `--accent`, or any CSS custom property for brand colors. Write them inline.
 4. **No external resources** — no CDN scripts, no `@import url(...)`, no `<link rel="stylesheet">`, no `<script src="...">`. Self-contained SVG only.
-5. **Use the CSS below verbatim** — do not invent new class names, do not add gradient hero sections, do not add a colored navigation bar. Copy the template exactly and fill in `[PLACEHOLDERS]`.
+5. **Your first tokens MUST be `<style>` — commit to the template before writing any content.** Copy the CSS block below verbatim as the very first thing you output. Then use ONLY the class names defined in that CSS. Do not invent new class names. Do not add a hero section, gradient banner, or colored navigation bar. Fill in `[PLACEHOLDERS]` with real data, leave the CSS untouched.
 
 ---
 
-**Template structure:**
+**Template structure — copy this CSS block exactly as your first output, then add sections:**
 
 ```html
 <style>

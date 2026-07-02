@@ -390,6 +390,11 @@ pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`), zero Paged.
 Process assets in sequence, streaming one progress line per asset as it completes.
 Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures above hurdle, $2.1M CapEx, +$1.4M value`
 
+**Progress lines are mandatory, not optional.** During any fan-out longer than ~5 assets
+(pulling models, decarb plans, running DCF), emit a short text line at least every 5
+assets — e.g. `Pulled decarb plans 15/39…`. Never go more than ~10 tool calls without
+a visible line of text; a silent multi-minute tool storm looks like a hang to the user.
+
 ### 3A — Pull all sources, reconcile, write back to Audette
 
 For every asset with an `audette_property_id`: call Audette FIRST (Steps 1–3), then search docs (Step 4), then reconcile (Step 5), then write back (Step 6). **The doc search in Step 4 is secondary and supplementary — never a replacement for Audette.**

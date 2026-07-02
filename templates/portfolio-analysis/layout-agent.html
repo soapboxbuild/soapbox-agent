@@ -154,18 +154,36 @@ th.num,td.num{text-align:right}
     <h2 class="section-title">Top [[TOP_N]] Assets by Value Creation</h2>
     <div style="overflow-x:auto">
     <table>
-      <thead><tr>
-        <th>#</th>
-        <th>Asset</th>
-        <th>Fund</th>
-        <th class="num">Exit</th>
-        <th class="num">CapEx Net</th>
-        <th class="num">Value Created</th>
-        <th>Lead Measure</th>
-      </tr></thead>
+      <thead>
+        <!-- Dual-header: current-state anchors (left) vs outcome-focused metrics (right) -->
+        <tr>
+          <th colspan="4" style="background:#F8F9FB;border-bottom:none;color:#94A3B8;font-size:9px;letter-spacing:.1em">ASSET</th>
+          <th colspan="2" style="background:#EFF6FF;border-bottom:none;color:#1E40AF;font-size:9px;letter-spacing:.1em;text-align:center">CURRENT STATE</th>
+          <th colspan="3" style="background:#F0FDF4;border-bottom:none;color:#1F6B45;font-size:9px;letter-spacing:.1em;text-align:center">OUTCOME-FOCUSED</th>
+        </tr>
+        <tr>
+          <th>#</th>
+          <th>Asset</th>
+          <th>Fund</th>
+          <th class="num">Exit</th>
+          <th class="num" style="background:#EFF6FF">Emissions (tCO₂e)</th>
+          <th class="num" style="background:#EFF6FF">% Reduction Possible</th>
+          <th class="num" style="background:#F0FDF4">CapEx Net</th>
+          <th class="num" style="background:#F0FDF4">Value Created</th>
+          <th style="background:#F0FDF4">Lead Measure</th>
+        </tr>
+      </thead>
       <tbody>
         [[TOP_ASSETS_ROWS]]
-        <!-- Each row: <tr><td><span class="rank-badge">1</span></td><td>Observer Park</td><td>GGIF</td><td class="num">2031</td><td class="num">$1.8M</td><td class="num">$4.2M</td><td>Heat pump retrofit</td></tr> -->
+        <!-- Each row: <tr>
+          <td><span class="rank-badge">1</span></td>
+          <td>Observer Park</td><td>GGIF</td><td class="num">2031</td>
+          <td class="num" style="background:#EFF6FF">1,240</td>
+          <td class="num" style="background:#EFF6FF">68%</td>
+          <td class="num" style="background:#F0FDF4">$1.8M</td>
+          <td class="num" style="background:#F0FDF4">$4.2M</td>
+          <td style="background:#F0FDF4">Heat pump retrofit</td>
+        </tr> -->
       </tbody>
     </table>
     </div>
@@ -183,10 +201,12 @@ th.num,td.num{text-align:right}
         <th class="num">CapEx Net</th>
         <th class="num">Value Creation</th>
         <th class="num">tCO₂ Reduced</th>
+        <th class="num">$/tCO₂</th>
       </tr></thead>
       <tbody>
         [[MEASURE_CATEGORY_ROWS]]
-        <!-- Each row: <tr><td>LED lighting</td><td class="num">28</td><td class="num">$2.1M</td><td class="num">$3.8M</td><td class="num">120 tCO₂</td></tr> -->
+        <!-- Each row: <tr><td>LED lighting</td><td class="num">28</td><td class="num">$2.1M</td><td class="num">$3.8M</td><td class="num">120 tCO₂</td><td class="num">$31,700</td></tr> -->
+        <!-- $/tCO₂ = Value Creation ÷ tCO₂ Reduced (Value Created per tonne) -->
       </tbody>
     </table>
     </div>
@@ -199,11 +219,14 @@ th.num,td.num{text-align:right}
   <div class="section" id="section-emissions">
     <div class="section-label">Pathway Analysis</div>
     <h2 class="section-title">Emissions Trajectory (2025–2050)</h2>
-    <!-- Inline SVG line chart — agent computes coordinates from trajectory data:
-         X axis: 2025–2050, Y axis: kgCO₂e/m² portfolio weighted average
-         Lines: BAU (grey dashed), CRREM target (red dashed), 15% IRR pathway (blue solid), Max decarb (green solid)
-         Shaded area between BAU and CRREM = stranding risk zone
-         If org_goal is set: add vertical orange dotted line at goal target year, labeled with goal -->
+    <!-- Inline SVG stacked-area / line chart — agent computes coordinates from trajectory data:
+         X axis: 2025–2050
+         Y axis: ABSOLUTE tCO₂e/yr (portfolio total, NOT intensity) — e.g. "1,200 tCO₂e"
+         Stacked area fill by measure category (grey=BAU/grid decay, purple=heating, pink=DHW, teal=renewables, blue=lighting/envelope)
+         Lines: BAU (grey dashed), CRREM target (red dashed, plotted on secondary right axis as kgCO₂e/m² intensity for comparison), 15% IRR pathway (blue solid), Max decarb (green solid)
+         Shaded area between BAU and 15% IRR = opportunity zone
+         If org_goal is set: add vertical orange dotted line at goal target year, labeled with goal
+         NOTE: the CRREM pathway section below uses intensity (kgCO₂e/m²) for CRREM compliance comparison — this trajectory uses absolute tCO₂e as the primary metric -->
     <div class="chart-wrap">
       [[EMISSIONS_SVG]]
     </div>
@@ -333,7 +356,12 @@ th.num,td.num{text-align:right}
         <th class="num">Exit</th>
         <th class="num">CapEx Net</th>
         <th class="num">Value Created</th>
+        <th class="num">% Reduction</th>
         <th class="num">Avg IRR</th>
+        <!-- % REDUCTION = (tCO₂ Reduced ÷ Current Emissions) × 100 -->
+        <!-- VALUE IMPACT % GAV COLUMN — add only when GAV is available for the asset:
+             <th class="num">Value Impact % GAV</th>
+             Values: e.g. "1.2%" or omit column entirely if GAV not available for majority of assets -->
         <!-- CRREM STATUS COLUMN — add when include_crrem: true:
              <th>CRREM Status</th>
              Values: <span class="badge badge-green">aligned</span> / <span class="badge badge-amber">at risk</span> / <span class="badge badge-red">stranded</span> -->

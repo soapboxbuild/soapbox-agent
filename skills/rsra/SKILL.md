@@ -162,6 +162,8 @@ If Audette found: use the Audette carbon intensity as the baseline, cite the Aud
 
 If not found: "Building not yet in Audette — proceeding from OM data and benchmarks."
 
+**CRITICAL — Audette not found:** When Audette fails to match the building, start fresh from the OM and web. **Never recycle data from a prior RSRA run on this asset** — prior reports may contain inferred or hallucinated assumptions that will silently propagate. Treat every failed Audette lookup as a clean slate: OM → web research → explicit inferences labeled `(est.)`. Do not copy fuel type, building description, EUI, or any other field from an old report.
+
 #### Fuel Type Verification — REQUIRED before accepting Audette model output
 
 Audette models default to **mixed-fuel** when no actual meter data exists. Mixed-fuel carries Scope 1 emissions (on-site gas combustion) that dramatically inflate the carbon baseline and CapEx estimates compared to an all-electric building. **Always verify fuel type from the OM and web before trusting model output.**

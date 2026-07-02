@@ -55,12 +55,38 @@ app.post('/mcp', async (req, res) => {
           isError: true,
         }
       }
+      // Validate required sections that render as invisible when missing
+      const warnings: string[] = []
+      if (report_type === 'rsra') {
+        const d = data as Record<string, unknown>
+        const sens = d.decarb_sensitivity
+        if (!sens || !Array.isArray(sens) || (sens as unknown[]).length === 0) {
+          warnings.push('⚠️ MISSING decarb_sensitivity: the sensitivity chart and table will be hidden. Add 3 rows from decarb_plan (e.g. Phase 1 only / Phase 1+2 / Full plan) with: label, total_spend, spend_per_unit, emissions_reduction_pct, noi_impact_annual, value_delta_pct.')
+        }
+        if (!d.physical_climate_risk) {
+          warnings.push('⚠️ MISSING physical_climate_risk: climate hazard section will be hidden.')
+        }
+        if (!d.ghg_scoping) {
+          warnings.push('⚠️ MISSING ghg_scoping: GHG scope section will be hidden.')
+        }
+      }
+
       const json = JSON.stringify(data)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')
+        .replace(/ /g, '\\u2028')
+        .replace(/ /g, '\\u2029')
       const rendered = html.replace(
         /<script id="report-data"[^>]*>[\s\S]*?<\/script>/,
         `<script id="report-data" type="application/json">${json}</script>`
       )
-      return { content: [{ type: 'text' as const, text: rendered }] }
+
+      const resultText = warnings.length > 0
+        ? warnings.join('\n') + '\n\n⛔ Fix the above before showing to user. The HTML is attached below:\n\n' + rendered
+        : rendered
+
+      return { content: [{ type: 'text' as const, text: resultText }] }
     }
   )
 

@@ -763,9 +763,18 @@ Two-phase output: (1) emit loading skeleton + fetch template simultaneously at s
 
 ⛔ **DO NOT write your own HTML.** The template contains all CSS, layout, and JavaScript rendering. Your only job is to compute the data object and call `fill_report`.
 
+**Pre-flight checklist — verify ALL fields are present before calling `fill_report`:**
+- [ ] `decarb_plan` — at least 1 measure with `measure`, `capex_total`, `timing`, `emissions_reduction_pct`
+- [ ] `decarb_sensitivity` — **REQUIRED, 3 rows**: derive from decarb_plan (e.g. "Phase 1 only", "Phase 1+2", "Full plan"). Each row needs `label`, `total_spend`, `spend_per_unit` (if multifamily), `emissions_reduction_pct` (number), `noi_impact_annual`, `value_delta_pct`. **If this array is missing or empty, the sensitivity chart and table will be completely invisible in the report — this is a critical omission.**
+- [ ] `deal_signal.level` — one of: `"Low Risk"` · `"Moderate Risk — Opportunity"` · `"Moderate Risk — CapEx"` · `"High Transition Risk"`
+- [ ] `emissions_profile.fuel_profile`, `baseline_emissions`, `regulation`
+- [ ] `physical_climate_risk.hazards` — at least 3 hazards with `risk_2030` and `risk_2050`
+- [ ] `ghg_scoping.scopes` — Scope 1, 2, and 3 entries
+
 **Required sequence — no exceptions:**
 1. Compute all values from Phase 1–9 research.
-2. Call `fill_report` with the nested JSON data object — the server injects it into the template and the browser renders everything (charts, tables, cards) automatically:
+2. Run through the pre-flight checklist above — confirm every required field is populated.
+3. Call `fill_report` with the nested JSON data object — the server injects it into the template and the browser renders everything (charts, tables, cards) automatically:
 
 ```json
 fill_report({

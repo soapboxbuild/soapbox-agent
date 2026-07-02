@@ -904,6 +904,20 @@ fill_report({
 - `emissions_profile.bpd_chart` — optional; include when BPD bucket data is available (see Phase 2C); omit `subject_eui` unless EUI is actually measured
 - `disposition_mode: true` — adds a "Sustainability Passport — Disposition / Exit" banner
 
+**GHG scope boundary — landlord perspective (GHG Protocol Cat. 13 / GRESB):**
+
+Always report from the **landlord operational boundary**, not the whole-building boundary:
+
+| Scope | What it covers | Common multifamily example |
+|-------|---------------|---------------------------|
+| **Scope 1** | On-site combustion the landlord operates | Central boiler gas, common-area generators. Zero for all-electric buildings. |
+| **Scope 2** | Electricity/heat the landlord **purchases** | Common area electricity, shared mechanical systems, landlord-paid utilities only. For a 300-unit building where units are resident-metered, this is typically ~5–15% of whole-building consumption. |
+| **Scope 3** | All tenant energy — **regardless of fuel type** (GHG Protocol Cat. 13: Downstream Leased Assets) | Resident-metered unit electricity, resident gas, any submetered tenant loads. This is Scope 3 even if the fuel is electricity, because the tenant — not the landlord — is the operator of that space. |
+
+⚠️ **Common error to avoid:** Do NOT put whole-building electricity in Scope 2. Scope 2 = landlord-purchased electricity only. Whole-building electricity minus landlord share = Scope 3 (tenant). Getting this wrong inflates Scope 2 by 7–10× and makes the donut chart misleading.
+
+The `annual_tco2e` field for each scope row must reflect the landlord boundary, not the whole-building total. Show whole-building in the `notes` field if useful for context.
+
 After emitting the artifact:
 1. Write a 3–5 sentence summary in chat: deal signal, top CapEx measure, key risk flag.
 2. Offer to add the CapEx estimate as a line item in the underwriting model.

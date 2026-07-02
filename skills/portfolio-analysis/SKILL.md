@@ -164,7 +164,19 @@ uploaded as spreadsheets, IC memos, or fund term sheets. Extract what you can be
 
 **If the user attaches a file inline in the thread** (e.g. a spreadsheet with exit years), its content is already in the message — read it directly. Do NOT web_fetch the attachment URL or the Supabase signed URL.
 
-For documents already uploaded to the portfolio (not attached inline), use `search_portfolio`. **Never web_fetch any URL to access portfolio docs — `search_portfolio` is the only way to read uploaded file content.**
+For documents already uploaded to the portfolio (not attached inline), two tools — pick by content type:
+
+- **`read_portfolio_file(file_name)`** — for SPREADSHEETS and any file where exact
+  cell values matter (exit years, cap rates, asset registers, utility tables).
+  Returns row-aligned CSV per sheet. Semantic search chunks flatten tables and lose
+  row alignment — never rely on `search_portfolio` for per-asset numeric parameters.
+- **`search_portfolio(query)`** — for narrative documents (IC memos, ESG policies,
+  audits) where you need relevant passages, not exact rows.
+
+**Never web_fetch any URL to access portfolio docs.**
+
+Workflow: `list_portfolio_files()` to see what exists → `read_portfolio_file` for each
+financial spreadsheet → `search_portfolio` for narrative parameters.
 
 Call `search_portfolio` with specific terms to find financial parameters:
 ```
@@ -222,7 +234,10 @@ Partition assets into:
 
 If the user attaches a spreadsheet in the thread, its content is already in the message — read it directly from the message context. Do NOT web_fetch any URL to access an attached file.
 
-If a spreadsheet or asset register is found (in the message or via `search_portfolio`), match its rows to the UUID map from 1B by asset name (fuzzy match on name). Then write parameters back:
+If a spreadsheet or asset register exists in the portfolio files, read it with
+`read_portfolio_file(file_name)` — this returns actual rows, so each asset's exit
+year/cap rate stays glued to its name. Match rows to the UUID map from 1B by asset
+name (fuzzy match). Then write parameters back:
 
 ```
 update_asset_metadata(asset_id: "<uuid-from-1B>", updates: { fund_name: "<fund>", exit_year: <year>, exit_cap_rate: <rate> })

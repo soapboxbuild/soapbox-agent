@@ -740,21 +740,63 @@ Two-phase output: (1) emit loading skeleton + fetch template simultaneously at s
 ⛔ **DO NOT write your own HTML.** The template contains all CSS, layout, and structure. Your only job is to substitute placeholders.
 
 **Required sequence — no exceptions:**
-1. The template HTML was returned by `get_report_resources({"template":"rsra"})` in Phase 1B above. Use that HTML exactly.
-2. Find every `[[PLACEHOLDER]]` marker in the template.
-3. Substitute each one with your computed value (see reference below).
-4. Emit the artifact at `{property-slug}-rsra.html` using this substituted HTML — nothing else.
+1. Compute all values from Phase 1 data using the reference schema below.
+2. Call `fill_report` — the server fetches the template and substitutes placeholders:
 
-If `get_report_resources` returned an error or was not called yet, call it now (`{"template":"rsra"}`) and wait for the response before emitting. Do not fall back to inline HTML.
+```json
+fill_report({
+  "template": "rsra",
+  "title": "{Property Name} — RSRA",
+  "data": {
+    "PROPERTY_NAME": "4400 Prairie Crossing",
+    "FULL_ADDRESS": "4400 Prairie Crossing, Prosper TX 75078",
+    "REPORT_DATE": "July 2, 2026",
+    "ORG_NAME": "Prose Frontier",
+    "LOGO_URL": "https://...",
+    "RISK_SCORE": "6.2",
+    "RISK_LABEL": "Moderate Risk — CapEx",
+    "RISK_LEVEL_CLASS": "signal-moderate",
+    "RISK_LEVEL": "Moderate",
+    "RISK_CLASS": "moderate",
+    "RISK_DESC": "One sentence explaining the risk driver.",
+    "RISK_DIMENSION": "Transition",
+    "DEAL_SIGNAL_CLASS": "moderate",
+    "DEAL_SIGNAL_LABEL": "Moderate Risk — CapEx",
+    "DEAL_SIGNAL_NARRATIVE": "One to two sentences on deal signal.",
+    "CAPEX_TOTAL_MID": "$2.1M",
+    "CAPEX_PER_UNIT": "$11,200/unit",
+    "CAPEX_PER_SF": "$18/SF",
+    "CAPEX_RANGE": "$1.8M–$2.4M",
+    "MANDATORY_CAPEX": "$450K",
+    "MANDATORY_NOTE": "Required for LL97 compliance by 2030.",
+    "CVAR_PCT": "0.52%",
+    "CVAR_USD": "$104,000",
+    "CVAR_PRIMARY_DRIVER": "Riverine Flooding",
+    "EAL_PCT": "0.043%",
+    "SCENARIO": "SSP2-4.5 (moderate emissions)",
+    "COVERS": "Flood (coastal + riverine) + Wind structural damage",
+    "HOLD_PERIOD": "10",
+    "CAPEX_TABLE": "<table>...</table>",
+    "REGULATORY_TABLE": "<table>...</table>",
+    "ENERGY_CONTENT": "<div>...</div>",
+    "CLIMATE_RISK_TABLE": "<table>...</table>",
+    "OPP_CARDS": "<div class=\"opp-card\">...</div>",
+    "FINDINGS_TABLE": "<table>...</table>",
+    "SELLER_QUESTIONS": "<ul><li>...</li></ul>"
+  }
+})
+```
 
-**Placeholder rules:**
+**Key rules:**
+- Every key in `data` must be UPPERCASE_WITH_UNDERSCORES matching the `[[PLACEHOLDER]]` name exactly
+- Do not nest objects — all values must be flat strings or HTML fragment strings
 - Do not add `<style>` blocks or change CSS class names — all styles are in the template
-- Write complete HTML fragments for block placeholders: `[[CAPEX_TABLE]]`, `[[REGULATORY_TABLE]]`, `[[ENERGY_CONTENT]]`, `[[CLIMATE_RISK_TABLE]]`, `[[OPP_CARDS]]`, `[[FINDINGS_TABLE]]`, `[[SELLER_QUESTIONS]]`
-- Use template CSS classes: `.risk-card.low/moderate/high`, `.badge-green/.badge-yellow/.badge-red/.badge-grey`, `table/th/td`, `.opp-card`
-- `[[RISK_LEVEL_CLASS]]`: use `signal-low` / `signal-moderate` / `signal-high` / `signal-critical`
-- `[[DEAL_SIGNAL_CLASS]]`: use `low` / `moderate` / `high`
+- Block placeholders accept full HTML fragments using template classes: `.risk-card.low/moderate/high`, `.badge-green/.badge-yellow/.badge-red/.badge-grey`, `table/th/td`, `.opp-card`
+- `RISK_LEVEL_CLASS`: `signal-low` / `signal-moderate` / `signal-high` / `signal-critical`
+- `DEAL_SIGNAL_CLASS`: `low` / `moderate` / `high`
+- `LOGO_URL`: from Get Brand tool (use `""` if unavailable)
 
-**Reference — data fields to compute and embed in your HTML sections:**
+**Reference — underlying data to compute before filling placeholders:**
 
 ```json
 {

@@ -737,111 +737,143 @@ Two-phase output: (1) emit loading skeleton + fetch template simultaneously at s
 
 ### Phase 2 — Fill Template and Emit Final Artifact
 
-⛔ **DO NOT write your own HTML.** The template contains all CSS, layout, and structure. Your only job is to substitute placeholders.
+⛔ **DO NOT write your own HTML.** The template contains all CSS, layout, and JavaScript rendering. Your only job is to compute the data object and call `fill_report`.
 
 **Required sequence — no exceptions:**
-1. Compute all values from Phase 1 data using the reference schema below.
-2. Call `fill_report` — the server fetches the template and substitutes placeholders:
+1. Compute all values from Phase 1–9 research.
+2. Call `fill_report` with the nested JSON data object — the server injects it into the template and the browser renders everything (charts, tables, cards) automatically:
 
 ```json
 fill_report({
   "template": "rsra",
   "title": "{Property Name} — RSRA",
   "data": {
-    "PROPERTY_NAME": "4400 Prairie Crossing",
-    "FULL_ADDRESS": "4400 Prairie Crossing, Prosper TX 75078",
-    "REPORT_DATE": "July 2, 2026",
-    "ORG_NAME": "Prose Frontier",
-    "LOGO_URL": "https://...",
-    "RISK_SCORE": "6.2",
-    "RISK_LABEL": "Moderate Risk — CapEx",
-    "RISK_LEVEL_CLASS": "signal-moderate",
-    "RISK_LEVEL": "Moderate",
-    "RISK_CLASS": "moderate",
-    "RISK_DESC": "One sentence explaining the risk driver.",  ← REQUIRED — do not omit
-    "RISK_DIMENSION": "Transition",                          ← REQUIRED — do not omit (e.g. "Transition" or "Physical")
-    "DEAL_SIGNAL_CLASS": "moderate",
-    "DEAL_SIGNAL_LABEL": "Moderate Risk — CapEx",
-    "DEAL_SIGNAL_NARRATIVE": "One to two sentences on deal signal.",
-    "CAPEX_TOTAL_MID": "$2.1M",
-    "CAPEX_PER_UNIT": "$11,200/unit",
-    "CAPEX_PER_SF": "$18/SF",
-    "CAPEX_RANGE": "$1.8M–$2.4M",
-    "MANDATORY_CAPEX": "$450K",
-    "MANDATORY_NOTE": "Required for LL97 compliance by 2030.",
-    "CVAR_PCT": "0.52%",
-    "CVAR_USD": "$104,000",
-    "CVAR_PRIMARY_DRIVER": "Riverine Flooding",
-    "EAL_PCT": "0.043%",
-    "SCENARIO": "SSP2-4.5 (moderate emissions)",
-    "COVERS": "Flood (coastal + riverine) + Wind structural damage",
-    "HOLD_PERIOD": "10",
-    "CAPEX_TABLE": "<table>...</table>",
-    "REGULATORY_TABLE": "<table>...</table>",
-    "ENERGY_CONTENT": "<div>...</div>",
-    "CLIMATE_RISK_TABLE": "<table>...</table>",
-    "OPP_CARDS": "<div class=\"opp-card\">...</div>",
-    "FINDINGS_TABLE": "<table>...</table>",
-    "SELLER_QUESTIONS": "<ul><li>...</li></ul>"
+    "property": {
+      "name": "4400 Prairie Crossing",
+      "address": "4400 Prairie Crossing, Prosper TX 75078",
+      "type": "multifamily",
+      "units": 200,
+      "year_built": 1995,
+      "zip": "75078"
+    },
+    "decarb_plan": [
+      {
+        "measure": "Heat pump water heater — central DHW plant",
+        "timing": "Mid Yr2",
+        "capex_per_unit": 700,
+        "capex_total": 140000,
+        "incentive_program": "IRA §48E — 30% tax credit",
+        "financial_impact_type": "Common area expense reduction",
+        "financial_impact_timing": "Annual ongoing from Yr2",
+        "financial_impact_value": "~$11,400/yr gas savings"
+      }
+    ],
+    "decarb_plan_total": {
+      "capex_per_unit": 3450,
+      "capex_total": 690000
+    },
+    "deal_signal": {
+      "level": "Moderate Risk — CapEx",
+      "narrative": "Gas exposure is real but manageable — dual-fuel profile requires ~$140K mid-hold fuel switching not in the seller's capital plan; size $700/unit into the model."
+    },
+    "emissions_profile": {
+      "fuel_profile": "Dual-fuel — natural gas heat + DHW; electric cooling",
+      "utility_structure": "Resident electric submetered; landlord pays common area electric + gas",
+      "baseline_emissions": "~68 kgCO₂e/m²yr (est., dual-fuel benchmark)",
+      "crrem_pathway": "~22% above 2030 CRREM target — Yr2 HPWH measures close the gap",
+      "regulation": "Moderate — Texas HB 1505; no active BPS fine schedule through hold period"
+    },
+    "physical_climate_risk": {
+      "hazards": [
+        {"hazard": "Riverine / coastal flood", "risk_level": "Low", "finding": "FEMA Zone X — minimal flood risk"},
+        {"hazard": "Extreme heat", "risk_level": "Moderate", "finding": "12 additional days >100°F by 2050 (NOAA)"},
+        {"hazard": "Wildfire", "risk_level": "Low", "finding": "Not applicable — Dallas metro suburban"},
+        {"hazard": "Seismic", "risk_level": "Low", "finding": "USGS Zone A — minimal seismic exposure"}
+      ],
+      "insurance_note": "No insurer withdrawal concerns. Heat stress premium increases moderate over 5-year hold.",
+      "climate_var": {
+        "cumulative_var_npv_pct": "0.52%",
+        "cumulative_var_npv_usd": 104000,
+        "expected_annual_loss_pct_exit": "0.043%",
+        "primary_driver": "Extreme heat — operational disruption",
+        "hold_period_years": 5,
+        "scenario": "SSP2-4.5",
+        "covers": "Flood + Wind"
+      }
+    },
+    "ghg_scoping": {
+      "scopes": [
+        {"scope": "Scope 1", "source": "Natural gas — heat + DHW", "annual_tco2e": "~42", "notes": "Verified from OM utility schedule"},
+        {"scope": "Scope 2 (location)", "source": "Grid electricity — landlord common area", "annual_tco2e": "~18", "notes": "ERCOT grid: 0.42 lbs CO₂/kWh"},
+        {"scope": "Scope 3", "source": "Resident electricity (submetered out)", "annual_tco2e": "~310", "notes": "Leased-space boundary — excluded from owner total"}
+      ],
+      "offset_note": "Annual REC offset cost for owner boundary (60 tCO₂e): ~$930/yr."
+    },
+    "certifications_and_debt": {
+      "energy_star_recommendation": "Pursue — estimated score ~74; cost ~$8K one-time",
+      "leed_recommendation": "Not recommended — no fund mandate; no meaningful exit premium",
+      "green_debt": "Fannie Mae Green Rewards eligible — requires ≥25% energy savings from planned measures",
+      "fund_alignment": "Planned HPWH + solar + controls align with Better Climate Challenge 50% reduction target"
+    },
+    "decarb_sensitivity": [
+      {
+        "label": "LED + Smart thermostats only",
+        "spend_per_unit": 700,
+        "total_spend": 140000,
+        "emissions_reduction_pct": 8,
+        "noi_impact_annual": 14200,
+        "value_delta_pct": 1.2,
+        "value_delta_usd": 178000
+      },
+      {
+        "label": "Phase 1 + Solar + EV",
+        "spend_per_unit": 1450,
+        "total_spend": 290000,
+        "emissions_reduction_pct": 22,
+        "noi_impact_annual": 32000,
+        "value_delta_pct": 2.8,
+        "value_delta_usd": 415000
+      },
+      {
+        "label": "Full plan incl. HPWH + envelope",
+        "spend_per_unit": 3450,
+        "total_spend": 690000,
+        "emissions_reduction_pct": 55,
+        "noi_impact_annual": 48500,
+        "value_delta_pct": 4.2,
+        "value_delta_usd": 623000
+      }
+    ],
+    "seller_questions": [
+      "Please provide the last 24 months of utility bills for gas and common area electric to verify benchmark emissions estimates before PSA.",
+      "What is the current status of the central gas boiler — age, last service, any documented deferred maintenance?"
+    ],
+    "sources": [
+      {"label": "NOAA Climate Projections — Dallas Metro", "value_cited": "12 additional days >100°F by 2050", "url": "https://www.ncei.noaa.gov/"},
+      {"label": "WRI Aqueduct Water Risk Atlas", "value_cited": "Medium water stress — Dallas metro", "url": "https://www.wri.org/aqueduct"}
+    ],
+    "prepared_by": "Soapbox Sustainability Intelligence",
+    "prepared_for": "Prose Frontier — Acquisitions",
+    "report_date": "2026-07-02",
+    "data_quality": "Medium — confirmed fuel profile; CapEx benchmarked",
+    "disposition_mode": false
   }
 })
 ```
 
-**Key rules:**
-- Every key in `data` MUST be UPPERCASE_WITH_UNDERSCORES matching the `[[PLACEHOLDER]]` name exactly
-- ⛔ Do NOT pass nested objects — all values must be flat strings or HTML fragment strings
-- ⛔ Do NOT use a nested intermediate schema — compute values directly into the flat keys above
-- Do not add `<style>` blocks or change CSS class names — all styles are in the template
-- Block placeholders accept full HTML fragments using template classes: `.risk-card.low/moderate/high`, `.badge-green/.badge-yellow/.badge-red/.badge-grey`, `table/th/td`, `.opp-card`
-- `RISK_LEVEL_CLASS`: `signal-low` / `signal-moderate` / `signal-high` / `signal-critical`
-- `DEAL_SIGNAL_CLASS`: `low` / `moderate` / `high`
-- `LOGO_URL`: from Get Brand tool (use `""` if unavailable)
-
-**How to build each HTML block placeholder:**
-
-`CAPEX_TABLE` — one `<tr>` per measure:
-```html
-<table><thead><tr><th>Measure</th><th>Timing</th><th>Low</th><th>Mid</th><th>High</th><th>Incentives</th></tr></thead>
-<tbody><tr><td>Heat pump water heater</td><td>Yr1–2</td><td>$280K</td><td>$390K</td><td>$520K</td><td>IRA §48E</td></tr></tbody></table>
-```
-
-`REGULATORY_TABLE` — one `<tr>` per regulation:
-```html
-<table><thead><tr><th>Regulation</th><th>Status</th><th>2030 Risk</th><th>Annual Penalty</th></tr></thead>
-<tbody><tr><td>Texas SB 2 (grid resilience)</td><td>Low risk</td><td>Low</td><td>—</td></tr></tbody></table>
-```
-
-`CLIMATE_RISK_TABLE` — one `<tr>` per hazard:
-```html
-<table><thead><tr><th>Hazard</th><th>2030</th><th>2050</th><th>Source</th></tr></thead>
-<tbody><tr><td>Riverine Flooding</td><td>Low</td><td>Moderate</td><td>WRI Aqueduct</td></tr></tbody></table>
-```
-
-`ENERGY_CONTENT` — fuel profile + CRREM narrative:
-```html
-<p>All-electric (heat pump HVAC + DHW). No on-site gas. Baseline ~38 kgCO₂e/m²yr (est. from CBECS). Asset is ~12% above the 2030 CRREM pathway; planned measures close the gap by Yr2.</p>
-```
-
-`OPP_CARDS` — one card per opportunity:
-```html
-<div class="opp-card"><div class="opp-title">IRA §179D Deduction</div><div class="opp-body">$5.65/SF for qualifying envelope + HVAC improvements. Est. $220K federal deduction.</div></div>
-```
-
-`FINDINGS_TABLE` — key findings rows:
-```html
-<table><tbody><tr><td>Fuel profile</td><td>All-electric — no gas exposure</td></tr><tr><td>CRREM alignment</td><td>~12% above 2030 pathway</td></tr></tbody></table>
-```
-
-`SELLER_QUESTIONS` — bulleted list:
-```html
-<ul><li>Share 24 months of utility bills to establish measured EUI baseline.</li><li>Confirm roof age and condition for solar PV feasibility.</li></ul>
-```
+**Key rules — data schema:**
+- `deal_signal.level` must be exactly one of: `"Low Risk"` · `"Moderate Risk — Opportunity"` · `"Moderate Risk — CapEx"` · `"High Transition Risk"`
+- `decarb_plan[].timing` must start with `"Early"`, `"Mid"`, or `"Late"` for correct badge colors
+- `decarb_plan[].incentive_program` — separate multiple incentives with `;`
+- `physical_climate_risk` and `ghg_scoping` sections auto-hide when omitted; show when data provided
+- `decarb_sensitivity` section only appears if array is non-empty (hidden by default)
+- `sources` — optional array of `{label, value_cited?, url?}` for collapsible citations block
+- `emissions_profile.bpd_chart` — optional; include when BPD bucket data is available (see Phase 2C); omit `subject_eui` unless EUI is actually measured
+- `disposition_mode: true` — adds a "Sustainability Passport — Disposition / Exit" banner
 
 After emitting the artifact:
 1. Write a 3–5 sentence summary in chat: deal signal, top CapEx measure, key risk flag.
 2. Offer to add the CapEx estimate as a line item in the underwriting model.
-
-**BPD histogram:** Include `emissions_profile.bpd_chart` with bucket data when available. The template generates the SVG automatically. Omit `subject_eui` if EUI is estimated rather than measured.
 
 ---
 

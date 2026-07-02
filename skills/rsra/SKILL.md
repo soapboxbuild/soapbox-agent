@@ -866,7 +866,7 @@ fill_report({
 - `decarb_plan[].timing` must start with `"Early"`, `"Mid"`, or `"Late"` for correct badge colors
 - `decarb_plan[].incentive_program` — separate multiple incentives with `;`
 - `physical_climate_risk` and `ghg_scoping` sections auto-hide when omitted; show when data provided
-- `decarb_sensitivity` section only appears if array is non-empty (hidden by default)
+- `decarb_sensitivity` — **always populate** with 3 scenarios derived from the decarb plan (e.g. "Phase 1 only", "Phase 1+2", "Full plan"). Each row needs: `label`, `total_spend`, `spend_per_unit` (if MF), `emissions_reduction_pct` (number, not string), `noi_impact_annual` (estimated annual savings in $), `value_delta_pct` (NOI delta / cap rate %, e.g. 1.2). The scatter chart only renders when `value_delta_pct` is provided. Section is hidden when array is empty.
 - `sources` — optional array of `{label, value_cited?, url?}` for collapsible citations block
 - `emissions_profile.bpd_chart` — optional; include when BPD bucket data is available (see Phase 2C); omit `subject_eui` unless EUI is actually measured
 - `disposition_mode: true` — adds a "Sustainability Passport — Disposition / Exit" banner

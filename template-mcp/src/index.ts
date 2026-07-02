@@ -32,15 +32,41 @@ app.get('/health', async (_req, res) => {
       return { type: t, available: html !== null }
     })
   )
-  res.json({ ok: true, service: 'template-mcp', version: '1.2.0', templates: checks })
+  res.json({ ok: true, service: 'template-mcp', version: '1.3.0', templates: checks })
 })
 
 app.post('/mcp', async (req, res) => {
-  const server = new McpServer({ name: 'template-mcp', version: '1.2.0' })
+  const server = new McpServer({ name: 'template-mcp', version: '1.3.0' })
+
+  server.tool(
+    'fill_report',
+    'Render a Soapbox report by injecting your computed JSON data into the official template. Returns complete HTML ready to display as an artifact. Do NOT write your own HTML — always use this tool.',
+    {
+      report_type: z.enum(KNOWN_TYPES)
+        .describe("Report type. Use 'rsra' for Rapid Sustainability Risk Assessment."),
+      data: z.record(z.unknown())
+        .describe('Computed report data object. Injected into the template <script id="report-data"> block.'),
+    },
+    async ({ report_type, data }) => {
+      const html = await fetchTemplate(report_type)
+      if (!html) {
+        return {
+          content: [{ type: 'text' as const, text: `Template not yet available for report type: ${report_type}` }],
+          isError: true,
+        }
+      }
+      const json = JSON.stringify(data)
+      const rendered = html.replace(
+        /<script id="report-data"[^>]*>[\s\S]*?<\/script>/,
+        `<script id="report-data" type="application/json">${json}</script>`
+      )
+      return { content: [{ type: 'text' as const, text: rendered }] }
+    }
+  )
 
   server.tool(
     'get_report_template',
-    'Get the HTML report template for a Soapbox report type. Returns a complete HTML document with [[PLACEHOLDER]] markers — substitute each marker with your actual computed values. The template includes all CSS; do not add styles or change class names.',
+    'Get the raw HTML report template with the <script id="report-data"> placeholder. Prefer fill_report instead — use this only if you need to inspect the template structure.',
     {
       report_type: z.enum(KNOWN_TYPES)
         .describe("Report type. Use 'rsra' for Rapid Sustainability Risk Assessment."),

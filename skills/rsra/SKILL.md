@@ -162,6 +162,22 @@ If Audette found: use the Audette carbon intensity as the baseline, cite the Aud
 
 If not found: "Building not yet in Audette — proceeding from OM data and benchmarks."
 
+#### Fuel Type Verification — REQUIRED before accepting Audette model output
+
+Audette models default to **mixed-fuel** when no actual meter data exists. Mixed-fuel carries Scope 1 emissions (on-site gas combustion) that dramatically inflate the carbon baseline and CapEx estimates compared to an all-electric building. **Always verify fuel type from the OM and web before trusting model output.**
+
+**Verification steps (run during Phase 1B / Phase 2D):**
+1. Scan the OM for: gas appliances, gas utility submetering, gas stub-outs, gas grills/fire pits in amenities, HVAC system descriptions (heat pump vs. gas furnace), hot water system (heat pump water heater vs. gas boiler)
+2. Web-search `"[property name]" OR "[address]" utilities gas electric appliances` — leasing sites often list utility setup and appliance types
+3. Check year built: post-2020 Sun Belt multifamily is increasingly all-electric, but gas service may still be present for cooking or amenities
+
+**Decision rule:**
+- If **any gas service is confirmed** (submetered gas, gas appliances, gas amenities) → building is **mixed-fuel**; Audette mixed-fuel model is appropriate
+- If **no gas evidence found** and year built ≥ 2018 in a climate-friendly jurisdiction → infer **all-electric**; note inference and toggle the Audette model accordingly (or flag for correction before the model is used)
+- If **OM is silent and web is ambiguous** → state the uncertainty, apply all-electric as the more conservative carbon assumption, and flag for seller confirmation
+
+**Never silently accept a mixed-fuel Audette default when the OM and web suggest the building may be all-electric.** The Scope 1 emissions and decarb CapEx from a spurious gas assumption will materially misrepresent the deal economics.
+
 **Circular benchmarking rule:** Never feed a CBECS benchmark EUI back into peer comparisons as if it were measured data. If actual EUI is unknown, the peer benchmark comparison must be skipped or clearly labeled "no measured baseline — comparison not available."
 
 ### 2B — Overture Maps (if connected)

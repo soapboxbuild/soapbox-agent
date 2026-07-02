@@ -788,139 +788,53 @@ fill_report({
 ```
 
 **Key rules:**
-- Every key in `data` must be UPPERCASE_WITH_UNDERSCORES matching the `[[PLACEHOLDER]]` name exactly
-- Do not nest objects — all values must be flat strings or HTML fragment strings
+- Every key in `data` MUST be UPPERCASE_WITH_UNDERSCORES matching the `[[PLACEHOLDER]]` name exactly
+- ⛔ Do NOT pass nested objects — all values must be flat strings or HTML fragment strings
+- ⛔ Do NOT use a nested intermediate schema — compute values directly into the flat keys above
 - Do not add `<style>` blocks or change CSS class names — all styles are in the template
 - Block placeholders accept full HTML fragments using template classes: `.risk-card.low/moderate/high`, `.badge-green/.badge-yellow/.badge-red/.badge-grey`, `table/th/td`, `.opp-card`
 - `RISK_LEVEL_CLASS`: `signal-low` / `signal-moderate` / `signal-high` / `signal-critical`
 - `DEAL_SIGNAL_CLASS`: `low` / `moderate` / `high`
 - `LOGO_URL`: from Get Brand tool (use `""` if unavailable)
 
-**Reference — underlying data to compute before filling placeholders:**
+**How to build each HTML block placeholder:**
 
-```json
-{
-    "property": {
-      "name": "[PROPERTY NAME]",
-      "address": "[FULL ADDRESS]",
-      "type": "[multifamily|office|industrial|retail|hotel]",
-      "units": "[number — MF only]",
-      "gfa_sqft": "[number — CRE only]",
-      "year_built": "[year]",
-      "zip": "[zip code]"
-    },
-    "decarb_plan": [
-      {
-        "measure": "[Measure description]",
-        "timing": "[Early Yr1|Mid Yr3|Late Yr4-5|Ongoing]",
-        "capex_per_unit": "[number — MF only]",
-        "capex_total": "[number]",
-        "incentive_program": "[program name(s) separated by semicolons]",
-        "financial_impact_type": "[impact type]",
-        "financial_impact_value": "[e.g. ~$6,200/yr]",
-        "emissions_reduction_pct": "[number — optional]"
-      }
-    ],
-    "decarb_plan_total": {
-      "capex_per_unit": "[number — MF only]",
-      "capex_total": "[number]",
-      "total_emissions_reduction_pct": "[number — optional]"
-    },
-    "emissions_profile": {
-      "fuel_profile": "[description]",
-      "utility_structure": "[description]",
-      "baseline_emissions": "[e.g. ~68 kgCO₂e/m²yr (est.)]",
-      "crrem_pathway": "[Paris/CRREM alignment — e.g. 'Asset is ~18% above the 2030 carbon-reduction pathway for this asset type — planned measures close the gap by Yr3']",
-      "regulation": "[Low|Moderate|High — description]",
-      "bpd_chart": {
-        "buckets": [{"min_kbtu": 40, "max_kbtu": 60, "count": 12}],
-        "min_eui": 40, "max_eui": 180,
-        "median_eui": 90, "target_eui": 75,
-        "subject_eui": "[measured EUI — omit if estimated]",
-        "peer_count": 847,
-        "asset_class": "Multifamily",
-        "climate_zone": "Northeast",
-        "year": 2023
-      }
-    },
-    "deal_signal": {
-      "level": "[Low Risk|Moderate Risk — Opportunity|Moderate Risk — CapEx|High Transition Risk]",
-      "narrative": "[one to two sentences]"
-    },
-    "seller_questions": ["[question 1]", "[question 2]"],
-    "physical_climate_risk": {
-      "scenario": "SSP2-4.5 (moderate emissions)",
-      "overall_risk_2050": "[No risk|Low|Moderate|High|Red flag]",
-      "primary_hazard": "[hazard name]",
-      "hazards": [
-        {
-          "hazard": "[name]",
-          "hazard_key": "[CoastalInundation|RiverineInundation|ChronicHeat|Wind|WaterRisk]",
-          "risk_2030": "[No risk|Low|Moderate|High|Red flag]",
-          "risk_2050": "[No risk|Low|Moderate|High|Red flag]",
-          "score_2030": 1,
-          "score_2050": 2,
-          "data_source": "[WRI Aqueduct Floods v2|NASA NEX-GDDP-CMIP6|IRIS synthetic TC catalog|WRI Aqueduct Water Risk]"
-        }
-      ],
-      "climate_var": {
-        "expected_annual_loss_pct_2030": "[e.g. 0.043%]",
-        "expected_annual_loss_pct_exit": "[e.g. 0.071%]",
-        "expected_annual_loss_usd_2030": "[number]",
-        "expected_annual_loss_usd_exit": "[number]",
-        "cumulative_var_npv_pct": "[e.g. 0.52%] — HEADLINE METRIC",
-        "cumulative_var_npv_usd": "[number]",
-        "primary_driver": "[hazard name]",
-        "covers": "Flood (coastal + riverine) + Wind structural damage",
-        "hold_period_years": 10,
-        "exit_year": 2036,
-        "asset_value_usd": "[number]",
-        "discount_rate": 0.06,
-        "scenario": "[SSP2-4.5 label]",
-        "methodology": "[from calculate_climate_var output]",
-        "confidence": "[from calculate_climate_var output]"
-      },
-      "operational_risk": {
-        "heat_impact_index_exit": "[number from calculate_climate_var]",
-        "water_stress_index_exit": "[number from calculate_climate_var]",
-        "note": "Heat and water indices represent chronic disruption risk — not structural asset value loss."
-      },
-      "insurance_note": "[optional — flag if insurance market withdrawn from jurisdiction]"
-    },
-    "decarb_sensitivity": [
-      {
-        "label": "[e.g. LED + controls only]",
-        "spend_per_unit": "[number — MF only]",
-        "total_spend": "[number]",
-        "emissions_reduction_pct": "[number — e.g. 8]",
-        "noi_impact_annual": "[number — annual NOI uplift $ from energy savings + green premium]",
-        "value_delta_pct": "[number — estimated % asset value uplift]",
-        "value_delta_usd": "[number — absolute $ value delta — optional if pct provided]"
-      }
-    ],
-    "ghg_scoping": {
-      "scopes": [
-        {"scope": "Scope 1", "source": "[combustion source]", "annual_tco2e": "[number]", "notes": "[optional]"},
-        {"scope": "Scope 2", "source": "[electricity source]", "annual_tco2e": "[number]", "notes": "[optional]"},
-        {"scope": "Scope 3", "source": "[tenant energy]", "annual_tco2e": "[number]", "notes": "[optional]"}
-      ],
-      "offset_note": "[optional REC/offset calculation]"
-    },
-    "certifications_and_debt": {
-      "energy_star_recommendation": "[optional]", "leed_recommendation": "[optional]",
-      "green_debt": "[optional]", "fund_alignment": "[optional]"
-    },
-    "sources": [
-      {"label": "[source name]", "value_cited": "[specific value cited — optional]", "url": "[url — optional]"}
-    ],
-    "data_quality": "[High|Medium|Low] — [brief description]",
-    "prepared_by": "Soapbox Sustainability Intelligence",
-    "prepared_for": "[client or org name]",
-    "report_date": "[YYYY-MM-DD]",
-    "disposition_mode": false
-  }
-}
+`CAPEX_TABLE` — one `<tr>` per measure:
+```html
+<table><thead><tr><th>Measure</th><th>Timing</th><th>Low</th><th>Mid</th><th>High</th><th>Incentives</th></tr></thead>
+<tbody><tr><td>Heat pump water heater</td><td>Yr1–2</td><td>$280K</td><td>$390K</td><td>$520K</td><td>IRA §48E</td></tr></tbody></table>
+```
 
+`REGULATORY_TABLE` — one `<tr>` per regulation:
+```html
+<table><thead><tr><th>Regulation</th><th>Status</th><th>2030 Risk</th><th>Annual Penalty</th></tr></thead>
+<tbody><tr><td>Texas SB 2 (grid resilience)</td><td>Low risk</td><td>Low</td><td>—</td></tr></tbody></table>
+```
+
+`CLIMATE_RISK_TABLE` — one `<tr>` per hazard:
+```html
+<table><thead><tr><th>Hazard</th><th>2030</th><th>2050</th><th>Source</th></tr></thead>
+<tbody><tr><td>Riverine Flooding</td><td>Low</td><td>Moderate</td><td>WRI Aqueduct</td></tr></tbody></table>
+```
+
+`ENERGY_CONTENT` — fuel profile + CRREM narrative:
+```html
+<p>All-electric (heat pump HVAC + DHW). No on-site gas. Baseline ~38 kgCO₂e/m²yr (est. from CBECS). Asset is ~12% above the 2030 CRREM pathway; planned measures close the gap by Yr2.</p>
+```
+
+`OPP_CARDS` — one card per opportunity:
+```html
+<div class="opp-card"><div class="opp-title">IRA §179D Deduction</div><div class="opp-body">$5.65/SF for qualifying envelope + HVAC improvements. Est. $220K federal deduction.</div></div>
+```
+
+`FINDINGS_TABLE` — key findings rows:
+```html
+<table><tbody><tr><td>Fuel profile</td><td>All-electric — no gas exposure</td></tr><tr><td>CRREM alignment</td><td>~12% above 2030 pathway</td></tr></tbody></table>
+```
+
+`SELLER_QUESTIONS` — bulleted list:
+```html
+<ul><li>Share 24 months of utility bills to establish measured EUI baseline.</li><li>Confirm roof age and condition for solar PV feasibility.</li></ul>
 ```
 
 After emitting the artifact:

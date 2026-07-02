@@ -39,15 +39,13 @@ tr:nth-child(even) td{background:#FAFBFC}
 th.num,td.num{text-align:right}
 .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#12253A;color:#fff;border-radius:50%;font-size:10px;font-weight:700}
 
-/* IRR badges */
-.irr-strong{color:#065F46;font-weight:600}
-.irr-mid{color:#92400E;font-weight:600}
-.irr-weak{color:#991B1B;font-weight:600}
+/* IRR and status badges */
 .badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .badge-green{background:#D1FAE5;color:#065F46}
 .badge-amber{background:#FEF3C7;color:#92400E}
 .badge-red{background:#FEE2E2;color:#991B1B}
 .badge-grey{background:#F1F5F9;color:#475569}
+.badge-blue{background:#DBEAFE;color:#1E40AF}
 
 /* SVG chart wrapper */
 .chart-wrap{margin:16px 0;background:#FAFBFC;border:1px solid #E2E8F0;border-radius:4px;padding:16px;overflow-x:auto}
@@ -60,14 +58,18 @@ th.num,td.num{text-align:right}
 .legend-crrem{background:#DC2626}
 .legend-goal{background:#D97706}
 
+/* Callout box */
+.callout{background:#F0FDF4;border-left:3px solid #4CAF82;padding:12px 16px;margin:12px 0;border-radius:0 4px 4px 0}
+.callout-warn{background:#FFFBEB;border-left-color:#F59E0B}
+.callout-danger{background:#FEF2F2;border-left-color:#EF4444}
+.callout-text{font-size:12px;color:#334155;line-height:1.6}
+.callout-value{font-size:18px;font-weight:700;color:#12253A;margin-bottom:2px}
+
 /* Footer */
 .report-footer{padding:24px 40px;background:#F1F4F8;border-top:2px solid #E2E8F0;font-size:11px;color:#64748B;line-height:1.6}
 .footer-sources{font-weight:600;color:#475569;margin-bottom:4px}
 .footer-params{margin-bottom:8px}
 .footer-limitation{font-style:italic;color:#94A3B8;font-size:10px}
-
-/* Conditional sections — agent removes .hidden sections */
-.section-conditional{display:block}
 </style>
 </head>
 <body>
@@ -85,7 +87,8 @@ th.num,td.num{text-align:right}
     <span style="color:#4CAF82;font-weight:600">CONFIDENTIAL</span>
   </div>
 
-  <!-- KPI BAR -->
+  <!-- KPI BAR — 4 core tiles always present -->
+  <!-- If org_goal is set, uncomment the 5th tile below -->
   <div class="kpi-bar">
     <div class="kpi-tile">
       <div class="kpi-label">Total CapEx (Net)</div>
@@ -95,20 +98,20 @@ th.num,td.num{text-align:right}
     <div class="kpi-tile">
       <div class="kpi-label">Value Creation</div>
       <div class="kpi-value kpi-accent">[[VALUE_CREATION]]</div>
-      <div class="kpi-sub">NPV of NOI uplift at exit</div>
+      <div class="kpi-sub">at exit cap, NOI uplift</div>
     </div>
     <div class="kpi-tile">
       <div class="kpi-label">Emissions Reduction</div>
-      <div class="kpi-value">[[EMISSIONS_REDUCTION]]</div>
-      <div class="kpi-sub">tCO₂e across portfolio</div>
+      <div class="kpi-value">[[EMISSIONS_REDUCTION_TCO2]]</div>
+      <div class="kpi-sub">tCO₂e/yr across portfolio</div>
     </div>
     <div class="kpi-tile">
       <div class="kpi-label">Assets Above Hurdle</div>
       <div class="kpi-value">[[ASSETS_ABOVE_HURDLE]] <span style="font-size:14px;font-weight:400;color:#64748B">/ [[ASSETS_TOTAL]]</span></div>
       <div class="kpi-sub">at [[IRR_HURDLE]]% IRR</div>
     </div>
-    <!-- OPTIONAL 5th tile — include only if org_goal is set -->
-    <!-- <div class="kpi-tile"><div class="kpi-label">Org Goal Progress</div><div class="kpi-value">[[ORG_GOAL_PCT]]%</div><div class="kpi-sub">of [[ORG_GOAL_LABEL]] under 15% pathway</div></div> -->
+    <!-- ORG GOAL TILE — include only if org_goal is set -->
+    <!-- <div class="kpi-tile"><div class="kpi-label">[[ORG_GOAL_LABEL]] Progress</div><div class="kpi-value">[[ORG_GOAL_PCT]]%</div><div class="kpi-sub">under [[IRR_HURDLE]]% IRR pathway</div></div> -->
   </div>
 
   <!-- EXECUTIVE SUMMARY -->
@@ -116,6 +119,10 @@ th.num,td.num{text-align:right}
     <div class="section-label">Overview</div>
     <h2 class="section-title">Executive Summary</h2>
     <div class="section-body">[[EXECUTIVE_SUMMARY_TEXT]]</div>
+    <!-- Agent: 3-4 sentences covering portfolio scope, primary opportunity, headline CapEx and value creation. -->
+    <!-- If include_crrem: true, add one sentence on emissions trajectory vs. CRREM 2035 target. -->
+    <!-- If include_bps: true, add one sentence on compliance exposure. -->
+    <!-- If org_goal is set, add one sentence on gap/progress vs. that goal under the 15% IRR pathway. -->
   </div>
 
   <!-- FUND-LEVEL SUMMARY -->
@@ -134,15 +141,17 @@ th.num,td.num{text-align:right}
       </tr></thead>
       <tbody>
         [[FUND_TABLE_ROWS]]
+        <!-- Each row: <tr><td>Fund Name</td><td class="num">12</td><td class="num">$5.2M</td><td class="num">$8.4M</td><td class="num">320 tCO₂</td><td class="num">18%</td></tr> -->
       </tbody>
     </table>
     </div>
   </div>
 
-  <!-- TOP 10 ASSETS -->
+  <!-- TOP N ASSETS BY VALUE CREATION -->
+  <!-- Agent: use top_n_assets parameter (default 10); update section title to match (e.g. "Top 15 Assets...") -->
   <div class="section">
     <div class="section-label">Asset Ranking</div>
-    <h2 class="section-title">Top 10 Assets by Value Creation</h2>
+    <h2 class="section-title">Top [[TOP_N]] Assets by Value Creation</h2>
     <div style="overflow-x:auto">
     <table>
       <thead><tr>
@@ -156,6 +165,7 @@ th.num,td.num{text-align:right}
       </tr></thead>
       <tbody>
         [[TOP_ASSETS_ROWS]]
+        <!-- Each row: <tr><td><span class="rank-badge">1</span></td><td>Observer Park</td><td>GGIF</td><td class="num">2031</td><td class="num">$1.8M</td><td class="num">$4.2M</td><td>Heat pump retrofit</td></tr> -->
       </tbody>
     </table>
     </div>
@@ -176,15 +186,24 @@ th.num,td.num{text-align:right}
       </tr></thead>
       <tbody>
         [[MEASURE_CATEGORY_ROWS]]
+        <!-- Each row: <tr><td>LED lighting</td><td class="num">28</td><td class="num">$2.1M</td><td class="num">$3.8M</td><td class="num">120 tCO₂</td></tr> -->
       </tbody>
     </table>
     </div>
   </div>
 
-  <!-- EMISSIONS TRAJECTORY — include only if include_crrem: true -->
-  <div class="section section-conditional" id="section-emissions">
+  <!-- ══════════════════════════════════════════════════════
+       EMISSIONS TRAJECTORY — include only if include_crrem: true
+       If include_crrem: false, remove this entire section.
+       ══════════════════════════════════════════════════════ -->
+  <div class="section" id="section-emissions">
     <div class="section-label">Pathway Analysis</div>
     <h2 class="section-title">Emissions Trajectory (2025–2050)</h2>
+    <!-- Inline SVG line chart — agent computes coordinates from trajectory data:
+         X axis: 2025–2050, Y axis: kgCO₂e/m² portfolio weighted average
+         Lines: BAU (grey dashed), CRREM target (red dashed), 15% IRR pathway (blue solid), Max decarb (green solid)
+         Shaded area between BAU and CRREM = stranding risk zone
+         If org_goal is set: add vertical orange dotted line at goal target year, labeled with goal -->
     <div class="chart-wrap">
       [[EMISSIONS_SVG]]
     </div>
@@ -193,6 +212,7 @@ th.num,td.num{text-align:right}
       <div class="legend-item"><div class="legend-line legend-decarb"></div>15% IRR Pathway</div>
       <div class="legend-item"><div class="legend-line legend-max"></div>Maximum Decarb</div>
       <div class="legend-item"><div class="legend-line legend-crrem"></div>CRREM 1.5°C Target</div>
+      <!-- ORG GOAL LEGEND ITEM — include only if org_goal is set -->
       <!-- <div class="legend-item"><div class="legend-line legend-goal"></div>[[ORG_GOAL_LABEL]]</div> -->
     </div>
     <div style="margin-top:16px;overflow-x:auto">
@@ -206,48 +226,102 @@ th.num,td.num{text-align:right}
       </tr></thead>
       <tbody>
         [[EMISSIONS_TABLE_ROWS]]
+        <!-- Four rows: BAU / 15% IRR Pathway / Maximum Decarb / CRREM 1.5°C Target -->
+        <!-- ORG GOAL ROW — include only if org_goal is set -->
+        <!-- <tr><td>[[ORG_GOAL_LABEL]] — Gap (15% IRR)</td><td class="num">[[ORG_GOAL_GAP_2030]]</td><td class="num">[[ORG_GOAL_GAP_2035]]</td><td class="num">[[ORG_GOAL_GAP_2040]]</td><td class="num">—</td></tr> -->
       </tbody>
     </table>
     </div>
   </div>
 
-  <!-- CRREM PATHWAY ANALYSIS — include only if include_crrem: true -->
-  <div class="section section-conditional" id="section-crrem">
+  <!-- ══════════════════════════════════════════════════════
+       CRREM PATHWAY ANALYSIS — include only if include_crrem: true
+       If include_crrem: false, remove this entire section.
+       ══════════════════════════════════════════════════════ -->
+  <div class="section" id="section-crrem">
     <div class="section-label">CRREM</div>
     <h2 class="section-title">CRREM Pathway Analysis</h2>
-    <div class="section-body">[[CRREM_NARRATIVE]]</div>
-    <table style="margin-top:16px">
-      <thead><tr>
-        <th>Stranding Status</th>
-        <th class="num">Today</th>
-        <th class="num">With Measures</th>
-      </tr></thead>
-      <tbody>
-        <tr><td>Assets stranding now</td><td class="num">[[STRANDING_TODAY]]</td><td class="num">[[STRANDING_WITH_MEASURES]]</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- BPS EXPOSURE — include only if include_bps: true -->
-  <div class="section section-conditional" id="section-bps">
-    <div class="section-label">Regulatory Risk</div>
-    <h2 class="section-title">Building Performance Standards Exposure</h2>
+    <!-- Trajectory table: portfolio-weighted intensity now vs. with measures, vs. CRREM targets at 2030/2035/2040 -->
     <div style="overflow-x:auto">
     <table>
       <thead><tr>
+        <th>Metric</th>
+        <th class="num">Current</th>
+        <th class="num">With Measures</th>
+        <th class="num">CRREM 2030</th>
+        <th class="num">CRREM 2035</th>
+        <th class="num">CRREM 2040</th>
+      </tr></thead>
+      <tbody>
+        [[CRREM_TRAJECTORY_TABLE_ROWS]]
+        <!-- Row 1: Portfolio carbon intensity (kgCO₂e/m²) -->
+        <!-- Row 2: Assets above pathway (count) -->
+        <!-- Row 3: Gap to target (kgCO₂e/m²) — positive = over, negative = already met -->
+      </tbody>
+    </table>
+    </div>
+    <!-- Stranding asset counts -->
+    <table style="margin-top:16px">
+      <thead><tr>
+        <th>Stranding Status</th>
+        <th class="num">Today (no action)</th>
+        <th class="num">With Recommended Measures</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td>Assets stranding before 2030</td>
+          <td class="num">[[STRANDING_TODAY_2030]]</td>
+          <td class="num">[[STRANDING_WITH_MEASURES_2030]]</td>
+        </tr>
+        <tr>
+          <td>Assets stranding before 2035</td>
+          <td class="num">[[STRANDING_TODAY_2035]]</td>
+          <td class="num">[[STRANDING_WITH_MEASURES_2035]]</td>
+        </tr>
+      </tbody>
+    </table>
+    <!-- Note: assets excluded from pathway analysis due to estimated EUI -->
+    <p style="margin-top:12px;font-size:12px;color:#64748B;font-style:italic">[[CRREM_EXCLUDED_ASSETS_NOTE]]</p>
+    <!-- Agent: set to e.g. "3 assets excluded from trajectory analysis — EUI unverified (BPD benchmark only). These assets carry ±40% uncertainty and are listed separately in Data Quality Notes."
+         If all assets have verified EUI, omit this paragraph. -->
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       BUILDING PERFORMANCE STANDARDS EXPOSURE — include only if include_bps: true
+       If include_bps: false, remove this entire section.
+       ══════════════════════════════════════════════════════ -->
+  <div class="section" id="section-bps">
+    <div class="section-label">Regulatory Risk</div>
+    <h2 class="section-title">Building Performance Standards Exposure</h2>
+    <!-- Aggregate compliance cost callout -->
+    <div class="callout callout-warn">
+      <div class="callout-value">[[BPS_TOTAL_FINE_NO_ACTION]]</div>
+      <div class="callout-text">Projected total BPS fines across [[BPS_LIABLE_COUNT]] liable assets if no action is taken through [[BPS_TARGET_YEAR]]. Fine avoidance is captured as a measure benefit in IRR calculations where applicable.</div>
+    </div>
+    <div style="overflow-x:auto;margin-top:16px">
+    <table>
+      <thead><tr>
         <th>Asset</th>
+        <th>Fund</th>
+        <th>Jurisdiction</th>
         <th>BPS Status</th>
-        <th class="num">Fine (no action)</th>
-        <th class="num">Fine Avoidance</th>
+        <th class="num">Annual Fine (no action)</th>
+        <th class="num">Fine Avoidance (measures)</th>
       </tr></thead>
       <tbody>
         [[BPS_ROWS]]
+        <!-- Status badges: liable / not-liable / unknown
+             <span class="badge badge-red">liable</span>
+             <span class="badge badge-green">not liable</span>
+             <span class="badge badge-grey">unknown</span> -->
       </tbody>
     </table>
     </div>
   </div>
 
   <!-- ASSET-BY-ASSET DETAIL -->
+  <!-- Agent: add "CRREM Status" column if include_crrem: true -->
+  <!-- Agent: add "BPS Exposure" column if include_bps: true -->
   <div class="section">
     <div class="section-label">Asset Detail</div>
     <h2 class="section-title">Asset-by-Asset Detail</h2>
@@ -260,8 +334,12 @@ th.num,td.num{text-align:right}
         <th class="num">CapEx Net</th>
         <th class="num">Value Created</th>
         <th class="num">Avg IRR</th>
-        <!-- add CRREM Status column if include_crrem: true -->
-        <!-- add BPS Exposure column if include_bps: true -->
+        <!-- CRREM STATUS COLUMN — add when include_crrem: true:
+             <th>CRREM Status</th>
+             Values: <span class="badge badge-green">aligned</span> / <span class="badge badge-amber">at risk</span> / <span class="badge badge-red">stranded</span> -->
+        <!-- BPS EXPOSURE COLUMN — add when include_bps: true:
+             <th class="num">BPS Exposure</th>
+             Values: annual fine amount, or <span class="badge badge-grey">n/a</span> -->
       </tr></thead>
       <tbody>
         [[ASSET_DETAIL_ROWS]]
@@ -274,13 +352,13 @@ th.num,td.num{text-align:right}
   <div class="section">
     <div class="section-label">Reference</div>
     <h2 class="section-title">Below-Hurdle Measures</h2>
-    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.6">These measures do not meet the [[IRR_HURDLE]]% hurdle at stated assumptions. They may become viable under different hold periods, exit cap rates, or if utility rates escalate faster.</p>
+    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.6">These measures do not meet the [[IRR_HURDLE]]% hurdle at stated assumptions. They may become viable under different hold periods, exit cap rates, or if utility rates escalate faster than [[UTILITY_ESCALATION]]%/yr.</p>
     <div style="overflow-x:auto">
     <table>
       <thead><tr>
         <th>Asset</th>
         <th>Measure</th>
-        <th class="num">CapEx</th>
+        <th class="num">CapEx Net</th>
         <th class="num">IRR</th>
         <th>Barrier</th>
       </tr></thead>
@@ -295,13 +373,14 @@ th.num,td.num{text-align:right}
   <div class="section">
     <div class="section-label">Timing</div>
     <h2 class="section-title">Deferred Measures</h2>
-    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.6">Measures deferred due to retrofit lead-time constraints or scheduling dependencies.</p>
+    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.6">Measures deferred due to retrofit lead-time constraints relative to hold period. Install year shown for planning purposes.</p>
     <div style="overflow-x:auto">
     <table>
       <thead><tr>
         <th>Asset</th>
         <th>Measure</th>
         <th class="num">Install Year</th>
+        <th class="num">CapEx Net</th>
         <th>Reason</th>
       </tr></thead>
       <tbody>
@@ -316,13 +395,14 @@ th.num,td.num{text-align:right}
     <div class="section-label">Methodology</div>
     <h2 class="section-title">Data Quality Notes</h2>
     <div class="section-body">[[DATA_QUALITY_NOTES]]</div>
+    <!-- Agent: include counts e.g. "34 of 39 assets: Audette-verified EUI. 5 assets: BPD MCP benchmark (est.) — [asset list]." -->
     <p style="margin-top:12px;font-size:12px;font-style:italic;color:#94A3B8">All values labeled (est.) are based on BPD MCP peer-group median EUI and carry ±40% uncertainty.</p>
   </div>
 
   <!-- FOOTER -->
   <div class="report-footer">
     <div class="footer-sources">Data sources: Audette &middot; Soapbox DCF Engine &middot; CRREM 2024 &middot; IRA §48E/§179D &middot; BPD (LBNL)</div>
-    <div class="footer-params">Parameters: IRR [[IRR_HURDLE]]% &middot; Utility escalation [[UTILITY_ESCALATION]]% &middot; Exit year floor [[EXIT_YEAR_FLOOR]] &middot; Value-inclusive IRR</div>
+    <div class="footer-params">Parameters: IRR [[IRR_HURDLE]]% &middot; Utility escalation [[UTILITY_ESCALATION]]%/yr &middot; Exit year floor [[EXIT_YEAR_FLOOR]] &middot; Discount rate [[DISCOUNT_RATE]]% &middot; Value-inclusive IRR</div>
     <div class="footer-limitation">This analysis is based on data available at time of run. CapEx estimates carry ±30% uncertainty without site inspection. IRR sensitivity to exit cap rate is high — a 50bp cap rate change can move IRR by 3–5pp. Verify with physical due diligence before committing capital.</div>
   </div>
 

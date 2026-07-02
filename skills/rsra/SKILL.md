@@ -196,7 +196,9 @@ Omit `emissions_profile.bpd_chart` entirely if `get_statistics()` returns no buc
 
 ### 2D — Web Research
 
-Search for:
+Use `brave_web_search` for all internet lookups. Do NOT use Audette tools for web research — Audette is for building model data only (Phase 2A).
+
+Call `brave_web_search` for:
 - `"[address]" ENERGY STAR` — check public Portfolio Manager benchmarking
 - `"[address]" Local Law 97` or `"[address]" LL97` — NYC compliance data
 - `"[address]" BERDO` or `"[address]" benchmarking` — Boston, Chicago, etc.
@@ -542,7 +544,7 @@ Model the full financial impact — both the cost of action and the cost of inac
 
 ### 7B — State & Local (Search by Jurisdiction)
 
-Use web search: `"[state/city] commercial energy efficiency rebates [current year]"` and `"[utility name] commercial rebates"`.
+Use `brave_web_search`: `"[state/city] commercial energy efficiency rebates [current year]"` and `"[utility name] commercial rebates"`.
 
 **Common programs to check:**
 - NYSERDA (NY): ConEdison / National Grid rebates; NYSERDA FlexTech program

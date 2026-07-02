@@ -655,6 +655,8 @@ For each asset, compile:
   "exit_year": 2030,
   "exit_cap_rate": 0.045,
   "hold_period_years": 4,
+  "going_in_noi": 850000,
+  "gav": null,
   "audette_eui": 85.2,
   "carbon_intensity_kg": 42,
   "crrem_status": "above_pathway",        // only if include_crrem: true
@@ -667,29 +669,92 @@ For each asset, compile:
   "recommended_measures": [
     {
       "measure": "LED lighting retrofit",
+      "category": "LED lighting",
+      "status": "recommended",
       "capex_gross": 280000,
       "capex_net": 196000,
       "ira_credit": "§179D 30%",
-      "annual_noi_uplift": 31000,
+      "annual_savings": 31000,
       "ll_capture_pct": 1.0,
+      "annual_noi_uplift": 31000,
+      "exit_value_uplift": 688000,
       "install_year": 2026,
       "irr": 0.21,
       "value_creation": 688000,
-      "emissions_reduction_t_co2": 18
+      "value_per_tco2": 38222,
+      "emissions_reduction_tco2": 18,
+      "data_confidence": "High"
     }
   ],
-  "below_hurdle_measures": [...],
-  "deferred_measures": [...],
+  "below_hurdle_measures": [...],   // same shape as above, status: "below hurdle"
+  "deferred_measures": [...],       // same shape as above, status: "deferred"
   "total_capex_gross": 1400000,
   "total_capex_net": 980000,
   "total_value_creation": 2100000,
   "total_noi_uplift_annual": 94500,
-  "total_emissions_reduction_t_co2": 67,
+  "total_emissions_reduction_tco2": 67,
   "compliance_cost_if_no_action": 45000
 }
 ```
 
 Stream one line per asset as it completes.
+
+### 3E — Build supporting data arrays for the XLSX companion
+
+After all assets complete, flatten the per-asset outputs into two arrays the XLSX template requires for analyst verification:
+
+**`all_measures`** — every measure across all assets (recommended + below hurdle + deferred), one row per measure:
+```json
+[
+  {
+    "asset_name": "Observer Park",
+    "fund": "GGIF",
+    "measure": "LED lighting retrofit",
+    "category": "LED lighting",
+    "status": "recommended",
+    "install_year": 2026,
+    "capex_gross": 280000,
+    "ira_credit": "§179D 30%",
+    "capex_net": 196000,
+    "annual_savings": 31000,
+    "ll_capture_pct": 1.0,
+    "annual_noi_uplift": 31000,
+    "exit_value_uplift": 688000,
+    "irr": 0.21,
+    "value_creation": 688000,
+    "value_per_tco2": 38222,
+    "emissions_reduction_tco2": 18,
+    "data_confidence": "High"
+  }
+]
+```
+
+**`asset_source_data`** — raw inputs per asset (Audette data + DCF parameters) for analyst verification:
+```json
+[
+  {
+    "asset_name": "Observer Park",
+    "fund": "GGIF",
+    "property_type": "Multifamily",
+    "gfa_m2": 12400,
+    "year_built": 1998,
+    "exit_year": 2031,
+    "exit_cap_rate": 0.045,
+    "gav": null,
+    "going_in_noi": 850000,
+    "hold_period_years": 5,
+    "eui_kwh_m2": 85.2,
+    "ghgi_kg_m2": 42.0,
+    "baseline_emissions_tco2": 521,
+    "lease_structure": "modified-gross",
+    "metering_config": "master-metered",
+    "jurisdiction": "Boston",
+    "audette_linked": true,
+    "data_source": "Audette calibrated model",
+    "data_quality": "High"
+  }
+]
+```
 
 ---
 
@@ -878,13 +943,29 @@ After generating the Phase 2 report:
 
 1. Save to portfolio documents: `{client-slug}-portfolio-analysis-{YYYYMMDD}.html`
 2. Save per-asset JSON outputs to `.cashflow-models/portfolio-{client-slug}/`
-3. Report: "[N] assets analyzed. [N_above] above IRR hurdle. Recommended measures: $[X]M net
+3. **Generate XLSX companion automatically** (no prompt needed — always produce it):
+   ```bash
+   python3 ~/soapbox-agent/scripts/build_xlsx.py \
+     --template portfolio-analysis \
+     --data '{ ...assembled portfolio JSON... }' \
+     --brand '{ "primary_color": "#12253A", "secondary_color": "#1A3550", "accent_color": "#EFF6FF", "highlight_color": "#4CAF82", "text_color": "#1A1A2E", "text_muted": "#64748B", "border_color": "#E2E8F0" }' \
+     --output .cashflow-models/portfolio-{client-slug}/{client-slug}-portfolio-analysis-{YYYYMMDD}.xlsx
+   ```
+   The XLSX is the analyst verification workbook — it contains source data, measure economics,
+   and all report output tables. It is always generated alongside the HTML report; do not prompt
+   the user mid-flow to decide whether to create it.
+
+   The `--data` JSON must include these top-level keys (assembled from Phase 4 aggregation):
+   `client_name`, `portfolio_id`, `report_date`, `prepared_by`, `parameters`, `portfolio_kpis`,
+   `asset_source_data`, `assets`, `fund_summary`, `top_assets`, `all_measures`,
+   `measure_categories`, `emissions_trajectory` (if include_crrem), `crrem_trajectory` (if include_crrem),
+   `bps_assets` (if include_bps), `below_hurdle`, `deferred`.
+
+4. Report: "[N] assets analyzed. [N_above] above IRR hurdle. Recommended measures: $[X]M net
    CapEx, $[Y]M value creation, [Z] tCO₂e reduced across portfolio."
-4. Offer:
+5. Offer:
    - **"Build per-asset RSRA threads"** — create individual asset threads pre-loaded with their
      analysis results for deeper due diligence
-   - **"Export to XLSX"** — run `build_xlsx.py` to generate a spreadsheet with all measure
-     tables and fund-level pivot
    - **"Export to PPTX"** — run `build_pptx.py` for the presentation deck
    - **"Re-run with different parameters"** — change IRR hurdle, exit year floor, or target year
    - **"Filter to one fund"** — re-aggregate for a specific fund only

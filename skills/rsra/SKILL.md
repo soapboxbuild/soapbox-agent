@@ -81,7 +81,7 @@ All RSRA HTML output must conform to these rules. Claude must apply them on ever
 - External `<img src="https://...">` — all images must be inline SVG or data URIs
 
 **Artifact output rules**
-- Two-phase output: Phase 1 = loading skeleton (immediate UX), Phase 2 = call `get_report_template` and fill in data
+- Two-phase output: Phase 1 = loading skeleton (immediate UX), Phase 2 = call `get_report_resources` and fill in data
 - Both phases use the **identical** file path — one artifact, updated in place
 - Never save the Phase 1 skeleton to asset documents — only the completed report
 - Numeric precision: 2 significant figures (`$1.4M` not `$1,427,000`; `42 kgCO₂e` not `41.7`)
@@ -656,7 +656,7 @@ Two-phase output: (1) emit loading skeleton + fetch template simultaneously at s
 
 **A) Emit the skeleton artifact** at `{property-slug}-rsra.html` using exactly the HTML below. Substitute only [PROPERTY NAME], [FULL ADDRESS], and the org name in the meta-strip:
 
-**B) Call `get_report_template("rsra")`** — fire this alongside the skeleton so the template HTML is in context before research begins. You will fill it in Phase 2.
+**B) Call `get_report_resources` with `{"template": "rsra"}`** — fire this alongside the skeleton so the template HTML is in context before research begins. You will fill it in Phase 2.
 
 ```html
 <!doctype html>
@@ -740,12 +740,12 @@ Two-phase output: (1) emit loading skeleton + fetch template simultaneously at s
 ⛔ **DO NOT write your own HTML.** The template contains all CSS, layout, and structure. Your only job is to substitute placeholders.
 
 **Required sequence — no exceptions:**
-1. The template HTML was returned by `get_report_template("rsra")` in Phase 1B above. Use that HTML exactly.
+1. The template HTML was returned by `get_report_resources({"template":"rsra"})` in Phase 1B above. Use that HTML exactly.
 2. Find every `[[PLACEHOLDER]]` marker in the template.
 3. Substitute each one with your computed value (see reference below).
 4. Emit the artifact at `{property-slug}-rsra.html` using this substituted HTML — nothing else.
 
-If `get_report_template` returned an error or was not called yet, call it now and wait for the response before emitting. Do not fall back to inline HTML.
+If `get_report_resources` returned an error or was not called yet, call it now (`{"template":"rsra"}`) and wait for the response before emitting. Do not fall back to inline HTML.
 
 **Placeholder rules:**
 - Do not add `<style>` blocks or change CSS class names — all styles are in the template

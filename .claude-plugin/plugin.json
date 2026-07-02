@@ -1,0 +1,15 @@
+{
+  "name": "soapbox-agent",
+  "version": "2.0.0",
+  "description": "Soapbox core sustainability intelligence — RSRA, CRREM pathways, retrofit advisor, and report template engine. Skills, agents, and MCP tools for real estate sustainability teams.",
+  "author": { "name": "Soapbox", "url": "https://soapbox.build" },
+  "homepage": "https://github.com/soapboxbuild/soapbox-agent",
+  "license": "Apache-2.0",
+  "mcpServers": {
+    "template-mcp": {
+      "type": "http",
+      "url": "https://template-mcp-production.up.railway.app/mcp"
+    }
+  },
+  "skills": ["skills"]
+}

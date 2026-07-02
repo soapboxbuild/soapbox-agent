@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>[[PROPERTY_NAME]] — Decarbonization Report</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+.report{max-width:920px;margin:0 auto;padding:40px 0 80px}
+
+/* ─── COVER HEADER ─────────────────────────────────────── */
+.cover{background:#12253A;color:#fff;padding:40px 40px 0;position:relative;overflow:hidden}
+.cover::before{content:'';position:absolute;right:-60px;top:-60px;width:320px;height:320px;background:rgba(76,175,130,.07);border-radius:50%}
+.cover-eyebrow{font-size:8px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#4CAF82;margin-bottom:12px}
+.cover-title{font-size:30px;font-weight:700;line-height:1.2;margin-bottom:6px}
+.cover-address{font-size:13px;font-weight:300;color:rgba(255,255,255,.6);margin-bottom:6px}
+.cover-meta{font-size:12px;color:rgba(255,255,255,.45);margin-bottom:28px}
+.cover-tag-row{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:24px}
+.cover-tag{display:inline-block;padding:4px 10px;border:1px solid rgba(255,255,255,.2);border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.65)}
+.meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.04em}
+
+/* ─── HEADLINE METRICS ─────────────────────────────────── */
+.metrics-bar{display:flex;gap:0;background:#fff;border-bottom:2px solid #E2E8F0}
+.metric{flex:1;padding:18px 20px;border-right:1px solid #E2E8F0;position:relative}
+.metric:last-child{border-right:none}
+.metric-label{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#64748B;margin-bottom:6px}
+.metric-value{font-size:26px;font-weight:700;color:#12253A;font-variant-numeric:tabular-nums;line-height:1}
+.metric-value.green{color:#1F6B45}
+.metric-value.amber{color:#92400E}
+.metric-value.red{color:#991B1B}
+.metric-sub{font-size:11px;color:#94A3B8;margin-top:3px}
+.metric-delta{position:absolute;top:18px;right:16px;font-size:11px;font-weight:600}
+.metric-delta.up{color:#1F6B45}
+.metric-delta.down{color:#991B1B}
+
+/* ─── SECTIONS ─────────────────────────────────────────── */
+.section{padding:32px 40px;background:#fff;margin-bottom:2px}
+.section-label{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+.section-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+.section-body{font-size:13px;line-height:1.7;color:#334155}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+
+/* ─── END-USE BREAKDOWN ─────────────────────────────────── */
+.enduse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin:12px 0}
+.enduse-card{background:#F8F9FB;border:1px solid #E2E8F0;border-radius:4px;padding:10px 12px}
+.enduse-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#64748B;margin-bottom:6px}
+.enduse-bar-bg{height:4px;background:#E2E8F0;border-radius:2px;margin-bottom:6px}
+.enduse-bar{height:4px;border-radius:2px;background:#2563EB}
+.enduse-bar.carbon{background:#DC2626}
+.enduse-value{font-size:13px;font-weight:700;color:#12253A;font-variant-numeric:tabular-nums}
+.enduse-pct{font-size:11px;color:#64748B;margin-left:4px}
+
+/* ─── FEASIBILITY SUMMARY ─────────────────────────────── */
+.feasibility-row{display:flex;gap:0;background:#F8F9FB;border:1px solid #E2E8F0;border-radius:4px;overflow:hidden;margin:12px 0}
+.feasibility-cell{flex:1;padding:16px 20px;border-right:1px solid #E2E8F0;text-align:center}
+.feasibility-cell:last-child{border-right:none}
+.fc-label{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#64748B;margin-bottom:6px}
+.fc-value{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.fc-value.baseline{color:#64748B}
+.fc-value.target{color:#1F6B45}
+.fc-value.reduction{color:#2563EB}
+.fc-sub{font-size:11px;color:#94A3B8;margin-top:2px}
+
+/* ─── CHART WRAPPER ─────────────────────────────────────── */
+.chart-wrap{margin:12px 0;background:#FAFBFC;border:1px solid #E2E8F0;border-radius:4px;padding:16px;overflow-x:auto}
+.chart-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;font-size:11px;color:#475569}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-swatch{width:24px;height:3px;border-radius:2px}
+
+/* ─── MEASURES TABLE ─────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+th{background:#F1F4F8;text-align:left;padding:8px 10px;font-weight:600;border:1px solid #E2E8F0;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#475569}
+td{padding:8px 10px;border:1px solid #E2E8F0;vertical-align:top;color:#334155}
+tr:nth-child(even) td{background:#FAFBFC}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+th.ctr,td.ctr{text-align:center}
+
+/* Measure row highlights */
+.row-above-hurdle td{background:#F0FDF4 !important}
+.row-above-hurdle td:first-child{border-left:3px solid #10B981}
+.row-below-hurdle td{background:#FFF7ED !important}
+.row-below-hurdle td:first-child{border-left:3px solid #F59E0B}
+.row-mandatory td{background:#EFF6FF !important}
+.row-mandatory td:first-child{border-left:3px solid #2563EB}
+
+/* IRR / hurdle badges */
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.badge-above{background:#D1FAE5;color:#065F46}
+.badge-below{background:#FEF3C7;color:#92400E}
+.badge-mandatory{background:#DBEAFE;color:#1E40AF}
+.badge-deferred{background:#F1F5F9;color:#475569}
+
+/* Hurdle callout */
+.hurdle-box{background:#F0FDF4;border:1px solid #A7F3D0;border-radius:4px;padding:12px 16px;margin:12px 0;font-size:12px;color:#065F46;line-height:1.6}
+.hurdle-box strong{color:#065F46}
+
+/* ─── FINANCIAL SUMMARY ─────────────────────────────────── */
+.fin-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#E2E8F0;border:1px solid #E2E8F0;border-radius:4px;overflow:hidden;margin:12px 0}
+.fin-cell{background:#fff;padding:14px 16px}
+.fin-label{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B;margin-bottom:5px}
+.fin-value{font-size:18px;font-weight:700;color:#12253A;font-variant-numeric:tabular-nums}
+.fin-sub{font-size:11px;color:#94A3B8;margin-top:2px}
+
+/* ─── CRREM STRANDING ALERT ─────────────────────────────── */
+.stranding-alert{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-radius:4px;margin:12px 0;font-size:12px;line-height:1.6}
+.stranding-alert.stranded{background:#FEE2E2;border-left:3px solid #DC2626;color:#991B1B}
+.stranding-alert.at-risk{background:#FEF3C7;border-left:3px solid #F59E0B;color:#92400E}
+.stranding-alert.aligned{background:#D1FAE5;border-left:3px solid #10B981;color:#065F46}
+.alert-icon{font-size:16px;margin-top:1px;flex-shrink:0}
+
+/* ─── DATA QUALITY ───────────────────────────────────────── */
+.dq-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.dq-item{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#334155;line-height:1.5}
+.dq-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.dq-dot.green{background:#10B981}
+.dq-dot.amber{background:#F59E0B}
+.dq-dot.red{background:#EF4444}
+
+/* ─── IMPLEMENTATION NOTES ──────────────────────────────── */
+.impl-card{background:#F8F9FB;border:1px solid #E2E8F0;border-radius:4px;padding:14px 16px;margin:8px 0}
+.impl-card-title{font-size:12px;font-weight:700;color:#12253A;margin-bottom:6px}
+.impl-card-body{font-size:12px;color:#475569;line-height:1.6}
+
+/* ─── FOOTER ─────────────────────────────────────────────── */
+.report-footer{padding:24px 40px;background:#F1F4F8;border-top:2px solid #E2E8F0;font-size:11px;color:#64748B;line-height:1.7}
+.footer-sources{font-weight:600;color:#475569;margin-bottom:4px}
+.footer-limitation{font-style:italic;color:#94A3B8;font-size:10px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="report">
+
+  <!-- ── COVER ──────────────────────────────────────────── -->
+  <div class="cover">
+    <div class="cover-eyebrow">Soapbox Sustainability Intelligence &mdash; Decarbonization Report</div>
+    <div class="cover-title">[[PROPERTY_NAME]]</div>
+    <div class="cover-address">[[FULL_ADDRESS]]</div>
+    <div class="cover-meta">[[PROPERTY_TYPE]] &nbsp;&middot;&nbsp; [[GFA_SF]] SF ([[GFA_UNITS]] units) &nbsp;&middot;&nbsp; Built [[YEAR_BUILT]] &nbsp;&middot;&nbsp; [[CLIMATE_ZONE]]</div>
+    <div class="cover-tag-row">
+      <div class="cover-tag">[[CRREM_STATUS_LABEL]]</div>
+      <div class="cover-tag">[[BPS_STATUS_LABEL]]</div>
+      <div class="cover-tag">[[AUDETTE_DATA_LABEL]]</div>
+      <!-- e.g. "CRREM: AT RISK 2031", "LL97: EXPOSURE $42K", "Audette-Verified" -->
+    </div>
+  </div>
+  <div class="meta-strip">
+    <span>Analysis completed: [[REPORT_DATE]]</span>
+    <span>Prepared by: Aris (Soapbox AI) for [[ORG_NAME]]</span>
+    <span style="color:#4CAF82;font-weight:600">CONFIDENTIAL</span>
+  </div>
+
+  <!-- ── HEADLINE METRICS ────────────────────────────────── -->
+  <div class="metrics-bar">
+    <div class="metric">
+      <div class="metric-label">Baseline Carbon</div>
+      <div class="metric-value">[[BASELINE_CARBON_TCO2]]</div>
+      <div class="metric-sub">tCO₂e/yr total</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Carbon Intensity</div>
+      <div class="metric-value">[[CARBON_INTENSITY]]</div>
+      <div class="metric-sub">kgCO₂e/[[INTENSITY_UNIT]]</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Achievable Reduction</div>
+      <div class="metric-value green">[[ACHIEVABLE_REDUCTION_PCT]]%</div>
+      <div class="metric-sub">[[ACHIEVABLE_REDUCTION_TCO2]] tCO₂e/yr</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Net CapEx</div>
+      <div class="metric-value">[[NET_CAPEX]]</div>
+      <div class="metric-sub">after incentives</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Value Creation</div>
+      <div class="metric-value green">[[VALUE_CREATION]]</div>
+      <div class="metric-sub">NPV at exit</div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 1: BASELINE PERFORMANCE ───────────────── -->
+  <div class="section">
+    <div class="section-label">Section 1</div>
+    <h2 class="section-title">Baseline Performance</h2>
+    <div class="two-col">
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Energy</div>
+        <table>
+          <tr><td style="color:#475569;font-size:11px">Total Consumption</td><td class="num">[[TOTAL_ENERGY_CONSUMPTION]]</td></tr>
+          <tr><td style="color:#475569;font-size:11px">Site EUI</td><td class="num">[[SITE_EUI]] kBtu/SF/yr</td></tr>
+          <tr><td style="color:#475569;font-size:11px">Source EUI</td><td class="num">[[SOURCE_EUI]] kBtu/SF/yr</td></tr>
+          <tr><td style="color:#475569;font-size:11px">ENERGY STAR Score</td><td class="num">[[ENERGY_STAR_SCORE]] / 100</td></tr>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Costs</div>
+        <table>
+          <tr><td style="color:#475569;font-size:11px">Total Energy Cost</td><td class="num">[[TOTAL_ENERGY_COST]]/yr</td></tr>
+          <tr><td style="color:#475569;font-size:11px">Landlord-Controlled</td><td class="num">[[LANDLORD_ENERGY_COST]]/yr</td></tr>
+          <tr><td style="color:#475569;font-size:11px">Tenant-Controlled</td><td class="num">[[TENANT_ENERGY_COST]]/yr</td></tr>
+          <tr><td style="color:#475569;font-size:11px">Cost / [[INTENSITY_UNIT]]</td><td class="num">$[[COST_PER_UNIT]]</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Energy End-Use Breakdown</div>
+      <div class="enduse-grid">
+        [[ENERGY_ENDUSE_CARDS]]
+        <!-- Example card:
+        <div class="enduse-card">
+          <div class="enduse-label">Heating</div>
+          <div class="enduse-bar-bg"><div class="enduse-bar" style="width:[[HEATING_PCT]]%"></div></div>
+          <div><span class="enduse-value">[[HEATING_KWH]]</span><span class="enduse-pct">[[HEATING_PCT]]%</span></div>
+        </div>
+        -->
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Emissions End-Use Breakdown</div>
+      <div class="enduse-grid">
+        [[CARBON_ENDUSE_CARDS]]
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 2: DECARBONIZATION FEASIBILITY ─────────── -->
+  <div class="section">
+    <div class="section-label">Section 2</div>
+    <h2 class="section-title">Decarbonization Feasibility</h2>
+
+    <div class="feasibility-row">
+      <div class="feasibility-cell">
+        <div class="fc-label">Baseline Emissions</div>
+        <div class="fc-value baseline">[[BASELINE_CARBON_TCO2]]</div>
+        <div class="fc-sub">tCO₂e/yr</div>
+      </div>
+      <div class="feasibility-cell">
+        <div class="fc-label">Achievable End State</div>
+        <div class="fc-value target">[[ACHIEVABLE_END_STATE_TCO2]]</div>
+        <div class="fc-sub">tCO₂e/yr</div>
+      </div>
+      <div class="feasibility-cell">
+        <div class="fc-label">Achievable Reduction</div>
+        <div class="fc-value reduction">[[ACHIEVABLE_REDUCTION_PCT]]%</div>
+        <div class="fc-sub">[[ACHIEVABLE_REDUCTION_TCO2]] tCO₂e/yr</div>
+      </div>
+      <div class="feasibility-cell">
+        <div class="fc-label">At [[IRR_HURDLE]]% IRR Hurdle</div>
+        <div class="fc-value target">[[HURDLE_REDUCTION_PCT]]%</div>
+        <div class="fc-sub">[[HURDLE_REDUCTION_TCO2]] tCO₂e/yr achievable</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Emissions Trajectory (2025–2050)</div>
+      <div class="chart-wrap">
+        [[DECARB_TRAJECTORY_SVG]]
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-swatch" style="background:#94A3B8"></div>BAU (no action)</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#2563EB"></div>At [[IRR_HURDLE]]% Hurdle Pathway</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#059669"></div>Maximum Decarb</div>
+        <div class="legend-item"><div class="legend-swatch" style="background:#DC2626;height:2px;border-top:1px dashed #DC2626;background:none;border-bottom:none"></div>CRREM 1.5°C Target</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 3: MEASURES ─────────────────────────────── -->
+  <div class="section">
+    <div class="section-label">Section 3</div>
+    <h2 class="section-title">Measures for Consideration</h2>
+
+    <div class="hurdle-box">
+      <strong>Hurdle rate: [[IRR_HURDLE]]% [[HURDLE_TYPE]]</strong> &nbsp;&mdash;&nbsp;
+      [[HURDLE_DESCRIPTION]]
+      <!-- e.g. "Unlevered (Ru) — [[CAPEX_SIZE_NOTE]]. Measures above [[IRR_HURDLE]]% are highlighted green. Formula: Ru = (Re + Kd × D/E) / (1 + D/E)." -->
+    </div>
+
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Measure</th>
+        <th class="ctr">Year</th>
+        <th class="num">Emissions<br>Savings (tCO₂e)</th>
+        <th class="num">Energy<br>Savings (kWh)</th>
+        <th class="num">Annual<br>Utility Savings</th>
+        <th class="num">Annual<br>BPS Avoidance</th>
+        <th class="num">Gross<br>CapEx</th>
+        <th class="num">Incentives</th>
+        <th class="num">Net<br>CapEx</th>
+        <th class="num">IRR</th>
+        <th class="ctr">vs. Hurdle</th>
+      </tr></thead>
+      <tbody>
+        [[MEASURES_ROWS]]
+        <!--
+        Row class options:
+          row-above-hurdle   → IRR ≥ hurdle (green left border)
+          row-below-hurdle   → IRR < hurdle (amber left border)
+          row-mandatory      → regulatory compliance driver (blue left border)
+
+        Example row:
+        <tr class="row-above-hurdle">
+          <td>Install LED Lighting</td>
+          <td class="ctr">2026</td>
+          <td class="num">23</td>
+          <td class="num">77,519</td>
+          <td class="num">$12k</td>
+          <td class="num">—</td>
+          <td class="num">$241k</td>
+          <td class="num">—</td>
+          <td class="num">$241k</td>
+          <td class="num irr-strong">24%</td>
+          <td class="ctr"><span class="badge badge-above">Above</span></td>
+        </tr>
+        -->
+      </tbody>
+    </table>
+    </div>
+
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:#64748B">
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;background:#10B981;border-radius:1px"></div>Above hurdle</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;background:#F59E0B;border-radius:1px"></div>Below hurdle (reference)</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;background:#2563EB;border-radius:1px"></div>Regulatory driver</div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 4: FINANCIAL SUMMARY ──────────────────── -->
+  <div class="section">
+    <div class="section-label">Section 4</div>
+    <h2 class="section-title">Financial Summary</h2>
+
+    <div class="fin-grid">
+      <div class="fin-cell">
+        <div class="fin-label">Total Net CapEx</div>
+        <div class="fin-value">[[TOTAL_NET_CAPEX]]</div>
+        <div class="fin-sub">above-hurdle measures</div>
+      </div>
+      <div class="fin-cell">
+        <div class="fin-label">Total Incentives</div>
+        <div class="fin-value">[[TOTAL_INCENTIVES]]</div>
+        <div class="fin-sub">ITC + IRA + utility programs</div>
+      </div>
+      <div class="fin-cell">
+        <div class="fin-label">Annual Utility Savings</div>
+        <div class="fin-value">[[ANNUAL_UTILITY_SAVINGS]]</div>
+        <div class="fin-sub">at current rates</div>
+      </div>
+      <div class="fin-cell">
+        <div class="fin-label">Value Creation (NPV)</div>
+        <div class="fin-value" style="color:#1F6B45">[[VALUE_CREATION]]</div>
+        <div class="fin-sub">NOI uplift at [[EXIT_CAP_RATE]]% exit cap</div>
+      </div>
+      <div class="fin-cell">
+        <div class="fin-label">Blended IRR</div>
+        <div class="fin-value" style="color:#1F6B45">[[BLENDED_IRR]]%</div>
+        <div class="fin-sub">above-hurdle bundle</div>
+      </div>
+      <div class="fin-cell">
+        <div class="fin-label">Simple Payback</div>
+        <div class="fin-value">[[SIMPLE_PAYBACK]] yrs</div>
+        <div class="fin-sub">utility savings only</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Scenario</th>
+        <th class="num">CapEx Net</th>
+        <th class="num">Annual Savings</th>
+        <th class="num">Value Creation</th>
+        <th class="num">IRR</th>
+        <th class="num">Carbon Reduction</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Above-hurdle measures only</td><td class="num">[[ABOVE_HURDLE_CAPEX]]</td><td class="num">[[ABOVE_HURDLE_SAVINGS]]</td><td class="num">[[ABOVE_HURDLE_VALUE]]</td><td class="num"><strong>[[ABOVE_HURDLE_IRR]]%</strong></td><td class="num">[[ABOVE_HURDLE_CARBON]]</td></tr>
+        <tr><td>All recommended measures</td><td class="num">[[ALL_MEASURES_CAPEX]]</td><td class="num">[[ALL_MEASURES_SAVINGS]]</td><td class="num">[[ALL_MEASURES_VALUE]]</td><td class="num">[[ALL_MEASURES_IRR]]%</td><td class="num">[[ALL_MEASURES_CARBON]]</td></tr>
+        <tr><td>Maximum decarb (all measures)</td><td class="num">[[MAX_DECARB_CAPEX]]</td><td class="num">[[MAX_DECARB_SAVINGS]]</td><td class="num">[[MAX_DECARB_VALUE]]</td><td class="num">[[MAX_DECARB_IRR]]%</td><td class="num">[[MAX_DECARB_CARBON]]</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ── SECTION 5: CRREM PATHWAY ──────────────────────── -->
+  <div class="section">
+    <div class="section-label">Section 5</div>
+    <h2 class="section-title">CRREM Pathway Alignment</h2>
+
+    <div class="stranding-alert [[STRANDING_ALERT_CLASS]]">
+      <div class="alert-icon">[[STRANDING_ALERT_ICON]]</div>
+      <div>[[STRANDING_ALERT_TEXT]]</div>
+    </div>
+
+    <div class="chart-wrap" style="margin-top:12px">
+      [[CRREM_SVG]]
+    </div>
+
+    <table style="margin-top:12px">
+      <thead><tr>
+        <th>Year</th>
+        <th class="num">Asset (kgCO₂e/m²)</th>
+        <th class="num">CRREM 1.5°C</th>
+        <th class="num">Gap</th>
+        <th class="num">With Measures</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>
+        [[CRREM_PATHWAY_ROWS]]
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── SECTION 6: REGULATORY & BPS EXPOSURE ──────────── -->
+  <div class="section">
+    <div class="section-label">Section 6</div>
+    <h2 class="section-title">Regulatory &amp; Compliance Exposure</h2>
+
+    <table>
+      <thead><tr>
+        <th>Regulation</th>
+        <th>Jurisdiction</th>
+        <th>Current Status</th>
+        <th class="num">Fine (No Action)</th>
+        <th class="num">Fine Avoidance</th>
+        <th>Next Deadline</th>
+      </tr></thead>
+      <tbody>
+        [[REGULATORY_ROWS]]
+      </tbody>
+    </table>
+
+    <div class="section-body" style="margin-top:12px">[[REGULATORY_NARRATIVE]]</div>
+  </div>
+
+  <!-- ── SECTION 7: GREEN FINANCING ────────────────────── -->
+  <div class="section">
+    <div class="section-label">Section 7</div>
+    <h2 class="section-title">Green Financing &amp; Incentive Opportunities</h2>
+
+    <table>
+      <thead><tr>
+        <th>Program</th>
+        <th>Type</th>
+        <th>Eligible Measures</th>
+        <th class="num">Estimated Benefit</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        [[GREEN_FINANCE_ROWS]]
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── SECTION 8: IMPLEMENTATION NOTES ──────────────── -->
+  <div class="section">
+    <div class="section-label">Section 8</div>
+    <h2 class="section-title">Implementation Considerations</h2>
+    <div class="section-body" style="margin-bottom:12px">[[IMPLEMENTATION_INTRO]]</div>
+    [[IMPLEMENTATION_CARDS]]
+    <!--
+    Example card:
+    <div class="impl-card">
+      <div class="impl-card-title">Rooftop Solar (No-Export PV)</div>
+      <div class="impl-card-body">Tenant power purchase agreements required to monetize onsite generation. Confirm roof structural capacity (2–4 lbs psf additional load). Verify net-metering / compensation structure with local utility before procurement.</div>
+    </div>
+    -->
+  </div>
+
+  <!-- ── SECTION 9: NEXT STEPS ─────────────────────────── -->
+  <div class="section">
+    <div class="section-label">Section 9</div>
+    <h2 class="section-title">Recommended Next Steps</h2>
+    <table>
+      <thead><tr>
+        <th>#</th>
+        <th>Action</th>
+        <th>Owner</th>
+        <th>Timeline</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        [[NEXT_STEPS_ROWS]]
+      </tbody>
+    </table>
+    <div class="section-body" style="margin-top:12px">[[NEXT_STEPS_NOTES]]</div>
+  </div>
+
+  <!-- ── SECTION 10: DATA INPUTS & QUALITY ─────────────── -->
+  <div class="section">
+    <div class="section-label">Section 10</div>
+    <h2 class="section-title">Data Inputs &amp; Quality</h2>
+    <div class="dq-grid">
+      [[DATA_QUALITY_ITEMS]]
+      <!--
+      Example item:
+      <div class="dq-item">
+        <div class="dq-dot green"></div>
+        <div>Utility data: 9/9 buildings covered (36-month history)</div>
+      </div>
+      <div class="dq-item">
+        <div class="dq-dot amber"></div>
+        <div>Equipment data: 0/9 buildings — inferred from vintage + type</div>
+      </div>
+      -->
+    </div>
+
+    <div style="margin-top:16px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Data Caveats</div>
+      <div class="section-body">[[DATA_CAVEATS]]</div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ─────────────────────────────────────────── -->
+  <div class="report-footer">
+    <div class="footer-sources">Energy model: Audette physics-based modeling platform &middot; Financial model: Soapbox DCF engine &middot; Pathway: CRREM v2 (2024) &middot; Incentives: IRA §48E/§179D &middot; Compliance: BPD (LBNL)</div>
+    <div style="margin-top:4px">Parameters: Hurdle [[IRR_HURDLE]]% [[HURDLE_TYPE]] &middot; Utility escalation [[UTILITY_ESCALATION]]%/yr &middot; Exit cap rate [[EXIT_CAP_RATE]]% &middot; Hold period [[HOLD_PERIOD]] yrs &middot; Analysis: [[REPORT_DATE]]</div>
+    <div class="footer-limitation">CapEx estimates carry ±30% uncertainty without site inspection. Energy and carbon savings are modeled projections — actual results depend on occupancy, operations, and climate. IRR is sensitive to exit cap rate: ±50bp moves IRR by approximately 3–5pp. Incentive eligibility subject to program rules at time of application. Verify all figures with qualified engineering and legal counsel before committing capital.</div>
+  </div>
+
+</div>
+</body>
+</html>

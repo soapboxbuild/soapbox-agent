@@ -4,7 +4,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { z } from 'zod'
 
 const REPO = 'https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main'
-const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'portfolio-analysis', 'retrofit-advisor'] as const
+const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'portfolio-analysis', 'decarb', 'retrofit-advisor'] as const
 type ReportType = typeof KNOWN_TYPES[number]
 
 // In-memory cache — templates are static between deploys
@@ -30,11 +30,11 @@ app.get('/health', async (_req, res) => {
       return { type: t, available: html !== null }
     })
   )
-  res.json({ ok: true, service: 'template-mcp', version: '1.1.0', templates: checks })
+  res.json({ ok: true, service: 'template-mcp', version: '1.2.0', templates: checks })
 })
 
 app.post('/mcp', async (req, res) => {
-  const server = new McpServer({ name: 'template-mcp', version: '1.1.0' })
+  const server = new McpServer({ name: 'template-mcp', version: '1.2.0' })
 
   server.tool(
     'get_report_template',
@@ -62,4 +62,4 @@ app.post('/mcp', async (req, res) => {
 })
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10)
-app.listen(PORT, () => console.log(`template-mcp v1.1.0 listening on port ${PORT}`))
+app.listen(PORT, () => console.log(`template-mcp v1.2.0 listening on port ${PORT}`))

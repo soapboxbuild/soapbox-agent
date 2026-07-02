@@ -2,45 +2,55 @@ import express from 'express'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
-import { readFileSync, existsSync } from 'fs'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-// dist/index.js → ../../templates at runtime; src/index.ts → ../../templates in dev
-const TEMPLATES_DIR = join(__dirname, '..', '..', 'templates')
+const REPO = 'https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main'
+const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'retrofit-advisor'] as const
+type ReportType = typeof KNOWN_TYPES[number]
 
-const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'retrofit-advisor']
+// In-memory cache — templates are static between deploys
+const templateCache = new Map<ReportType, string>()
+
+async function fetchTemplate(report_type: ReportType): Promise<string | null> {
+  if (templateCache.has(report_type)) return templateCache.get(report_type)!
+  const url = `${REPO}/templates/${report_type}/layout-agent.html`
+  const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+  if (!res.ok) return null
+  const html = await res.text()
+  templateCache.set(report_type, html)
+  return html
+}
 
 const app = express()
 app.use(express.json())
 
-app.get('/health', (_req, res) => {
-  const available = KNOWN_TYPES.filter(t =>
-    existsSync(join(TEMPLATES_DIR, t, 'layout-agent.html'))
+app.get('/health', async (_req, res) => {
+  const checks = await Promise.all(
+    KNOWN_TYPES.map(async t => {
+      const html = await fetchTemplate(t).catch(() => null)
+      return { type: t, available: html !== null }
+    })
   )
-  res.json({ ok: true, service: 'template-mcp', version: '1.0.0', available })
+  res.json({ ok: true, service: 'template-mcp', version: '1.0.1', templates: checks })
 })
 
 app.post('/mcp', async (req, res) => {
-  const server = new McpServer({ name: 'template-mcp', version: '1.0.0' })
+  const server = new McpServer({ name: 'template-mcp', version: '1.0.1' })
 
   server.tool(
     'get_report_template',
     'Get the HTML report template for a Soapbox report type. Returns a complete HTML document with [[PLACEHOLDER]] markers — substitute each marker with your actual computed values. The template includes all CSS; do not add styles or change class names.',
     {
-      report_type: z.enum(['rsra', 'crrem', 'sustainability-passport', 'retrofit-advisor'])
+      report_type: z.enum(KNOWN_TYPES)
         .describe("Report type. Use 'rsra' for Rapid Sustainability Risk Assessment."),
     },
     async ({ report_type }) => {
-      const filePath = join(TEMPLATES_DIR, report_type, 'layout-agent.html')
-      if (!existsSync(filePath)) {
+      const html = await fetchTemplate(report_type)
+      if (!html) {
         return {
           content: [{ type: 'text' as const, text: `Template not yet available for report type: ${report_type}` }],
           isError: true,
         }
       }
-      const html = readFileSync(filePath, 'utf-8')
       return { content: [{ type: 'text' as const, text: html }] }
     }
   )
@@ -52,4 +62,4 @@ app.post('/mcp', async (req, res) => {
 })
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10)
-app.listen(PORT, () => console.log(`template-mcp listening on port ${PORT}`))
+app.listen(PORT, () => console.log(`template-mcp v1.0.1 listening on port ${PORT}`))

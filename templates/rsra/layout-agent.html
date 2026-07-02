@@ -1237,7 +1237,7 @@
       var dS1=0, dS2=0, dS3=0;
       ghg.scopes.forEach(function(s){
         var sn=(s.scope||'').toLowerCase();
-        var _vraw=String(s.annual_tco2e||'');var _hi=_vraw.match(/(\d+(?:\.\d+)?)\s*[–\-]\s*(\d+(?:\.\d+)?)/);var _vmatch=_vraw.match(/\d+(?:\.\d+)?/);var v=_hi?((parseFloat(_hi[1])+parseFloat(_hi[2]))/2):(_vmatch?parseFloat(_vmatch[0]):0)||0;
+        var _vraw=String(s.annual_tco2e||'');function _parseN(s){return parseFloat(String(s).replace(/,/g,''))||0;}var _hi=_vraw.match(/([\d,]+(?:\.\d+)?)\s*[–\-]\s*([\d,]+(?:\.\d+)?)/);var _vmatch=_vraw.match(/[\d,]+(?:\.\d+)?/);var v=_hi?((_parseN(_hi[1])+_parseN(_hi[2]))/2):(_vmatch?_parseN(_vmatch[0]):0)||0;
         if(sn.indexOf('scope 1')===0){dS1=v;}
         else if(sn.indexOf('scope 2')===0){dS2=v;}
         else if(sn.indexOf('scope 3')===0){dS3=v;}

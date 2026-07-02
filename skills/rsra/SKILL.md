@@ -162,7 +162,13 @@ If Audette found: use the Audette carbon intensity as the baseline, cite the Aud
 
 If not found: "Building not yet in Audette — proceeding from OM data and benchmarks."
 
-**CRITICAL — Audette not found:** When Audette fails to match the building, start fresh from the OM and web. **Never recycle data from a prior RSRA run on this asset** — prior reports may contain inferred or hallucinated assumptions that will silently propagate. Treat every failed Audette lookup as a clean slate: OM → web research → explicit inferences labeled `(est.)`. Do not copy fuel type, building description, EUI, or any other field from an old report.
+**Audette pipeline failed (`audette_pipeline_state = 'failed'`):** This is not a fatal error — the RSRA can still proceed from OM and web data. But always surface this to the user immediately:
+
+> ⚠️ **Audette model unavailable** — the Audette pipeline for this asset has a failed state, so no energy model or carbon baseline is available. The RSRA will proceed from the Offering Memorandum and web research instead. To get a calibrated Audette model, run `#audette-onboard` to re-onboard the asset (you'll need utility bills or a PCNA). Want me to continue with the RSRA now, or onboard Audette first?
+
+Then **wait for the user's response** before proceeding. Do not silently skip Audette and continue — the user must know the model is missing.
+
+**CRITICAL — Audette not found or failed:** When Audette has no usable model, start fresh from the OM and web. **Never recycle data from a prior RSRA run on this asset** — prior reports may contain inferred or hallucinated assumptions that will silently propagate. Treat every failed Audette lookup as a clean slate: OM → web research → explicit inferences labeled `(est.)`. Do not copy fuel type, building description, EUI, or any other field from an old report.
 
 #### Fuel Type Verification — REQUIRED before accepting Audette model output
 

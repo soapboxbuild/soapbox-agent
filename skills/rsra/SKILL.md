@@ -616,8 +616,6 @@ Generate **only questions that are warranted** by specific risk flags found abov
 
 ## Phase 9: RSRA Recommendation
 
-> **Start Phase 10 template fetch now.** While completing Phase 9, call `get_report_template("rsra")` so the template is ready when you emit the artifact.
-
 Based on all factors, issue a formal deal recommendation.
 
 ### 9A — Risk Score
@@ -648,11 +646,15 @@ Choose one:
 
 ## Phase 10: Report Output
 
-Two-phase output: emit a loading skeleton immediately, then call `get_report_template("rsra")` and fill in the template with your data.
+Two-phase output: (1) emit loading skeleton + fetch template simultaneously at startup, (2) fill the fetched template with your computed data.
 
-### Phase 1 — Loading Skeleton (emit BEFORE any research begins)
+### Phase 1 — Loading Skeleton + Template Fetch (do BOTH before any research)
 
-**Before running any searches or reading any documents**, emit the artifact at `{property-slug}-rsra.html` using exactly the HTML below. This gives the user immediate visual feedback. Do not emit plain text — use this HTML verbatim, substituting only [PROPERTY NAME], [FULL ADDRESS], and the org name in the meta-strip:
+**Before running any searches or reading any documents**, do both of the following simultaneously:
+
+**A) Emit the skeleton artifact** at `{property-slug}-rsra.html` using exactly the HTML below. Substitute only [PROPERTY NAME], [FULL ADDRESS], and the org name in the meta-strip:
+
+**B) Call `get_report_template("rsra")`** — fire this alongside the skeleton so the template HTML is in context before research begins. You will fill it in Phase 2.
 
 ```html
 <!doctype html>
@@ -731,13 +733,22 @@ Two-phase output: emit a loading skeleton immediately, then call `get_report_tem
 </div>
 ```
 
-### Phase 2 — Emit Final Artifact
+### Phase 2 — Fill Template and Emit Final Artifact
 
-Call `get_report_template("rsra")` to retrieve the complete HTML template. Emit the artifact at `{property-slug}-rsra.html` using the returned HTML **verbatim**, substituting every `[[PLACEHOLDER]]` marker with your computed values.
+⛔ **DO NOT write your own HTML.** The template contains all CSS, layout, and structure. Your only job is to substitute placeholders.
 
-**Rules:**
+**Required sequence — no exceptions:**
+1. The template HTML was returned by `get_report_template("rsra")` in Phase 1B above. Use that HTML exactly.
+2. Find every `[[PLACEHOLDER]]` marker in the template.
+3. Substitute each one with your computed value (see reference below).
+4. Emit the artifact at `{property-slug}-rsra.html` using this substituted HTML — nothing else.
+
+If `get_report_template` returned an error or was not called yet, call it now and wait for the response before emitting. Do not fall back to inline HTML.
+
+**Placeholder rules:**
 - Do not add `<style>` blocks or change CSS class names — all styles are in the template
-- Write complete HTML for `[[CAPEX_TABLE]]`, `[[REGULATORY_TABLE]]`, `[[ENERGY_CONTENT]]`, `[[CLIMATE_RISK_TABLE]]`, `[[OPP_CARDS]]`, `[[FINDINGS_TABLE]]`, `[[SELLER_QUESTIONS]]` using the pre-defined classes: `.risk-card.low/moderate/high`, `.badge-green/.badge-yellow/.badge-red/.badge-grey`, `table/th/td`, `.opp-card`
+- Write complete HTML fragments for block placeholders: `[[CAPEX_TABLE]]`, `[[REGULATORY_TABLE]]`, `[[ENERGY_CONTENT]]`, `[[CLIMATE_RISK_TABLE]]`, `[[OPP_CARDS]]`, `[[FINDINGS_TABLE]]`, `[[SELLER_QUESTIONS]]`
+- Use template CSS classes: `.risk-card.low/moderate/high`, `.badge-green/.badge-yellow/.badge-red/.badge-grey`, `table/th/td`, `.opp-card`
 - `[[RISK_LEVEL_CLASS]]`: use `signal-low` / `signal-moderate` / `signal-high` / `signal-critical`
 - `[[DEAL_SIGNAL_CLASS]]`: use `low` / `moderate` / `high`
 

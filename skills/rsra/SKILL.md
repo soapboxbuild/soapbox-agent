@@ -122,6 +122,16 @@ Read the OM and extract:
 | **Seller** | Name |
 | **Broker** | Firm + contact |
 
+**Deal Finance** (required for Phase 5B IRR hurdle):
+
+| Field | Notes |
+|-------|-------|
+| **Re** | Target equity return (IRR) — from OM sponsor assumptions or deal terms; typically 15–25% |
+| **Kd** | Cost of debt — stated loan rate or current market rate for asset type |
+| **D/E** | Leverage ratio — debt / equity (e.g. 65/35 LTV → D/E ≈ 1.86) |
+
+If any of these are not disclosed in the OM, note them as "not stated" and flag for deal team confirmation before Phase 5B.
+
 **Also extract any sustainability data mentioned in the OM:**
 - ENERGY STAR score or certification
 - LEED / BREEAM / BOMA BESt certification status
@@ -394,7 +404,24 @@ Use the appropriate benchmark set for the asset type. All figures are USD and re
 
 ### 5B — Compliance-Required vs. Elective CapEx
 
-Separate the table explicitly. **IRR screen:** For each elective measure, compute unlevered IRR using (1) annual energy/penalty savings, (2) the OM's exit cap rate, and (3) hold period from the OM. Only include measures with IRR ≥ deal hurdle rate in the "recommended" column; flag the rest as "below hurdle."
+Separate the table explicitly. **IRR screen:** For each elective measure, compute IRR using (1) annual energy/penalty savings and (2) hold period from the OM, then compare against the deal-derived hurdle rate.
+
+**Step 1 — Compute the unlevered hurdle rate (Ru) from deal inputs:**
+
+```
+Ru = (Re + Kd × D/E) / (1 + D/E)
+```
+
+Where `Re`, `Kd`, and `D/E` are extracted from Phase 1B Deal Finance fields. This is a policy-defensible formula, not an arbitrary hurdle — it weights equity and debt costs by the deal's actual capital structure.
+
+**Step 2 — Apply leverageability split:**
+
+- **Large capex items (> $500K, separately financeable):** Use **Ru** as the hurdle. These items can be re-leveraged at deal terms, so the blended cost of capital applies.
+- **Small / scattered items (< $500K, typically unlevered):** Use **Re** as the hurdle. Items too small to finance separately are effectively funded with equity only, so the equity return floor applies.
+
+**Stoneweg benchmark (use when deal-specific inputs are unavailable):** Ru = 13%; equity floor (Re) = 20%.
+
+Only include measures with IRR ≥ applicable hurdle in the "recommended" column; flag the rest as "below hurdle."
 
 **Utility recovery check before any NOI claim:** Before calculating NOI uplift from energy savings, determine who pays utilities:
 - **Master-metered / landlord-paid:** 100% of savings flow to NOI — capture fully.

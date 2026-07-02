@@ -758,8 +758,8 @@ fill_report({
     "RISK_LEVEL_CLASS": "signal-moderate",
     "RISK_LEVEL": "Moderate",
     "RISK_CLASS": "moderate",
-    "RISK_DESC": "One sentence explaining the risk driver.",
-    "RISK_DIMENSION": "Transition",
+    "RISK_DESC": "One sentence explaining the risk driver.",  ← REQUIRED — do not omit
+    "RISK_DIMENSION": "Transition",                          ← REQUIRED — do not omit (e.g. "Transition" or "Physical")
     "DEAL_SIGNAL_CLASS": "moderate",
     "DEAL_SIGNAL_LABEL": "Moderate Risk — CapEx",
     "DEAL_SIGNAL_NARRATIVE": "One to two sentences on deal signal.",

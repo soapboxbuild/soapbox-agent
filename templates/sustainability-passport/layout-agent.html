@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>[[PROPERTY_NAME]] — Sustainability Passport</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+.report{max-width:860px;margin:0 auto;padding:40px 0 80px}
+
+/* Header */
+.doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+.doc-header-eyebrow{font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+.doc-header-property-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
+.doc-header-address{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+.doc-header-meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.04em}
+
+/* Meta bar */
+.meta-bar{display:flex;gap:0;border-bottom:1px solid #E2E8F0;background:#fff}
+.meta-item{flex:1;padding:14px 20px;border-right:1px solid #E2E8F0}
+.meta-item:last-child{border-right:none}
+.meta-label{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B;margin-bottom:4px}
+.meta-val{font-size:18px;font-weight:700;color:#12253A;font-variant-numeric:tabular-nums;line-height:1}
+.meta-sub{font-size:11px;color:#64748B;margin-top:2px}
+
+/* Certification badges */
+.cert-strip{display:flex;flex-wrap:wrap;gap:8px;padding:16px 40px;background:#F1F4F8;border-bottom:1px solid #E2E8F0}
+.cert-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:#fff;border:1px solid #CBD5E1;border-radius:4px;font-size:11px;font-weight:600;color:#12253A}
+.cert-dot{width:8px;height:8px;border-radius:50%;background:#4CAF82}
+.cert-dot-exp{background:#F59E0B}
+
+/* Sections */
+.section{padding:32px 40px;background:#fff;margin-bottom:2px}
+.section-label{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+.section-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+.section-body{font-size:13px;line-height:1.7;color:#334155}
+
+/* Profile rows */
+.profile-dl{display:grid;gap:0}
+.profile-row{display:grid;grid-template-columns:180px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid #F1F4F8}
+.profile-row:last-child{border-bottom:none}
+.profile-dt{font-size:11px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+.profile-dd{font-size:13px;line-height:1.6;color:#334155}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+th{background:#F1F4F8;text-align:left;padding:8px 10px;font-weight:600;border:1px solid #E2E8F0;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#475569}
+td{padding:8px 10px;border:1px solid #E2E8F0;vertical-align:top;color:#334155}
+tr:nth-child(even) td{background:#FAFBFC}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* Risk / status indicators */
+.risk-high{color:#991B1B;font-weight:600}
+.risk-moderate{color:#92400E;font-weight:600}
+.risk-low{color:#065F46;font-weight:600}
+.risk-unknown{color:#475569;font-style:italic}
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-amber{background:#FEF3C7;color:#92400E}
+.badge-red{background:#FEE2E2;color:#991B1B}
+.badge-grey{background:#F1F5F9;color:#475569}
+.badge-blue{background:#DBEAFE;color:#1E40AF}
+
+/* CRREM chart */
+.chart-wrap{margin:12px 0;background:#FAFBFC;border:1px solid #E2E8F0;border-radius:4px;padding:16px;overflow-x:auto}
+
+/* Compliance alert */
+.compliance-alert{background:#FEF3C7;border-left:3px solid #F59E0B;padding:10px 14px;margin:12px 0;font-size:12px;color:#92400E;line-height:1.5}
+.compliance-clear{background:#D1FAE5;border-left:3px solid #10B981;padding:10px 14px;margin:12px 0;font-size:12px;color:#065F46;line-height:1.5}
+
+/* Footer */
+.report-footer{padding:24px 40px;background:#F1F4F8;border-top:2px solid #E2E8F0;font-size:11px;color:#64748B;line-height:1.6}
+.footer-sources{font-weight:600;color:#475569;margin-bottom:4px}
+.footer-limitation{font-style:italic;color:#94A3B8;font-size:10px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="report">
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <div class="doc-header-eyebrow">Soapbox Sustainability Intelligence &mdash; Sustainability Passport</div>
+    <div class="doc-header-property-name">[[PROPERTY_NAME]]</div>
+    <div class="doc-header-address">[[FULL_ADDRESS]]</div>
+  </div>
+  <div class="doc-header-meta-strip">
+    <span>Prepared: [[REPORT_DATE]]</span>
+    <span>Prepared by: Aris (Soapbox AI) for [[ORG_NAME]]</span>
+    <span style="color:#4CAF82;font-weight:600">CONFIDENTIAL</span>
+  </div>
+
+  <!-- META BAR -->
+  <div class="meta-bar">
+    <div class="meta-item">
+      <div class="meta-label">ENERGY STAR Score</div>
+      <div class="meta-val">[[ENERGY_STAR_SCORE]]</div>
+      <div class="meta-sub">out of 100</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Site EUI</div>
+      <div class="meta-val">[[SITE_EUI]]</div>
+      <div class="meta-sub">kBtu/SF/yr</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Carbon Intensity</div>
+      <div class="meta-val">[[CARBON_INTENSITY]]</div>
+      <div class="meta-sub">kgCO₂e/m²/yr</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">CRREM Alignment</div>
+      <div class="meta-val">[[CRREM_ALIGNMENT_YEAR]]</div>
+      <div class="meta-sub">stranding year if no action</div>
+    </div>
+  </div>
+
+  <!-- CERTIFICATION STRIP -->
+  <div class="cert-strip">
+    [[CERTIFICATION_BADGES]]
+    <!-- Example: <div class="cert-badge"><div class="cert-dot"></div>LEED Gold · 2023</div> -->
+  </div>
+
+  <!-- 1. PROPERTY OVERVIEW -->
+  <div class="section">
+    <div class="section-label">Section 1</div>
+    <h2 class="section-title">Property Overview</h2>
+    <div class="profile-dl">
+      <div class="profile-row"><div class="profile-dt">Property Type</div><div class="profile-dd">[[PROPERTY_TYPE]]</div></div>
+      <div class="profile-row"><div class="profile-dt">Gross Floor Area</div><div class="profile-dd">[[GFA_SF]] SF (([[GFA_M2]] m²)</div></div>
+      <div class="profile-row"><div class="profile-dt">Year Built / Renovated</div><div class="profile-dd">[[YEAR_BUILT_RENOVATED]]</div></div>
+      <div class="profile-row"><div class="profile-dt">Stories</div><div class="profile-dd">[[STORIES]]</div></div>
+      <div class="profile-row"><div class="profile-dt">Units / Tenants</div><div class="profile-dd">[[UNITS_TENANTS]]</div></div>
+      <div class="profile-row"><div class="profile-dt">Ownership / Fund</div><div class="profile-dd">[[OWNERSHIP_FUND]]</div></div>
+      <div class="profile-row"><div class="profile-dt">Occupancy</div><div class="profile-dd">[[OCCUPANCY_PCT]]%</div></div>
+      <div class="profile-row"><div class="profile-dt">Climate Zone</div><div class="profile-dd">[[CLIMATE_ZONE]]</div></div>
+      <div class="profile-row"><div class="profile-dt">Primary Heating Fuel</div><div class="profile-dd">[[PRIMARY_FUEL]]</div></div>
+    </div>
+  </div>
+
+  <!-- 2. ENERGY PERFORMANCE -->
+  <div class="section">
+    <div class="section-label">Section 2</div>
+    <h2 class="section-title">Energy Performance</h2>
+    <table>
+      <thead><tr>
+        <th>Metric</th>
+        <th class="num">Value</th>
+        <th class="num">National Median</th>
+        <th>Source</th>
+      </tr></thead>
+      <tbody>
+        [[ENERGY_PERFORMANCE_ROWS]]
+      </tbody>
+    </table>
+    <div class="section-body" style="margin-top:12px">[[ENERGY_NARRATIVE]]</div>
+  </div>
+
+  <!-- 3. CARBON FOOTPRINT -->
+  <div class="section">
+    <div class="section-label">Section 3</div>
+    <h2 class="section-title">Carbon Footprint</h2>
+    <table>
+      <thead><tr>
+        <th>Scope</th>
+        <th class="num">tCO₂e/yr</th>
+        <th class="num">kgCO₂e/m²/yr</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        [[CARBON_ROWS]]
+      </tbody>
+    </table>
+    <div class="section-body" style="margin-top:12px">[[CARBON_NARRATIVE]]</div>
+  </div>
+
+  <!-- 4. CRREM PATHWAY ALIGNMENT -->
+  <div class="section">
+    <div class="section-label">Section 4</div>
+    <h2 class="section-title">CRREM Pathway Alignment</h2>
+    <div class="chart-wrap">
+      [[CRREM_SVG]]
+    </div>
+    <table style="margin-top:12px">
+      <thead><tr>
+        <th>Year</th>
+        <th class="num">Asset (kgCO₂e/m²)</th>
+        <th class="num">CRREM 1.5°C Target</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>
+        [[CRREM_TABLE_ROWS]]
+      </tbody>
+    </table>
+    <div class="section-body" style="margin-top:12px">[[CRREM_NARRATIVE]]</div>
+  </div>
+
+  <!-- 5. GREEN CERTIFICATIONS -->
+  <div class="section">
+    <div class="section-label">Section 5</div>
+    <h2 class="section-title">Green Certifications</h2>
+    <table>
+      <thead><tr>
+        <th>Certification</th>
+        <th>Rating</th>
+        <th>Year</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        [[CERTIFICATION_ROWS]]
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. REGULATORY COMPLIANCE -->
+  <div class="section">
+    <div class="section-label">Section 6</div>
+    <h2 class="section-title">Regulatory Compliance</h2>
+    [[COMPLIANCE_ALERTS]]
+    <table style="margin-top:12px">
+      <thead><tr>
+        <th>Regulation</th>
+        <th>Jurisdiction</th>
+        <th>Status</th>
+        <th class="num">Exposure (no action)</th>
+        <th>Deadline</th>
+      </tr></thead>
+      <tbody>
+        [[COMPLIANCE_ROWS]]
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 7. PHYSICAL CLIMATE RISK -->
+  <div class="section">
+    <div class="section-label">Section 7 &mdash; TCFD</div>
+    <h2 class="section-title">Physical Climate Risk</h2>
+    <table>
+      <thead><tr>
+        <th>Hazard</th>
+        <th>Current Risk</th>
+        <th>2050 (RCP 4.5)</th>
+        <th>2050 (RCP 8.5)</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        [[PHYSICAL_RISK_ROWS]]
+      </tbody>
+    </table>
+    <div class="section-body" style="margin-top:12px">[[PHYSICAL_RISK_NARRATIVE]]</div>
+  </div>
+
+  <!-- 8. CAPITAL INVESTMENT HISTORY -->
+  <div class="section">
+    <div class="section-label">Section 8</div>
+    <h2 class="section-title">Capital Investment History</h2>
+    <table>
+      <thead><tr>
+        <th>Year</th>
+        <th>Measure</th>
+        <th class="num">CapEx</th>
+        <th class="num">Energy Savings</th>
+        <th>Verified</th>
+      </tr></thead>
+      <tbody>
+        [[CAPEX_HISTORY_ROWS]]
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 9. GREEN FINANCING ELIGIBILITY -->
+  <div class="section">
+    <div class="section-label">Section 9</div>
+    <h2 class="section-title">Green Financing Eligibility</h2>
+    <table>
+      <thead><tr>
+        <th>Program</th>
+        <th>Eligible</th>
+        <th>Estimated Benefit</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        [[GREEN_FINANCE_ROWS]]
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 10. GRESB INDICATORS -->
+  <div class="section">
+    <div class="section-label">Section 10</div>
+    <h2 class="section-title">GRESB Performance Indicators</h2>
+    <table>
+      <thead><tr>
+        <th>KPI</th>
+        <th class="num">Value</th>
+        <th>Unit</th>
+        <th>Source</th>
+        <th>Coverage</th>
+      </tr></thead>
+      <tbody>
+        [[GRESB_ROWS]]
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:#64748B;margin-top:10px">INREV SDDS coverage: <strong>[[INREV_COVERAGE_PCT]]%</strong> of mandatory KPIs available for this asset.</p>
+  </div>
+
+  <!-- 11. EU TAXONOMY -->
+  <div class="section">
+    <div class="section-label">Section 11</div>
+    <h2 class="section-title">EU Taxonomy Screening</h2>
+    <div class="section-body">[[EU_TAXONOMY_TEXT]]</div>
+    <table style="margin-top:12px">
+      <thead><tr>
+        <th>Objective</th>
+        <th>Screening Criterion</th>
+        <th>Status</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        [[EU_TAXONOMY_ROWS]]
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:#94A3B8;margin-top:10px;font-style:italic">Preliminary assessment only — legal counsel should confirm final taxonomy eligibility.</p>
+  </div>
+
+  <!-- 12. ESG NARRATIVE -->
+  <div class="section">
+    <div class="section-label">Section 12 &mdash; For Institutional Investors</div>
+    <h2 class="section-title">ESG Narrative</h2>
+    <div class="section-body">[[ESG_NARRATIVE]]</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="report-footer">
+    <div class="footer-sources">Data sources: ENERGY STAR Portfolio Manager &middot; Audette &middot; CRREM 2024 &middot; GRESB &middot; Climate Analytics &middot; Soapbox Sustainability Intelligence</div>
+    <div>Preparer: Aris (Soapbox AI) for [[ORG_NAME]] &middot; [[REPORT_DATE]]</div>
+    <div class="footer-limitation">This passport is prepared for information purposes only. Energy and carbon data reflect the most recent available reporting period. All regulatory exposure estimates are preliminary — engage qualified counsel before reliance. Physical risk assessments are modeled projections and carry material uncertainty at the single-asset level.</div>
+  </div>
+
+</div>
+</body>
+</html>

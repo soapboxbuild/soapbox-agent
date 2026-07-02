@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>[[PROPERTY_NAME]] — CRREM Pathway Analysis</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+.report{max-width:860px;margin:0 auto;padding:40px 0 80px}
+
+/* Header */
+.doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+.doc-header-eyebrow{font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+.doc-header-property-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
+.doc-header-address{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+.doc-header-meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.04em}
+
+/* Stranding alert bar */
+.stranding-bar{padding:14px 40px;display:flex;align-items:center;gap:16px;font-size:13px;font-weight:600}
+.stranding-bar.stranded{background:#FEE2E2;color:#991B1B;border-bottom:2px solid #FECACA}
+.stranding-bar.aligned{background:#D1FAE5;color:#065F46;border-bottom:2px solid #A7F3D0}
+.stranding-bar.at-risk{background:#FEF3C7;color:#92400E;border-bottom:2px solid #FDE68A}
+.stranding-icon{font-size:20px}
+
+/* KPI bar */
+.kpi-bar{display:flex;gap:0;background:#fff;border-bottom:1px solid #E2E8F0}
+.kpi-tile{flex:1;padding:16px 20px;border-right:1px solid #E2E8F0}
+.kpi-tile:last-child{border-right:none}
+.kpi-label{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B;margin-bottom:5px}
+.kpi-value{font-size:22px;font-weight:700;color:#12253A;font-variant-numeric:tabular-nums;line-height:1}
+.kpi-sub{font-size:11px;color:#64748B;margin-top:3px}
+
+/* Sections */
+.section{padding:32px 40px;background:#fff;margin-bottom:2px}
+.section-label{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+.section-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+.section-body{font-size:13px;line-height:1.7;color:#334155}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+th{background:#F1F4F8;text-align:left;padding:8px 10px;font-weight:600;border:1px solid #E2E8F0;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#475569}
+td{padding:8px 10px;border:1px solid #E2E8F0;vertical-align:top;color:#334155;font-variant-numeric:tabular-nums}
+tr:nth-child(even) td{background:#FAFBFC}
+th.num,td.num{text-align:right}
+
+/* Pathway status badges */
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.badge-aligned{background:#D1FAE5;color:#065F46}
+.badge-atrisk{background:#FEF3C7;color:#92400E}
+.badge-stranded{background:#FEE2E2;color:#991B1B}
+.badge-grey{background:#F1F5F9;color:#475569}
+
+/* Chart */
+.chart-wrap{margin:12px 0;background:#FAFBFC;border:1px solid #E2E8F0;border-radius:4px;padding:16px;overflow-x:auto}
+.chart-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;font-size:11px;color:#475569}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-line{width:24px;height:3px;border-radius:2px}
+.legend-actual{background:#2563EB}
+.legend-crrem{background:#DC2626}
+.legend-bau{background:#94A3B8}
+.legend-decarb{background:#059669}
+
+/* Measure table highlights */
+.measure-mandatory{background:#FEF3C7 !important}
+.measure-top{background:#EFF6FF !important}
+
+/* Footer */
+.report-footer{padding:24px 40px;background:#F1F4F8;border-top:2px solid #E2E8F0;font-size:11px;color:#64748B;line-height:1.6}
+.footer-sources{font-weight:600;color:#475569;margin-bottom:4px}
+.footer-limitation{font-style:italic;color:#94A3B8;font-size:10px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="report">
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <div class="doc-header-eyebrow">Soapbox Sustainability Intelligence &mdash; CRREM Pathway Analysis</div>
+    <div class="doc-header-property-name">[[PROPERTY_NAME]]</div>
+    <div class="doc-header-address">[[FULL_ADDRESS]] &nbsp;&middot;&nbsp; [[PROPERTY_TYPE]] &nbsp;&middot;&nbsp; [[GFA_SF]] SF</div>
+  </div>
+  <div class="doc-header-meta-strip">
+    <span>Prepared: [[REPORT_DATE]]</span>
+    <span>Prepared by: Aris (Soapbox AI) for [[ORG_NAME]]</span>
+    <span style="color:#4CAF82;font-weight:600">CONFIDENTIAL</span>
+  </div>
+
+  <!-- STRANDING STATUS BAR -->
+  <!-- Set class to: stranded / at-risk / aligned based on [[STRANDING_STATUS_CLASS]] -->
+  <div class="stranding-bar [[STRANDING_STATUS_CLASS]]">
+    <span class="stranding-icon">[[STRANDING_ICON]]</span>
+    <span>[[STRANDING_HEADLINE]]</span>
+  </div>
+
+  <!-- KPI BAR -->
+  <div class="kpi-bar">
+    <div class="kpi-tile">
+      <div class="kpi-label">Current Carbon Intensity</div>
+      <div class="kpi-value">[[CURRENT_CARBON_INTENSITY]]</div>
+      <div class="kpi-sub">kgCO₂e/m²/yr</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">CRREM 2030 Target</div>
+      <div class="kpi-value">[[CRREM_2030_TARGET]]</div>
+      <div class="kpi-sub">kgCO₂e/m²/yr</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Gap to 2030 Target</div>
+      <div class="kpi-value">[[GAP_TO_2030]]</div>
+      <div class="kpi-sub">kgCO₂e/m²/yr over pathway</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Stranding Year</div>
+      <div class="kpi-value">[[STRANDING_YEAR]]</div>
+      <div class="kpi-sub">if no action taken</div>
+    </div>
+  </div>
+
+  <!-- PATHWAY CHART -->
+  <div class="section">
+    <div class="section-label">Carbon Trajectory</div>
+    <h2 class="section-title">CRREM Pathway vs. Asset Trajectory</h2>
+    <div class="chart-wrap">
+      [[CRREM_PATHWAY_SVG]]
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-line legend-actual"></div>Asset (actual)</div>
+      <div class="legend-item"><div class="legend-line legend-crrem"></div>CRREM 1.5°C pathway</div>
+      <div class="legend-item"><div class="legend-line legend-bau"></div>BAU projection</div>
+      <div class="legend-item"><div class="legend-line legend-decarb"></div>With measures</div>
+    </div>
+  </div>
+
+  <!-- PATHWAY TABLE -->
+  <div class="section">
+    <div class="section-label">Year-by-Year</div>
+    <h2 class="section-title">Pathway Data Table</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Year</th>
+        <th class="num">Asset (kgCO₂e/m²)</th>
+        <th class="num">CRREM Target</th>
+        <th class="num">Gap</th>
+        <th class="num">With Measures</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>
+        [[PATHWAY_TABLE_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- STRANDING RISK -->
+  <div class="section">
+    <div class="section-label">Stranding Risk</div>
+    <h2 class="section-title">Stranding Risk Assessment</h2>
+    <div class="section-body">[[STRANDING_NARRATIVE]]</div>
+    <table style="margin-top:16px">
+      <thead><tr>
+        <th>Scenario</th>
+        <th>Stranding Year</th>
+        <th class="num">Cumulative Carbon Gap (tCO₂e)</th>
+        <th>Financial Exposure</th>
+      </tr></thead>
+      <tbody>
+        [[STRANDING_SCENARIOS_ROWS]]
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DECARBONIZATION MEASURES -->
+  <div class="section">
+    <div class="section-label">Recommended Actions</div>
+    <h2 class="section-title">Decarbonization Measures</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Measure</th>
+        <th>Category</th>
+        <th class="num">CapEx</th>
+        <th class="num">Carbon Reduction (tCO₂e/yr)</th>
+        <th class="num">New Intensity (kgCO₂e/m²)</th>
+        <th>Pathway Impact</th>
+      </tr></thead>
+      <tbody>
+        [[MEASURES_ROWS]]
+      </tbody>
+    </table>
+    </div>
+    <div class="section-body" style="margin-top:12px">[[MEASURES_NARRATIVE]]</div>
+  </div>
+
+  <!-- ENERGY SOURCE BREAKDOWN -->
+  <div class="section">
+    <div class="section-label">Energy Sources</div>
+    <h2 class="section-title">Energy Source & Emissions Breakdown</h2>
+    <table>
+      <thead><tr>
+        <th>Source</th>
+        <th class="num">Consumption (kBtu/yr)</th>
+        <th class="num">% of Total</th>
+        <th class="num">Emissions (tCO₂e/yr)</th>
+        <th class="num">Emission Factor</th>
+      </tr></thead>
+      <tbody>
+        [[ENERGY_SOURCE_ROWS]]
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PEER COMPARISON -->
+  <div class="section">
+    <div class="section-label">Benchmarking</div>
+    <h2 class="section-title">Peer Comparison</h2>
+    <table>
+      <thead><tr>
+        <th>Benchmark</th>
+        <th class="num">kgCO₂e/m²/yr</th>
+        <th>vs. This Asset</th>
+      </tr></thead>
+      <tbody>
+        [[PEER_COMPARISON_ROWS]]
+      </tbody>
+    </table>
+    <div class="section-body" style="margin-top:12px">[[BENCHMARK_NARRATIVE]]</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="report-footer">
+    <div class="footer-sources">Data sources: CRREM v2 (2024) &middot; Audette &middot; ENERGY STAR &middot; Soapbox Sustainability Intelligence</div>
+    <div>CRREM pathways based on 1.5°C scenario for [[PROPERTY_TYPE]] in [[COUNTRY]]. Utility emission factors: [[GRID_EMISSION_FACTOR]] kgCO₂e/kWh ([[GRID_FACTOR_YEAR]]).</div>
+    <div class="footer-limitation">Carbon intensity calculations are based on available utility data. Estimates marked (est.) use peer-group medians and carry ±30% uncertainty. CRREM pathways are subject to revision — verify against current CRREM tool at crrem.org.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "template-mcp",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "MCP server that serves Soapbox report HTML templates by type",
   "type": "module",
   "scripts": {

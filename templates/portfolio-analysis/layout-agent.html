@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>[[CLIENT_NAME]] Portfolio — Decarbonization Analysis</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
+.report{max-width:960px;margin:0 auto;padding:40px 0 80px}
+
+/* Header */
+.doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+.doc-header-eyebrow{font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#4CAF82;margin-bottom:10px}
+.doc-header-title{font-size:26px;font-weight:700;line-height:1.2;margin-bottom:6px}
+.doc-header-sub{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+.meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.04em}
+
+/* KPI bar */
+.kpi-bar{display:flex;gap:0;border-bottom:2px solid #E2E8F0}
+.kpi-tile{flex:1;padding:20px 24px;background:#fff;border-right:1px solid #E2E8F0;border-bottom:none}
+.kpi-tile:last-child{border-right:none}
+.kpi-label{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#64748B;margin-bottom:6px}
+.kpi-value{font-size:24px;font-weight:700;color:#12253A;font-variant-numeric:tabular-nums;line-height:1}
+.kpi-sub{font-size:11px;color:#64748B;margin-top:4px}
+.kpi-accent{color:#1F6B45}
+
+/* Sections */
+.section{padding:32px 40px;background:#fff;margin-bottom:2px}
+.section-label{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+.section-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
+.section-body{font-size:13px;line-height:1.7;color:#334155}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:12px;margin:12px 0}
+th{background:#F1F4F8;text-align:left;padding:8px 10px;font-weight:600;border:1px solid #E2E8F0;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#475569}
+td{padding:8px 10px;border:1px solid #E2E8F0;vertical-align:top;color:#334155;font-variant-numeric:tabular-nums}
+tr:nth-child(even) td{background:#FAFBFC}
+th.num,td.num{text-align:right}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:#12253A;color:#fff;border-radius:50%;font-size:10px;font-weight:700}
+
+/* IRR badges */
+.irr-strong{color:#065F46;font-weight:600}
+.irr-mid{color:#92400E;font-weight:600}
+.irr-weak{color:#991B1B;font-weight:600}
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.badge-green{background:#D1FAE5;color:#065F46}
+.badge-amber{background:#FEF3C7;color:#92400E}
+.badge-red{background:#FEE2E2;color:#991B1B}
+.badge-grey{background:#F1F5F9;color:#475569}
+
+/* SVG chart wrapper */
+.chart-wrap{margin:16px 0;background:#FAFBFC;border:1px solid #E2E8F0;border-radius:4px;padding:16px;overflow-x:auto}
+.chart-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;font-size:11px;color:#475569}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-line{width:24px;height:3px;border-radius:2px}
+.legend-bau{background:#94A3B8}
+.legend-decarb{background:#2563EB}
+.legend-max{background:#059669}
+.legend-crrem{background:#DC2626}
+.legend-goal{background:#D97706}
+
+/* Footer */
+.report-footer{padding:24px 40px;background:#F1F4F8;border-top:2px solid #E2E8F0;font-size:11px;color:#64748B;line-height:1.6}
+.footer-sources{font-weight:600;color:#475569;margin-bottom:4px}
+.footer-params{margin-bottom:8px}
+.footer-limitation{font-style:italic;color:#94A3B8;font-size:10px}
+
+/* Conditional sections — agent removes .hidden sections */
+.section-conditional{display:block}
+</style>
+</head>
+<body>
+<div class="report">
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <div class="doc-header-eyebrow">Soapbox Sustainability Intelligence &mdash; Portfolio Decarbonization Analysis</div>
+    <div class="doc-header-title">[[CLIENT_NAME]] Portfolio</div>
+    <div class="doc-header-sub">[[ASSET_COUNT]] assets &nbsp;&middot;&nbsp; [[FUND_LIST]]</div>
+  </div>
+  <div class="meta-strip">
+    <span>Prepared: [[REPORT_DATE]]</span>
+    <span>Prepared by: Aris (Soapbox AI) for [[ORG_NAME]]</span>
+    <span style="color:#4CAF82;font-weight:600">CONFIDENTIAL</span>
+  </div>
+
+  <!-- KPI BAR -->
+  <div class="kpi-bar">
+    <div class="kpi-tile">
+      <div class="kpi-label">Total CapEx (Net)</div>
+      <div class="kpi-value">[[TOTAL_CAPEX_NET]]</div>
+      <div class="kpi-sub">after incentives</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Value Creation</div>
+      <div class="kpi-value kpi-accent">[[VALUE_CREATION]]</div>
+      <div class="kpi-sub">NPV of NOI uplift at exit</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Emissions Reduction</div>
+      <div class="kpi-value">[[EMISSIONS_REDUCTION]]</div>
+      <div class="kpi-sub">tCO₂e across portfolio</div>
+    </div>
+    <div class="kpi-tile">
+      <div class="kpi-label">Assets Above Hurdle</div>
+      <div class="kpi-value">[[ASSETS_ABOVE_HURDLE]] <span style="font-size:14px;font-weight:400;color:#64748B">/ [[ASSETS_TOTAL]]</span></div>
+      <div class="kpi-sub">at [[IRR_HURDLE]]% IRR</div>
+    </div>
+    <!-- OPTIONAL 5th tile — include only if org_goal is set -->
+    <!-- <div class="kpi-tile"><div class="kpi-label">Org Goal Progress</div><div class="kpi-value">[[ORG_GOAL_PCT]]%</div><div class="kpi-sub">of [[ORG_GOAL_LABEL]] under 15% pathway</div></div> -->
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section">
+    <div class="section-label">Overview</div>
+    <h2 class="section-title">Executive Summary</h2>
+    <div class="section-body">[[EXECUTIVE_SUMMARY_TEXT]]</div>
+  </div>
+
+  <!-- FUND-LEVEL SUMMARY -->
+  <div class="section">
+    <div class="section-label">Fund View</div>
+    <h2 class="section-title">Fund-Level Summary</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Fund</th>
+        <th class="num">Assets</th>
+        <th class="num">CapEx Net</th>
+        <th class="num">Value Creation</th>
+        <th class="num">Emissions Reduction</th>
+        <th class="num">Avg IRR</th>
+      </tr></thead>
+      <tbody>
+        [[FUND_TABLE_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- TOP 10 ASSETS -->
+  <div class="section">
+    <div class="section-label">Asset Ranking</div>
+    <h2 class="section-title">Top 10 Assets by Value Creation</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>#</th>
+        <th>Asset</th>
+        <th>Fund</th>
+        <th class="num">Exit</th>
+        <th class="num">CapEx Net</th>
+        <th class="num">Value Created</th>
+        <th>Lead Measure</th>
+      </tr></thead>
+      <tbody>
+        [[TOP_ASSETS_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- MEASURE CATEGORY SUMMARY -->
+  <div class="section">
+    <div class="section-label">Measure Breakdown</div>
+    <h2 class="section-title">Measure Category Summary</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Category</th>
+        <th class="num">Assets</th>
+        <th class="num">CapEx Net</th>
+        <th class="num">Value Creation</th>
+        <th class="num">tCO₂ Reduced</th>
+      </tr></thead>
+      <tbody>
+        [[MEASURE_CATEGORY_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- EMISSIONS TRAJECTORY — include only if include_crrem: true -->
+  <div class="section section-conditional" id="section-emissions">
+    <div class="section-label">Pathway Analysis</div>
+    <h2 class="section-title">Emissions Trajectory (2025–2050)</h2>
+    <div class="chart-wrap">
+      [[EMISSIONS_SVG]]
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-line legend-bau"></div>BAU</div>
+      <div class="legend-item"><div class="legend-line legend-decarb"></div>15% IRR Pathway</div>
+      <div class="legend-item"><div class="legend-line legend-max"></div>Maximum Decarb</div>
+      <div class="legend-item"><div class="legend-line legend-crrem"></div>CRREM 1.5°C Target</div>
+      <!-- <div class="legend-item"><div class="legend-line legend-goal"></div>[[ORG_GOAL_LABEL]]</div> -->
+    </div>
+    <div style="margin-top:16px;overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Scenario</th>
+        <th class="num">2030 (kgCO₂e/m²)</th>
+        <th class="num">2035</th>
+        <th class="num">2040</th>
+        <th class="num">2050</th>
+      </tr></thead>
+      <tbody>
+        [[EMISSIONS_TABLE_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- CRREM PATHWAY ANALYSIS — include only if include_crrem: true -->
+  <div class="section section-conditional" id="section-crrem">
+    <div class="section-label">CRREM</div>
+    <h2 class="section-title">CRREM Pathway Analysis</h2>
+    <div class="section-body">[[CRREM_NARRATIVE]]</div>
+    <table style="margin-top:16px">
+      <thead><tr>
+        <th>Stranding Status</th>
+        <th class="num">Today</th>
+        <th class="num">With Measures</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Assets stranding now</td><td class="num">[[STRANDING_TODAY]]</td><td class="num">[[STRANDING_WITH_MEASURES]]</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- BPS EXPOSURE — include only if include_bps: true -->
+  <div class="section section-conditional" id="section-bps">
+    <div class="section-label">Regulatory Risk</div>
+    <h2 class="section-title">Building Performance Standards Exposure</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Asset</th>
+        <th>BPS Status</th>
+        <th class="num">Fine (no action)</th>
+        <th class="num">Fine Avoidance</th>
+      </tr></thead>
+      <tbody>
+        [[BPS_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ASSET-BY-ASSET DETAIL -->
+  <div class="section">
+    <div class="section-label">Asset Detail</div>
+    <h2 class="section-title">Asset-by-Asset Detail</h2>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Asset</th>
+        <th>Fund</th>
+        <th class="num">Exit</th>
+        <th class="num">CapEx Net</th>
+        <th class="num">Value Created</th>
+        <th class="num">Avg IRR</th>
+        <!-- add CRREM Status column if include_crrem: true -->
+        <!-- add BPS Exposure column if include_bps: true -->
+      </tr></thead>
+      <tbody>
+        [[ASSET_DETAIL_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- BELOW-HURDLE MEASURES -->
+  <div class="section">
+    <div class="section-label">Reference</div>
+    <h2 class="section-title">Below-Hurdle Measures</h2>
+    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.6">These measures do not meet the [[IRR_HURDLE]]% hurdle at stated assumptions. They may become viable under different hold periods, exit cap rates, or if utility rates escalate faster.</p>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Asset</th>
+        <th>Measure</th>
+        <th class="num">CapEx</th>
+        <th class="num">IRR</th>
+        <th>Barrier</th>
+      </tr></thead>
+      <tbody>
+        [[BELOW_HURDLE_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- DEFERRED MEASURES -->
+  <div class="section">
+    <div class="section-label">Timing</div>
+    <h2 class="section-title">Deferred Measures</h2>
+    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.6">Measures deferred due to retrofit lead-time constraints or scheduling dependencies.</p>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Asset</th>
+        <th>Measure</th>
+        <th class="num">Install Year</th>
+        <th>Reason</th>
+      </tr></thead>
+      <tbody>
+        [[DEFERRED_ROWS]]
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- DATA QUALITY NOTES -->
+  <div class="section">
+    <div class="section-label">Methodology</div>
+    <h2 class="section-title">Data Quality Notes</h2>
+    <div class="section-body">[[DATA_QUALITY_NOTES]]</div>
+    <p style="margin-top:12px;font-size:12px;font-style:italic;color:#94A3B8">All values labeled (est.) are based on BPD MCP peer-group median EUI and carry ±40% uncertainty.</p>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="report-footer">
+    <div class="footer-sources">Data sources: Audette &middot; Soapbox DCF Engine &middot; CRREM 2024 &middot; IRA §48E/§179D &middot; BPD (LBNL)</div>
+    <div class="footer-params">Parameters: IRR [[IRR_HURDLE]]% &middot; Utility escalation [[UTILITY_ESCALATION]]% &middot; Exit year floor [[EXIT_YEAR_FLOOR]] &middot; Value-inclusive IRR</div>
+    <div class="footer-limitation">This analysis is based on data available at time of run. CapEx estimates carry ±30% uncertainty without site inspection. IRR sensitivity to exit cap rate is high — a 50bp cap rate change can move IRR by 3–5pp. Verify with physical due diligence before committing capital.</div>
+  </div>
+
+</div>
+</body>
+</html>

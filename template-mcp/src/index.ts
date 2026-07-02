@@ -7,16 +7,18 @@ const REPO = 'https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main'
 const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'portfolio-analysis', 'decarb', 'retrofit-advisor'] as const
 type ReportType = typeof KNOWN_TYPES[number]
 
-// In-memory cache — templates are static between deploys
-const templateCache = new Map<ReportType, string>()
+// In-memory cache with 5-minute TTL — re-fetches after template updates without requiring a redeploy
+const CACHE_TTL_MS = 5 * 60 * 1000
+const templateCache = new Map<ReportType, { html: string; fetchedAt: number }>()
 
 async function fetchTemplate(report_type: ReportType): Promise<string | null> {
-  if (templateCache.has(report_type)) return templateCache.get(report_type)!
+  const cached = templateCache.get(report_type)
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached.html
   const url = `${REPO}/templates/${report_type}/layout-agent.html`
   const res = await fetch(url, { signal: AbortSignal.timeout(10_000) })
-  if (!res.ok) return null
+  if (!res.ok) return cached?.html ?? null  // fall back to stale on fetch error
   const html = await res.text()
-  templateCache.set(report_type, html)
+  templateCache.set(report_type, { html, fetchedAt: Date.now() })
   return html
 }
 

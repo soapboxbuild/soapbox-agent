@@ -55,8 +55,10 @@ wizard call the same soapbox-api endpoints and must stay convention-compatible:*
 - API: `https://soapbox-api-production.up.railway.app`; every call needs
   `Authorization: Bearer <token>` + `x-organization-id: <org uuid>` (tenant
   middleware resolves the portfolio from the org).
-- Supabase project `fplbvanvwvnviczozwhz` (direct SQL via Supabase MCP) for the few
-  fields the API doesn't expose.
+- Supabase project `fplbvanvwvnviczozwhz` (direct SQL via Supabase MCP) for the
+  steps with no API endpoint: org + member creation, connector-row copies,
+  metadata jsonb merges, and verification rollups. All asset fields go through
+  the API.
 - Scripts (already built, `scripts/`): `portfolio_match.py` (fuzzy matching),
   `document_classifier.py` (doc typing), `ll_allocation.py` (LL/TT tree). Use them
   when name matches aren't obvious; skip when filenames are unambiguous.
@@ -98,10 +100,11 @@ Per asset:
   "portfolio-onboarding"`, `batch`, `setup_complete: false`, num_buildings,
   archetype, regulatory_driver, energy (with source + units), equipment_survey,
   and confidence notes.
-- SQL for fields PATCH doesn't expose: `street_address, city, state_province,
-  postal_zip_code, country, property_type, gross_floor_area_m2 (ft² × 0.09290304),
-  year_built, tags` (tag with `portfolio-onboarding` + `<client>-batch-N`).
-  (Platform fix queued: expose these in PATCH; check before scripting SQL.)
+- `PATCH /api/assets/:id` also accepts (since soapbox-api `962ab29`, 2026-07-02):
+  `street_address, city, state_province, postal_zip_code, country, property_type,
+  gross_floor_area_m2 (ft² × 0.09290304), year_built, num_floors, tags` (tag with
+  `portfolio-onboarding` + `<client>-batch-N`). No direct SQL needed for asset
+  fields — everything goes through the API.
 
 ## Stage 3 — Audette linking + grouping
 

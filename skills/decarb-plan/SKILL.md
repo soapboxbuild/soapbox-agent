@@ -158,6 +158,28 @@ Gather every source; record everything in state as you go.
    `state.citations` as `{claim, source, provenance, url}`. No uncited claims survive to the
    report.
 
+### P1.5 — Building-model validation (HARD GATE before any upload/calibration)
+
+The Audette building count and per-building GFA are frequently auto-generated (footprint-matched
+or total÷N) and WRONG. Before uploading utility/equipment data or calibrating, reconcile the model
+against ground truth:
+
+- Pull per-building footprints from the **ALTA / boundary survey** and **PCA** (search the asset's
+  documents). These give real building count, per-building footprint/GFA, and structure type
+  (residential vs clubhouse/amenity vs utility/mechanical).
+- Confirm, and record each check as state: (a) building COUNT matches the survey; (b) each building's
+  GFA matches its real footprint (not an even split); (c) the sum of building GFAs reconciles to the
+  property total (flag any unexplained delta); (d) non-residential structures are identified and typed.
+- If the model does NOT reconcile (wrong count, even-split GFAs, unreconciled total, mis-typed
+  amenity buildings), **STOP**: record a `verifier__record_finding` (kind data-quality, asset_id,
+  severity high) describing the discrepancy and surface it for adjudication. Do NOT upload utility
+  data, calibrate, or generate measures against a model that fails validation — a 10–20% calibration
+  "gap" is usually a building-model error, not an emission-factor difference.
+- Only once the model reconciles (or the owner adjudicates the correct structure) proceed. Then apply
+  the [[utility-split-estimation]] allocation rule: carve out common/amenity loads first, allocate the
+  remainder GFA-weighted (never even), and set landlord shares per building/end-use (tenant-metered
+  fuel = 0% on residential buildings, 100% on amenity buildings).
+
 Set `phase: "P2"` and save.
 
 ---

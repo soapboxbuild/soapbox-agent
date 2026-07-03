@@ -123,13 +123,13 @@ Never ask more than one question per message.
 
 ## Step 4: Confirm and Save
 
-After all 6 questions, present a summary and ask for confirmation:
+After all the project type's questions, present a summary and ask for confirmation:
 
 > "Here's what I've captured for this project. Does everything look correct?"
-> [Show all 6 answers as a bulleted list]
+> [Show all answers as a bulleted list]
 > Options: Looks good — save it | I need to change something
 
-If "I need to change something": ask which question to revisit (options: list the 6 question
+If "I need to change something": ask which question to revisit (options: list the question
 titles), then loop back to that question, then return here.
 
 Once confirmed: proceed to Step 5.

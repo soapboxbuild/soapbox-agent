@@ -1,0 +1,308 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "soapbox-agent/skills/decarb-plan/state-schema.json",
+  "title": "Decarb-Plan Engagement State Ledger",
+  "description": "State ledger for a decarb-plan engagement, written to projects/<asset-key>/decarb-plan.json. Shape copied from the 2026-07-03 decarb-plan workflow design spec ('State ledger' section). Every phase section is optional at the top level; `phase` records the current position. `kickoff` is extended beyond the spec's minimal shape with the field-by-field output of the decarb-plan project type; `citations` and `report.overrides` are extensions referenced by SKILL.md.",
+  "type": "object",
+  "required": ["phase", "asset"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "enum": ["P0", "P1", "P2", "GATE1", "P3", "GATE2", "P4", "P5", "done"],
+      "description": "Current phase. Post-Gate-1 baseline changes set this back to GATE1."
+    },
+    "asset": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "type": "string", "description": "Soapbox asset UUID" },
+        "name": { "type": "string" },
+        "portfolio_id": { "type": "string" }
+      }
+    },
+    "kickoff": {
+      "type": "object",
+      "properties": {
+        "goal": { "type": "string" },
+        "drivers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "driver_type": { "type": "string" },
+              "detail": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "target": {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["crrem", "percent", "bps-fine-avoidance", "net-zero-year"]
+            },
+            "value": { "type": ["number", "string", "null"] },
+            "basis": { "type": ["string", "null"] }
+          }
+        },
+        "secondary_targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["crrem", "percent", "bps-fine-avoidance", "net-zero-year"]
+              },
+              "value": { "type": ["number", "string", "null"] },
+              "basis": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "hold_period_years": { "type": ["number", "null"] },
+        "budget_ceiling": { "type": ["string", "number", "null"] },
+        "capital_events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "event": { "type": "string" },
+              "target_date": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "equipment_commitments": { "type": ["string", "null"] },
+        "financing_appetite": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "turn_schedule": { "type": ["string", "null"] },
+        "disruption_tolerance": {
+          "type": ["string", "null"],
+          "enum": ["none", "light", "in-unit", "vacancy-required", null]
+        },
+        "existing_docs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "status": { "type": "string", "enum": ["on_file", "outdated", "missing"] }
+            }
+          }
+        },
+        "documents_expected": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "provider": { "type": ["string", "null"] },
+              "expected_date": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "cap_rate": {
+          "type": "object",
+          "properties": {
+            "value": { "type": ["number", "string", "null"] },
+            "source": {
+              "type": ["string", "null"],
+              "description": "Recorded verbatim from kickoff — never paraphrased"
+            }
+          }
+        },
+        "stakeholders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string" },
+              "name_firm": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "review_cadence": { "type": ["string", "null"] },
+        "deadline": { "type": ["string", "null"] },
+        "primary_contact": {
+          "type": "object",
+          "properties": {
+            "name": { "type": ["string", "null"] },
+            "email": { "type": ["string", "null"] }
+          }
+        }
+      }
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string", "enum": ["audit", "pca", "utility", "other"] },
+          "storage_path": { "type": "string" },
+          "read": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "description": "One entry per baseline field (e.g. electricity_kwh_yr, gas_gj_yr, gfa, units, emissions_tco2e). Every value carries its unit and source.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value", "source"],
+        "properties": {
+          "value": { "type": ["number", "string", "array", "object", "null"] },
+          "unit": { "type": "string" },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["field", "candidates", "suggested", "finding_id"],
+        "properties": {
+          "field": { "type": "string" },
+          "candidates": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["value", "source"],
+              "properties": {
+                "value": { "type": ["number", "string", "null"] },
+                "source": { "type": "string" }
+              }
+            }
+          },
+          "suggested": {
+            "type": "object",
+            "required": ["value", "source", "rule"],
+            "properties": {
+              "value": { "type": ["number", "string", "null"] },
+              "source": { "type": "string" },
+              "rule": {
+                "type": "string",
+                "description": "Named hierarchy rule that produced the suggestion (suggestion only — never auto-applied)"
+              }
+            }
+          },
+          "adjudication": {
+            "type": "object",
+            "description": "Present only after the user adjudicates at Gate 1",
+            "required": ["value", "source", "adjudicated_by", "date"],
+            "properties": {
+              "value": { "type": ["number", "string", "null"] },
+              "source": { "type": "string" },
+              "adjudicated_by": { "type": "string", "const": "user" },
+              "date": { "type": "string" }
+            }
+          },
+          "finding_id": {
+            "type": "string",
+            "description": "verifier__record_finding id for this conflict"
+          }
+        }
+      }
+    },
+    "targets": {
+      "type": "object",
+      "properties": {
+        "trajectory": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Engine-computed pathway points (e.g. {year, target_intensity, projected_intensity})"
+        },
+        "bps_milestones": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Jurisdiction milestone rows (e.g. {year, requirement, projected_status})"
+        },
+        "fine_exposure": {
+          "type": "object",
+          "description": "Engine-computed fine exposure by milestone year"
+        },
+        "confirmed_at": { "type": ["string", "null"], "description": "Set at Gate 1 approval" }
+      }
+    },
+    "measures": {
+      "type": "object",
+      "properties": {
+        "register_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Retrofit-register measure ids from retrofit__evaluate_measure"
+        },
+        "roadmap_phases": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Phased roadmap rows (e.g. {phase, measures, capex, noi_delta, exit_impact, trigger})"
+        },
+        "gap_statement": { "type": "string" },
+        "gate2_confirmed_at": { "type": ["string", "null"], "description": "Set at Gate 2 approval" }
+      }
+    },
+    "audette": {
+      "type": "object",
+      "properties": {
+        "building_uid": {
+          "type": ["string", "array"],
+          "items": { "type": "string" },
+          "description": "Audette building model uid(s) — one property may hold several buildings"
+        },
+        "custom_plan_id": { "type": ["string", "null"] },
+        "survey_corrections_submitted": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    },
+    "citations": {
+      "type": "array",
+      "description": "Extension: every research claim recorded in P1 with provenance",
+      "items": {
+        "type": "object",
+        "required": ["claim", "source", "provenance"],
+        "properties": {
+          "claim": { "type": "string" },
+          "source": { "type": "string" },
+          "provenance": { "type": "string", "enum": ["library", "web"] },
+          "url": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "properties": {
+        "data_json_path": { "type": "string" },
+        "verification_status": {
+          "type": ["string", "null"],
+          "description": "Result of verifier__verification_status at the render gate (e.g. pass|fail)"
+        },
+        "overrides": {
+          "type": "array",
+          "description": "Documented overrides for open high-severity findings — required for render when verification_status is not pass",
+          "items": {
+            "type": "object",
+            "required": ["finding_id", "override_reason", "approved_by"],
+            "properties": {
+              "finding_id": { "type": "string" },
+              "override_reason": { "type": "string" },
+              "approved_by": { "type": "string" }
+            }
+          }
+        },
+        "render_iterations": { "type": "integer", "default": 0 },
+        "exports": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Paths of exported deliverables (PDF/PPTX)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "phase": "GATE1",
+  "asset": {"id": "02848996-666e-41c9-9687-fd70edaf0653", "name": "Cortland Westminster", "portfolio_id": "8cea3d4f-2387-4f89-beb2-60937dc761e1"},
+  "kickoff": {
+    "goal": "Position Cortland Westminster for GRESB technical-assessment points via a documented, verified decarbonization pathway that clears CO Reg 28 milestones within a 7-year hold",
+    "drivers": ["gresb-technical-assessment-points", "bps-compliance-co-reg-28"],
+    "target": {"type": "bps-fine-avoidance", "value": null, "basis": "Colorado Regulation 28 (HB21-1286): -7% GHG by 2026, -20% by 2030 vs 2021 baseline; >50k sf covered building"},
+    "secondary_targets": [],
+    "hold_period_years": 7,
+    "capital_events": [],
+    "equipment_commitments": ["none planned; gas DHW (2014) and split AHUs w/ gas heat (2009) age naturally within hold"],
+    "budget_ceiling": null,
+    "financing_appetite": "hurdle-driven",
+    "irr_hurdle": {"value": 0.12, "source": "client guidance, Christopher, 2026-07-03 (12% IRR)"},
+    "turn_schedule": null,
+    "disruption_tolerance": "light",
+    "existing_docs": ["AEI Energy & Water Audit 475250-EA1 (Nov 2023)", "15359-PCA-Cortland Westminster (draft)", "Westminster CO Survey 2021"],
+    "documents_expected": [],
+    "cap_rate": {"value": 0.055, "source": "client guidance range 5.25-5.5%, Christopher, 2026-07-03; conservative end (5.5%) used for exit math, range noted"},
+    "stakeholders": ["Christopher (Soapbox, engagement lead)"],
+    "review_cadence": "two gates + final report review",
+    "deadline": "~2 weeks from 2026-07-03",
+    "primary_contact": "Christopher"
+  },
+  "documents": [
+    {"name": "AEI Energy & Water Audit 475250-EA1 (Nov 2023)", "type": "audit", "storage_path": null, "read": true},
+    {"name": "15359-PCA-Cortland Westminster (draft)", "type": "pca", "storage_path": null, "read": true},
+    {"name": "Westminster CO Survey 2021", "type": "other", "storage_path": null, "read": true}
+  ],
+  "baseline": {
+    "electricity_kwh": {"value": 3000668, "unit": "kWh/yr", "source": "AEI Energy & Water Audit 475250-EA1 (Nov 2023)"},
+    "electricity_cost": {"value": 487426, "unit": "USD/yr", "source": "AEI Energy & Water Audit 475250-EA1 (Nov 2023)"},
+    "gas_gj": {"value": 24154, "unit": "GJ/yr", "source": "AEI Energy & Water Audit 475250-EA1 (Nov 2023)"},
+    "gas_cost": {"value": 371948, "unit": "USD/yr", "source": "AEI Energy & Water Audit 475250-EA1 (Nov 2023)"},
+    "owner_tenant_gas_split": {"value": "owner-paid $371,948/yr (100% of billed gas figure attributed to owner)", "unit": "USD/yr", "source": "AEI audit cost-split analysis — Medium-confidence estimate, metering configuration unconfirmed; see existing open HIGH finding bbc6908d-125b-4a36-a262-d8652d8c19bb (not duplicated here)"},
+    "gfa": {"value": 724081, "unit": "ft2", "source": "Agreement within rounding: Overture footprint-weighted helper dataset 724,081 ft2; AEI audit 724,079 ft2 (both recorded, difference immaterial, 724,081 used)"},
+    "units": {"value": null, "unit": "count", "source": "CONFLICTED — see conflicts row 'units'; candidates 504 (helper/platform + one audit summary-table instance) vs 530 (audit property-info block p.1)"},
+    "floors": {"value": 3, "unit": "count", "source": "kickoff/prior extraction"},
+    "year_built": {"value": 2003, "unit": "year", "source": "AEI audit + PCA agree"},
+    "buildings": {"value": 17, "unit": "count", "source": "Audette property group (property_uid 7d56c04e-ff1b-49bd-a918-14c36363a7cc) — 17 buildings; per-building model details NOT pulled, see note"},
+    "equipment": [
+      {"item": "Split AHUs, gas heat", "install_year_avg": 2009, "source": "AEI audit equipment survey (confirmed dual-source, finding 31e99e2b-71f7-4f1f-b112-dcdeb7aede32 covers DHW only; AHU figure agreed audit-only, no conflicting candidate found)"},
+      {"item": "Gas DHW", "install_year_avg": 2014, "source": "AEI audit + helper-data equipment survey agree; CONFIRMED via existing finding 31e99e2b-71f7-4f1f-b112-dcdeb7aede32"},
+      {"item": "Washers/dryers", "install_year_avg": 2018, "source": "AEI audit equipment survey"}
+    ],
+    "emissions_tco2e": {"value": null, "unit": "tCO2e/yr", "source": "NOT AVAILABLE — Audette building-model emissions could not be pulled this phase (see audette note below); ESPM actuals also deferred. No emission-factor-sourced figure exists yet; must be produced via Audette/CRREM tooling before P2 target math, not computed here."}
+  },
+  "conflicts": [
+    {
+      "field": "units",
+      "candidates": [
+        {"value": 504, "source": "helper/platform dataset (Cortland Batch 1 helper data)"},
+        {"value": 504, "source": "AEI audit 475250-EA1 summary table (one instance)"},
+        {"value": 530, "source": "AEI audit 475250-EA1 property-info block, p.1 (per prior extraction)"}
+      ],
+      "suggested": {"value": 504, "source": "helper/platform dataset", "rule": "audit-reported 12-mo figures rank above estimates in the hierarchy, but here the audit itself is internally inconsistent (504 in its summary table vs 530 in its property-info block); with the audit split against itself, the independently-sourced helper/platform dataset (504) is used as tiebreak suggestion — NOT auto-applied, user must adjudicate"},
+      "finding_id": "14aedb80-ecc8-41c1-bd74-bb03bc3c8c05",
+      "adjudication": null
+    },
+    {
+      "field": "owner_tenant_gas_split",
+      "candidates": [
+        {"value": "owner-paid $371,948/yr (100%)", "source": "AEI audit cost-split analysis"},
+        {"value": "unconfirmed — actual owner/tenant metering split unknown", "source": "helper-data confidence flag (Medium, EST)"}
+      ],
+      "suggested": {"value": "audit figure used as provisional owner-paid basis pending metering confirmation", "source": "AEI audit 475250-EA1", "rule": "audit-reported 12-mo > estimate, applied provisionally only because no measured/ESPM actuals exist; hierarchy would prefer measured utility actuals if metering were confirmed"},
+      "finding_id": "bbc6908d-125b-4a36-a262-d8652d8c19bb",
+      "note": "References the PRE-EXISTING open HIGH finding from verifier__list_findings — not duplicated with a new record_finding call, per skill instruction.",
+      "adjudication": null
+    },
+    {
+      "field": "baseline_year_reg28",
+      "candidates": [
+        {"value": "2023 (only data available)", "source": "AEI Energy & Water Audit 475250-EA1, Nov 2023, 12-month period"},
+        {"value": "2021 (required by statute)", "source": "Colorado Regulation 28 / HB21-1286 baseline-year requirement"}
+      ],
+      "suggested": {"value": "NO SUGGESTION — hierarchy does not resolve a missing year; audit data cannot substitute for a statutory 2021 baseline without disclosure", "source": "n/a", "rule": "hierarchy is silent on temporal substitution; this is a scope/methodology question for the user, not a value pick"},
+      "finding_id": "784f5591-8e4b-4bde-b977-a06826bc08a7",
+      "adjudication": null
+    }
+  ],
+  "targets": {"trajectory": [], "bps_milestones": [], "fine_exposure": {}, "confirmed_at": null},
+  "measures": {
+    "register_ids": [
+      "4f19f37c-aad7-487c-a505-91a04ea38bf4",
+      "bd73ea95-3d05-48bf-9e0e-31e436aacb81",
+      "486fcd50-eee5-4949-8802-cfcbb2a81d73",
+      "2802b07d-6960-4f43-bce0-7b676d63358c",
+      "b6a2cb6c-1a73-4735-99ec-e3a9876afd04"
+    ],
+    "roadmap_phases": [], "gap_statement": "", "gate2_confirmed_at": null
+  },
+  "audette": {
+    "building_uid": "",
+    "custom_plan_id": "",
+    "survey_corrections_submitted": [],
+    "notes": [
+      "Property resolved via list_properties (account-scoped, not bare list_buildings): property_uid 7d56c04e-ff1b-49bd-a918-14c36363a7cc = 'Cortland Westminster', 17 buildings.",
+      "get_equipment_survey and get_building_model_details both require building_model_uid (property_uid is rejected — validated by a live call that errored with 'Missing required argument: building_model_uid'). No property-scoped building-lookup tool exists (list_buildings is bare/account-wide and explicitly disallowed by the runbook). Building-level model details, equipment survey, and Audette-modeled emissions/EUI were therefore NOT pulled this phase.",
+      "ESPM pull deferred: Hindsight REST for ESPM not available to this agent; ESPM property id 17984313 actuals are outstanding and sit at the top of the reconciliation hierarchy — their absence means several 'agreed' baseline fields above (electricity, gas) are only audit-confirmed, not measured-actual-confirmed."
+    ]
+  },
+  "report": {"data_json_path": "", "verification_status": {"pass": false, "open_high": 3, "open_total": 3}, "render_iterations": 0, "exports": []}
+}

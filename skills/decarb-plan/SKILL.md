@@ -255,7 +255,8 @@ Set `phase: "P4"` and save.
    with the corrected values. Record each submission in
    `state.audette.survey_corrections_submitted`.
 3. **RENDER GATE (HARD):** call `verifier__verification_status` for the asset and write the
-   result to `state.report.verification_status`.
+   result to `state.report.verification_status`. The deployed tool returns
+   `{pass: boolean, open_high: number, open_total: number}` — store that shape verbatim.
    - **Pass** → proceed to P5.
    - **Not pass** → resolve findings, or — only with explicit user approval — record a
      documented override `{finding_id, override_reason, approved_by}` in
@@ -268,6 +269,9 @@ Set `phase: "P5"` and save.
 ---
 
 ## P5 — Report
+
+Before dispatching any render, re-run `verifier__verification_status` and re-confirm the
+gate (resume may have skipped P4's check).
 
 1. **Assemble the report data JSON** per `templates/decarb/example-data.json` — the
    **authoritative example payload** (created by Task 3; its field names are exactly what the
@@ -284,24 +288,25 @@ Set `phase: "P5"` and save.
    | Data Quality & Adjudications appendix | `state.conflicts` (incl. adjudications) + verifier findings |
    | Methodology & Sources | `state.citations` |
 
-2. **Dispatch the `report-renderer` subagent** with the standard payload:
+2. **Render via template-mcp** (same entry point as the rsra skill, NOT the `report-renderer`
+   subagent, which is built around a different schema/layout/sections contract that
+   `templates/decarb` does not have). Unlike rsra's template, `templates/decarb/layout-agent.html`
+   has no `<script id="report-data">` block and no client-side rendering JS — it is
+   **agent-filled**, so the agent (not the tool) must do the substitution:
+   - Call `get_report_resources('decarb')` to fetch `layout-agent.html`.
+   - Replace every `[[TOKEN]]` scalar placeholder with the assembled data, and expand every
+     repeated-row placeholder (`[[SCENARIO_1_ROWS]]`, `[[ROADMAP_ROWS]]`,
+     `[[ADJUDICATION_ROWS]]`, `[[CITATION_ROWS]]`, etc.) into literal `<tr>`/card HTML — one
+     block per data row, matching the commented example directly below each placeholder in
+     the template. Field names exactly as `templates/decarb/example-data.json` documents.
+   - Pass the fully-filled HTML through `fill_report` to produce the artifact, then hand off
+     to `report-review` for the interactive loop, same as rsra.
+   - Record `state.report.render_iterations` starting at 0.
 
-   ```json
-   {
-     "template": "decarb",
-     "org": "<org-key>",
-     "portfolio": "<portfolio-key>",
-     "asset": "<asset-key>",
-     "data": { "...the assembled report data JSON..." }
-   }
-   ```
-
-   All four top-level keys are required; the renderer validates `data` against the template
-   schema and hands off to `report-review` on completion.
-
-3. **Loop `report-review`:** present the artifact, apply user revisions (re-dispatch the
-   renderer with updated `data`; increment `state.report.render_iterations`), and on approval
-   export **PDF and/or PPTX**.
+3. **Loop `report-review`:** present the artifact, apply user revisions (re-fill the template
+   with updated data and re-call `fill_report`; increment `state.report.render_iterations`),
+   and on approval export **PDF and/or PPTX** — this loop is unchanged from the
+   subagent-dispatch flow.
 4. **Register the deliverable in Files** and write all export paths to
    `state.report.exports`.
 5. **Retain lessons:** call `verifier__retain_shared_expertise` with the generalizable,

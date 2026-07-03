@@ -1,0 +1,386 @@
+{
+  "_comment": "Authoritative example payload for templates/decarb/layout-agent.html. This template is AGENT-FILLED: it uses literal [[TOKEN]] placeholders (scalars) and repeated-row placeholders (e.g. scenario_1_rows) that the agent renders into literal HTML rows/cards before handoff, NOT the generic template-mcp <script id=\"report-data\"> JSON-injection convention used by data-driven templates like rsra. Field names below correspond 1:1 to the template's [[TOKEN_NAME]] slots, lowercased to snake_case; each row-array documents the exact columns/fields needed to build that section's repeated markup. Fictional asset — 'Example Gardens' — used for schema documentation only.",
+
+  "property_name": "Example Gardens",
+  "full_address": "4820 Aldergate Lane, Springfield Heights, OH 45215",
+  "property_type": "Multifamily — Garden-Style",
+  "gfa_sf": "182,400",
+  "gfa_units": "196",
+  "year_built": "1988",
+  "climate_zone": "ASHRAE Zone 5A",
+  "crrem_status_tag": "CRREM: Stranding 2032",
+  "bps_status_tag": "Columbus BPS: $61K Exposure",
+  "bps_tag_class": "alert",
+  "data_source_tag": "Audette-Verified",
+  "report_date": "2026-07-03",
+  "org_name": "Meridian Multifamily Partners",
+
+  "baseline_carbon_tco2": "1,240",
+  "carbon_intensity": "6.8",
+  "intensity_unit": "unit",
+  "achievable_reduction_pct": "58",
+  "achievable_reduction_tco2": "719",
+  "net_capex": "$1.82M",
+  "value_at_exit": "$2.94M",
+
+  "total_energy_gwh": "3.41",
+  "site_eui": "61.4",
+  "energy_intensity": "17,400",
+  "energy_star_score": "48",
+  "grid_ef": "0.365",
+
+  "total_energy_cost": "$498,200",
+  "landlord_energy_cost": "$312,600",
+  "tenant_energy_cost": "$185,600",
+  "cost_per_unit": "2,542",
+  "electricity_rate": "0.132",
+  "gas_rate": "1.14",
+  "rate_source": "Duke Energy Ohio Rate Schedule GS-2 (2026)",
+
+  "energy_enduse_cards": [
+    { "label": "Space Heating", "value": "1.48 GWh", "pct": 43, "carbon": false },
+    { "label": "Domestic Hot Water", "value": "0.61 GWh", "pct": 18, "carbon": false },
+    { "label": "Cooling", "value": "0.44 GWh", "pct": 13, "carbon": false },
+    { "label": "Lighting", "value": "0.34 GWh", "pct": 10, "carbon": false },
+    { "label": "Plug Loads", "value": "0.31 GWh", "pct": 9, "carbon": false },
+    { "label": "Common Area / Other", "value": "0.23 GWh", "pct": 7, "carbon": false }
+  ],
+  "carbon_enduse_cards": [
+    { "label": "Space Heating (Gas)", "value": "612 tCO2e", "pct": 49, "carbon": true },
+    { "label": "Domestic Hot Water (Gas)", "value": "236 tCO2e", "pct": 19, "carbon": true },
+    { "label": "Cooling (Elec)", "value": "161 tCO2e", "pct": 13, "carbon": true },
+    { "label": "Lighting (Elec)", "value": "124 tCO2e", "pct": 10, "carbon": true },
+    { "label": "Plug Loads (Elec)", "value": "70 tCO2e", "pct": 6, "carbon": true },
+    { "label": "Common Area (Mixed)", "value": "37 tCO2e", "pct": 3, "carbon": true }
+  ],
+
+  "achievable_end_state": "521",
+  "irr_hurdle": "8",
+  "hurdle_reduction_pct": "34",
+  "hurdle_reduction_tco2": "422",
+  "decarb_trajectory_svg": "<svg viewBox='0 0 640 220' width='640' height='220'><!-- BAU, Scenario 1, Scenario 2, CRREM 1.5C lines 2025-2050, rendered by the calling skill from state.targets.trajectory --></svg>",
+
+  "scenario_1_callout": "Recommended measures deliver 13.2% IRR on incremental spend and increase asset value at exit by $1.61M.",
+  "scenario_1_rows": [
+    {
+      "measure": "LED Lighting Retrofit (Interior + Common Area)",
+      "year": "2026",
+      "emissions_savings_tco2": "124",
+      "like_for_like_cost": "—",
+      "incremental_cost": "$186k",
+      "incentives": "—",
+      "net_total_cost": "$186k",
+      "landlord_utility_savings": "$21k",
+      "tenant_utility_savings": "—",
+      "ancillary_savings": "—",
+      "y1_return_on_cost": "11.3%",
+      "irr": "22%",
+      "hurdle_status": "above",
+      "row_class": "row-above"
+    },
+    {
+      "measure": "Condensing Boiler Replacement (2 of 4 plants)",
+      "year": "2027",
+      "emissions_savings_tco2": "212",
+      "like_for_like_cost": "$140k",
+      "incremental_cost": "$96k",
+      "incentives": "$34k",
+      "net_total_cost": "$202k",
+      "landlord_utility_savings": "$28k",
+      "tenant_utility_savings": "—",
+      "ancillary_savings": "$6k",
+      "y1_return_on_cost": "16.8%",
+      "irr": "19%",
+      "hurdle_status": "above",
+      "row_class": "row-above"
+    },
+    {
+      "measure": "Building Envelope Air Sealing",
+      "year": "2027",
+      "emissions_savings_tco2": "86",
+      "like_for_like_cost": "—",
+      "incremental_cost": "$112k",
+      "incentives": "$18k",
+      "net_total_cost": "$94k",
+      "landlord_utility_savings": "$14k",
+      "tenant_utility_savings": "$9k",
+      "ancillary_savings": "—",
+      "y1_return_on_cost": "24.5%",
+      "irr": "31%",
+      "hurdle_status": "above",
+      "row_class": "row-above"
+    },
+    {
+      "measure": "Columbus BPS Benchmarking Compliance Filing System",
+      "year": "2026",
+      "emissions_savings_tco2": "—",
+      "like_for_like_cost": "—",
+      "incremental_cost": "$14k",
+      "incentives": "—",
+      "net_total_cost": "$14k",
+      "landlord_utility_savings": "—",
+      "tenant_utility_savings": "—",
+      "ancillary_savings": "$61k",
+      "y1_return_on_cost": "435.7%",
+      "irr": "n/m",
+      "hurdle_status": "regulatory",
+      "row_class": "row-reg"
+    }
+  ],
+  "s1_total_emissions": "422",
+  "s1_total_likeforlike": "$140k",
+  "s1_total_incremental": "$408k",
+  "s1_total_incentives": "$52k",
+  "s1_total_net": "$496k",
+  "s1_total_landlord": "$63k",
+  "s1_total_tenant": "$9k",
+  "s1_total_ancillary": "$67k",
+  "s1_total_y1roc": "13.9%",
+  "s1_blended_irr": "22%",
+
+  "financial_callout_s1": "If no mitigation steps are taken, a future buyer could push for a price adjustment in the range of $890k–$1.1M reflecting unresolved BPS fine exposure and deferred capital.",
+  "no_action_exposure": "$890k–$1.1M",
+  "s1_vb_likeforlike": "$140k",
+  "s1_vb_incremental": "$408k",
+  "s1_vb_incentives": "$52k",
+  "s1_vb_net_capex": "$496k",
+  "exit_cap_rate": "5.75",
+  "s1_vb_cap_utility": "$1.10M",
+  "s1_vb_cap_ancillary": "$1.17M",
+  "s1_vb_bps_pv": "$54k",
+  "s1_vb_total_impact": "$1.61M",
+  "s1_irr_total": "13.2",
+  "s1_irr_incremental": "22.0",
+  "exit_year": "2033",
+  "hold_period": "7",
+
+  "scenario_2_callout": "Adds 3 measures below the IRR hurdle that are required to align with the CRREM 1.5°C pathway by 2038.",
+  "s2_additional_measures": "3",
+  "crrem_align_year": "2038",
+  "scenario_2_rows": [
+    {
+      "measure": "Air-Source Heat Pump Conversion (Remaining 2 Boiler Plants)",
+      "year": "2029",
+      "emissions_savings_tco2": "224",
+      "like_for_like_cost": "$130k",
+      "incremental_cost": "$318k",
+      "incentives": "$96k",
+      "net_total_cost": "$352k",
+      "landlord_utility_savings": "$19k",
+      "tenant_utility_savings": "—",
+      "ancillary_savings": "—",
+      "y1_return_on_cost": "5.4%",
+      "irr": "4%",
+      "hurdle_status": "below",
+      "row_class": "row-below"
+    },
+    {
+      "measure": "Domestic Hot Water Heat Pump Retrofit",
+      "year": "2030",
+      "emissions_savings_tco2": "141",
+      "like_for_like_cost": "$88k",
+      "incremental_cost": "$164k",
+      "incentives": "$41k",
+      "net_total_cost": "$211k",
+      "landlord_utility_savings": "$11k",
+      "tenant_utility_savings": "—",
+      "ancillary_savings": "—",
+      "y1_return_on_cost": "5.2%",
+      "irr": "3%",
+      "hurdle_status": "below",
+      "row_class": "row-below"
+    },
+    {
+      "measure": "Rooftop Solar PV (No-Export, 210kW)",
+      "year": "2031",
+      "emissions_savings_tco2": "132",
+      "like_for_like_cost": "—",
+      "incremental_cost": "$294k",
+      "incentives": "$88k",
+      "net_total_cost": "$206k",
+      "landlord_utility_savings": "$17k",
+      "tenant_utility_savings": "—",
+      "ancillary_savings": "—",
+      "y1_return_on_cost": "8.3%",
+      "irr": "7%",
+      "hurdle_status": "below",
+      "row_class": "row-below"
+    }
+  ],
+  "s2_total_emissions": "919",
+  "s2_total_likeforlike": "$358k",
+  "s2_total_incremental": "$1.18M",
+  "s2_total_incentives": "$277k",
+  "s2_total_net": "$1.26M",
+  "s2_total_landlord": "$110k",
+  "s2_total_tenant": "$9k",
+  "s2_total_ancillary": "$67k",
+  "s2_total_y1roc": "7.6%",
+  "s2_blended_irr": "9%",
+
+  "s2_vb_likeforlike": "$358k",
+  "s2_vb_incremental": "$1.18M",
+  "s2_vb_incentives": "$277k",
+  "s2_vb_net_capex": "$1.26M",
+  "s2_vb_cap_utility": "$2.07M",
+  "s2_vb_cap_ancillary": "$1.17M",
+  "s2_vb_bps_pv": "$54k",
+  "s2_vb_total_impact": "$2.94M",
+  "s2_irr_total": "9.1",
+  "s2_irr_incremental": "9.0",
+
+  "stranding_class": "at-risk",
+  "stranding_text": "Under Scenario 1, Example Gardens falls below the CRREM 1.5°C pathway in 2032 without further action; Scenario 2 (full pathway measure set) maintains alignment through the modeled horizon to 2050.",
+  "crrem_svg": "<svg viewBox='0 0 640 220' width='640' height='220'><!-- asset actual vs CRREM 1.5C target line, rendered by the calling skill from state.targets.trajectory --></svg>",
+  "crrem_pathway_rows": [
+    { "year": "2025", "asset_kgco2_m2": "13.1", "crrem_target": "12.8", "gap": "+0.3", "scenario_1": "13.1", "scenario_2": "13.1", "status": "aligned" },
+    { "year": "2030", "asset_kgco2_m2": "11.9", "crrem_target": "9.4", "gap": "+2.5", "scenario_1": "8.7", "scenario_2": "7.2", "status": "at-risk" },
+    { "year": "2035", "asset_kgco2_m2": "10.8", "crrem_target": "6.1", "gap": "+4.7", "scenario_1": "7.9", "scenario_2": "5.4", "status": "stranded" },
+    { "year": "2040", "asset_kgco2_m2": "9.9", "crrem_target": "3.9", "gap": "+6.0", "scenario_1": "7.4", "scenario_2": "3.6", "status": "stranded" }
+  ],
+
+  "regulatory_rows": [
+    {
+      "regulation": "Columbus Building Performance Standard",
+      "jurisdiction": "City of Columbus, OH",
+      "current_status": "Non-compliant — Period 1 (2027)",
+      "annual_fine_no_action": "$61,000",
+      "pv_total_exposure": "$412,000",
+      "fine_avoidance_scenario_1": "$358,000",
+      "deadline": "2027-06-01"
+    },
+    {
+      "regulation": "Ohio HB 6 Renewable Portfolio Reporting",
+      "jurisdiction": "State of Ohio",
+      "current_status": "Compliant — informational filing only",
+      "annual_fine_no_action": "—",
+      "pv_total_exposure": "—",
+      "fine_avoidance_scenario_1": "—",
+      "deadline": "n/a"
+    }
+  ],
+  "regulatory_narrative": "Columbus's BPS ordinance (effective 2027) sets a declining EUI target for multifamily properties over 50 units; Example Gardens' 196 units place it squarely in scope. Scenario 1 measures alone close 87% of the Period-1 gap; the Compliance Filing System line item (see Recommended Measures) covers the benchmarking/reporting obligation itself.",
+
+  "implementation_intro": "The measures below carry site-specific execution risks beyond the modeled physics and economics; review with the general contractor before mobilizing capital.",
+  "implementation_notes": "<div style=\"background:#F8F9FB;border:1px solid #E2E8F0;border-radius:3px;padding:12px 16px;margin:6px 0\"><div style=\"font-size:12px;font-weight:700;color:#12253A;margin-bottom:5px\">Rooftop Solar (No-Export PV)</div><div style=\"font-size:12px;color:#475569;line-height:1.6\">Tenant PPAs required to monetize onsite generation. Confirm roof structural capacity (2–4 lbs psf) given the property's 1988 truss design. Verify net-metering tariff with AEP Ohio before procurement.</div></div><div style=\"background:#F8F9FB;border:1px solid #E2E8F0;border-radius:3px;padding:12px 16px;margin:6px 0\"><div style=\"font-size:12px;font-weight:700;color:#12253A;margin-bottom:5px\">Condensing Boiler Replacement</div><div style=\"font-size:12px;color:#475569;line-height:1.6\">Phase around the two remaining plants' end-of-life (adjudicated install year 2003) to avoid stranding capital on equipment already scheduled for replacement.</div></div>",
+
+  "data_quality_items": [
+    { "dot": "green", "text": "Electricity and gas consumption: ESPM-linked actuals, 24 months trailing." },
+    { "dot": "green", "text": "Equipment inventory: on-site survey conducted 2026-05, cross-checked against Audette equipment model." },
+    { "dot": "amber", "text": "Tenant sub-metered usage: partial coverage (68% of units) — remainder estimated from master-meter allocation." },
+    { "dot": "red", "text": "Envelope R-values: no as-built documentation located; assumed from 1988 vintage code baseline pending destructive testing." }
+  ],
+  "data_caveats": "CapEx estimates carry ±30% uncertainty absent a full site inspection scope-of-work. Tenant-controlled savings assume no material change in occupant behavior post-retrofit.",
+
+  "roadmap_intro": "Phasing sequences capital around confirmed capital events (roof replacement 2028) and equipment end-of-life, per the retrofit-specialist staging playbook.",
+  "roadmap_rows": [
+    {
+      "phase": "Phase 1",
+      "timeframe": "2026–2027",
+      "trigger": "Immediate — no equipment dependency",
+      "measures": "LED Lighting Retrofit; BPS Compliance Filing System",
+      "phase_capex": "$200k",
+      "annual_noi_delta": "$21k",
+      "exit_value_impact": "$427k"
+    },
+    {
+      "phase": "Phase 2",
+      "timeframe": "2027–2028",
+      "trigger": "Boiler plants 1–2 EOL (installed 1998)",
+      "measures": "Condensing Boiler Replacement (2 of 4); Envelope Air Sealing",
+      "phase_capex": "$296k",
+      "annual_noi_delta": "$42k",
+      "exit_value_impact": "$1.18M"
+    },
+    {
+      "phase": "Phase 3",
+      "timeframe": "2029–2031",
+      "trigger": "Boiler plants 3–4 EOL (adjudicated install year 2003); roof replacement capital event (2028) enables PV mounting",
+      "measures": "Air-Source Heat Pump Conversion; DHW Heat Pump Retrofit; Rooftop Solar PV",
+      "phase_capex": "$769k",
+      "annual_noi_delta": "$47k",
+      "exit_value_impact": "$1.33M"
+    }
+  ],
+  "roadmap_gap_callout": "The recommended Scenario 1 roster closes 59% of the confirmed CRREM 1.5°C target; adding the 3 Scenario 2 defensive measures (heat pump conversion, DHW heat pump, rooftop PV) at $1.18M incremental cost closes the remainder and holds pathway alignment through 2050.",
+  "gap_pct_closed": "59",
+  "gap_defensive_measures": "3",
+  "gap_defensive_cost": "$1.18M",
+
+  "adjudications_intro": "Every baseline field with disagreeing sources was surfaced as a conflict at Gate 1. The user adjudicated each; no value was auto-resolved.",
+  "adjudication_rows": [
+    {
+      "field": "Electricity (kWh/yr)",
+      "candidates": "1,890,000 · ESPM actuals (24mo)<br>1,742,000 · Audette modeled",
+      "suggested": "1,890,000 (measured &gt; modeled)",
+      "adjudicated_value": "1,890,000",
+      "adjudicated_by": "user",
+      "date": "2026-06-11",
+      "finding_id": "DQ-014",
+      "finding_status": "resolved"
+    },
+    {
+      "field": "Boiler Plants 3–4 Install Year",
+      "candidates": "1999 · PCA (2021)<br>2003 · On-site equipment survey (2026-05)",
+      "suggested": "2003 (audit/survey &gt; older PCA)",
+      "adjudicated_value": "2003",
+      "adjudicated_by": "user",
+      "date": "2026-06-11",
+      "finding_id": "DQ-017",
+      "finding_status": "resolved"
+    },
+    {
+      "field": "Tenant Gas Allocation Basis",
+      "candidates": "Estimated pro-rata by unit SF · Audette estimate<br>Sub-metered 68% coverage · utility bills",
+      "suggested": "Sub-metered where available, pro-rata for remainder (measured &gt; estimate)",
+      "adjudicated_value": "Sub-metered (68%) + pro-rata remainder",
+      "adjudicated_by": "user",
+      "date": "2026-06-12",
+      "finding_id": "DQ-019",
+      "finding_status": "resolved"
+    }
+  ],
+
+  "methodology_intro": "Every reported number traces to an engine output, Audette modeled analysis, or a cited source; no figure in this report is LLM-computed. Sources below cover regulatory, incentive, and market claims made in the narrative sections.",
+  "citation_rows": [
+    {
+      "claim": "Columbus BPS Period 1 (2027) compliance deadline and per-sq-ft fine structure",
+      "source": "City of Columbus Building Performance Standard Ordinance No. 1847-2023",
+      "provenance": "library",
+      "reference": "retrofit reference library: columbus-bps-ordinance.md"
+    },
+    {
+      "claim": "IRA §48E direct-pay eligibility for condensing boiler and heat pump measures",
+      "source": "IRS Notice 2023-38, IRA §48E guidance",
+      "provenance": "library",
+      "reference": "retrofit reference library: ira-48e-eligibility.md"
+    },
+    {
+      "claim": "AEP Ohio net-metering tariff terms for sub-1MW systems",
+      "source": "AEP Ohio Schedule NM-1 (effective 2025)",
+      "provenance": "web",
+      "reference": "https://www.aepohio.com/account/rates/ (accessed 2026-06-18)"
+    },
+    {
+      "claim": "CRREM 1.5°C pathway target intensities for US multifamily, ASHRAE Zone 5A",
+      "source": "CRREM v2 (2024) pathway dataset",
+      "provenance": "library",
+      "reference": "crrem tooling: pathway export, run 2026-06-10"
+    }
+  ],
+
+  "project_origination_rows": [
+    { "measure": "LED Lighting Retrofit", "year": "2026", "emissions_savings_tco2": "124", "net_total_cost": "$186k", "landlord_utility_savings": "$21k", "tenant_utility_savings": "—", "ancillary_savings": "—", "irr": "22%", "status": "in-s1" },
+    { "measure": "Condensing Boiler Replacement (2 of 4)", "year": "2027", "emissions_savings_tco2": "212", "net_total_cost": "$202k", "landlord_utility_savings": "$28k", "tenant_utility_savings": "—", "ancillary_savings": "$6k", "irr": "19%", "status": "in-s1" },
+    { "measure": "Building Envelope Air Sealing", "year": "2027", "emissions_savings_tco2": "86", "net_total_cost": "$94k", "landlord_utility_savings": "$14k", "tenant_utility_savings": "$9k", "ancillary_savings": "—", "irr": "31%", "status": "in-s1" },
+    { "measure": "BPS Compliance Filing System", "year": "2026", "emissions_savings_tco2": "—", "net_total_cost": "$14k", "landlord_utility_savings": "—", "tenant_utility_savings": "—", "ancillary_savings": "$61k", "irr": "n/m", "status": "in-s1" },
+    { "measure": "Air-Source Heat Pump Conversion (remaining plants)", "year": "2029", "emissions_savings_tco2": "224", "net_total_cost": "$352k", "landlord_utility_savings": "$19k", "tenant_utility_savings": "—", "ancillary_savings": "—", "irr": "4%", "status": "in-s2-only" },
+    { "measure": "DHW Heat Pump Retrofit", "year": "2030", "emissions_savings_tco2": "141", "net_total_cost": "$211k", "landlord_utility_savings": "$11k", "tenant_utility_savings": "—", "ancillary_savings": "—", "irr": "3%", "status": "in-s2-only" },
+    { "measure": "Rooftop Solar PV (No-Export, 210kW)", "year": "2031", "emissions_savings_tco2": "132", "net_total_cost": "$206k", "landlord_utility_savings": "$17k", "tenant_utility_savings": "—", "ancillary_savings": "—", "irr": "7%", "status": "in-s2-only" },
+    { "measure": "Full Electric Resistance Backup Removal", "year": "2032", "emissions_savings_tco2": "18", "net_total_cost": "$41k", "landlord_utility_savings": "$2k", "tenant_utility_savings": "—", "ancillary_savings": "—", "irr": "-2%", "status": "below-hurdle" }
+  ],
+
+  "irr_on_incremental": "22.0",
+  "hurdle_type": "unlevered project IRR",
+  "utility_escalation": "3.5"
+}

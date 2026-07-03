@@ -1,3 +1,22 @@
+<!--
+  TEMPLATE SLOT CONVENTION (decarb / layout-agent.html)
+  ------------------------------------------------------
+  This template does NOT use the generic template-mcp `<script id="report-data">`
+  JSON-injection convention that data-driven templates (e.g. rsra) use. It is an
+  AGENT-FILLED prose/markup template: every double-bracket placeholder is replaced
+  in-place by the calling skill/agent with plain text or literal HTML before the
+  filled HTML is handed off (e.g. via fill_report's report_type 'decarb', which
+  serves this file as-is for the agent to edit).
+  - Scalar placeholders: double-bracket UPPER_SNAKE_CASE names — replace with a formatted
+    string.
+  - Repeated-row placeholders (e.g. `[[SCENARIO_1_ROWS]]`, `[[ROADMAP_ROWS]]`,
+    `[[ADJUDICATION_ROWS]]`, `[[CITATION_ROWS]]`) — replace with one or more
+    literal `<tr>...</tr>` (or card `<div>`) blocks; an HTML comment immediately
+    below each such placeholder shows the exact markup shape expected per row.
+  - `templates/decarb/example-data.json` is the authoritative, field-complete
+    reference payload for every placeholder in this file (scalars and row-array
+    inputs alike) — treat its field names as the schema.
+-->
 <!doctype html>
 <html lang="en">
 <head>
@@ -574,6 +593,105 @@ tr.totals-row td{font-weight:700;background:#F1F4F8 !important;color:#12253A}
     <h2 class="section-title">Data Inputs &amp; Quality</h2>
     <div class="dq-grid">[[DATA_QUALITY_ITEMS]]</div>
     <div class="section-body" style="margin-top:14px">[[DATA_CAVEATS]]</div>
+  </div>
+
+  <!-- ── SECTION 9: PHASED IMPLEMENTATION ROADMAP ──────── -->
+  <div class="section">
+    <div class="section-label">Section 9</div>
+    <h2 class="section-title">Phased Implementation Roadmap</h2>
+    <div class="section-body" style="margin-bottom:14px">[[ROADMAP_INTRO]]</div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Phase</th>
+        <th>Timeframe</th>
+        <th>Trigger</th>
+        <th>Measures</th>
+        <th class="num">Phase CapEx</th>
+        <th class="num">Annual NOI Delta</th>
+        <th class="num">Exit Value Impact</th>
+      </tr></thead>
+      <tbody>
+        [[ROADMAP_ROWS]]
+        <!--
+        <tr>
+          <td>Phase 1</td>
+          <td>2026–2027</td>
+          <td>Boiler EOL (installed 2001)</td>
+          <td>LED Lighting; Condensing Boiler Replacement</td>
+          <td class="num">$412k</td>
+          <td class="num">$38k</td>
+          <td class="num">$760k</td>
+        </tr>
+        -->
+      </tbody>
+    </table>
+    </div>
+    <div class="callout info" style="margin-top:14px">[[ROADMAP_GAP_CALLOUT]]</div>
+    <!-- e.g. "The recommended roster closes [[GAP_PCT_CLOSED]]% of the confirmed target; [[GAP_DEFENSIVE_MEASURES]] defensive measure(s) totaling [[GAP_DEFENSIVE_COST]] close the remainder." -->
+  </div>
+
+  <!-- ── SECTION 10: DATA QUALITY & ADJUDICATIONS APPENDIX ─ -->
+  <div class="section">
+    <div class="section-label">Section 10 &mdash; Appendix</div>
+    <h2 class="section-title">Data Quality &amp; Adjudications</h2>
+    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.5">[[ADJUDICATIONS_INTRO]]</p>
+    <!-- e.g. "Every baseline field with disagreeing sources was surfaced as a conflict at Gate 1. The user adjudicated each; no value was auto-resolved." -->
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Field</th>
+        <th>Candidates (value &middot; source)</th>
+        <th>Suggested (hierarchy rule)</th>
+        <th>Adjudicated Value</th>
+        <th>Adjudicated By</th>
+        <th>Date</th>
+        <th>Finding</th>
+      </tr></thead>
+      <tbody>
+        [[ADJUDICATION_ROWS]]
+        <!--
+        <tr>
+          <td>Electricity (kWh/yr)</td>
+          <td>612,400 &middot; ESPM actuals<br>598,000 &middot; Audette modeled</td>
+          <td>612,400 (measured &gt; modeled)</td>
+          <td>612,400</td>
+          <td>user</td>
+          <td>2026-06-14</td>
+          <td><span class="badge b-above">Resolved</span> DQ-014</td>
+        </tr>
+        -->
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- ── SECTION 11: METHODOLOGY & SOURCES ─────────────── -->
+  <div class="section">
+    <div class="section-label">Section 11 &mdash; Appendix</div>
+    <h2 class="section-title">Methodology &amp; Sources</h2>
+    <div class="section-body" style="margin-bottom:14px">[[METHODOLOGY_INTRO]]</div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Claim</th>
+        <th>Source</th>
+        <th>Provenance</th>
+        <th>Reference</th>
+      </tr></thead>
+      <tbody>
+        [[CITATION_ROWS]]
+        <!--
+        <tr>
+          <td>NY LL97 Period 1 (2024–2029) emissions limit for Group B</td>
+          <td>NYC Local Law 97 of 2019, §28-320.3</td>
+          <td>library</td>
+          <td>retrofit reference library: nyc-ll97-limits.md</td>
+        </tr>
+        -->
+      </tbody>
+    </table>
+    </div>
   </div>
 
   <!-- ── APPENDIX: PROJECT ORIGINATION (FULL LIST) ──────── -->

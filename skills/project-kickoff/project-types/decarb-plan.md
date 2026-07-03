@@ -102,8 +102,15 @@ Store as: `hold_period_years`, `capital_events` — list of `{event, target_date
    - C-PACE
    - Incentives-dependent (grants, rebates, tax credits)
    - TBD
+3. **Hurdle rate (optional):** "Does the fund have a hurdle rate or return threshold retrofit
+   spending must clear? If so, what and per whom?" Ask as two linked free-text prompts if
+   answered:
+   1. "What is the hurdle rate?" Free text (e.g. "12% IRR").
+   2. "Per whom (source)?" Free text — record verbatim (e.g. "Fund IC policy, 2026").
+   Skip both if the client says there is no hurdle rate.
 
-Store as: `budget_ceiling` (free text), `financing_appetite` — list of selected options.
+Store as: `budget_ceiling` (free text), `financing_appetite` — list of selected options,
+`irr_hurdle` — `{value, source}` (or null if none) — source recorded exactly as given.
 
 ---
 
@@ -231,7 +238,7 @@ delivery on the client side.>
 
 ## 2. Target Definition
 
-**Primary target:** <primary_target.type> — <primary_target.detail>
+**Primary target:** <primary_target.type> — <primary_target.value> (<primary_target.basis>)
 
 **Secondary targets:**
 | Type | Detail |
@@ -252,6 +259,7 @@ delivery on the client side.>
 
 **Budget ceiling:** <budget_ceiling>
 **Financing appetite:** <financing_appetite list>
+**Hurdle rate:** <irr_hurdle.value or "None"> **Source:** <irr_hurdle.source or "N/A"> *(recorded verbatim)*
 
 ## 5. Tenant / Occupancy Constraints
 

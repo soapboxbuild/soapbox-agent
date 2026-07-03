@@ -86,6 +86,7 @@ cat projects/<asset-key>/decarb-plan.json 2>/dev/null
    | `equipment_commitments` | `kickoff.equipment_commitments` |
    | `budget_ceiling` | `kickoff.budget_ceiling` |
    | `financing_appetite` | `kickoff.financing_appetite` |
+   | `irr_hurdle` `{value, source}` | `kickoff.irr_hurdle` — source string **verbatim, never paraphrased** |
    | `turn_schedule` | `kickoff.turn_schedule` |
    | `disruption_tolerance` | `kickoff.disruption_tolerance` |
    | `existing_docs` | `kickoff.existing_docs` (also seeds `documents` in P1) |
@@ -112,9 +113,11 @@ Gather every source; record everything in state as you go.
    in `state.documents` as `{name, type: audit|pca|utility|other, storage_path, read}` and
    mark `read: true` once ingested.
 2. **Retrofit register + findings ledger:** `retrofit__get_measure_state` for the asset's
-   existing measure register; load open `verifier__` findings via
-   `verifier__verification_status` and `verifier__get_verification_checklist` so known
-   data-quality issues carry into reconciliation.
+   existing measure register; load existing open findings via `verifier__list_findings(asset_id)`
+   — capture `finding_ids`; the gas-split style pre-existing findings must be adjudicated at
+   Gate 1 alongside new conflicts, not duplicated — plus `verifier__verification_status` and
+   `verifier__get_verification_checklist` so known data-quality issues carry into
+   reconciliation.
 3. **Audette pulls:** resolve the asset's Audette property, then its building model(s) —
    **one property may hold several buildings.** Pull `get_building_model_details`,
    `get_equipment_survey`, and `get_available_measures` for **every** building model on the
@@ -157,7 +160,8 @@ For **each field**: gather ALL candidate values with their sources.
   where `suggested` is computed from the hierarchy (measured utility/ESPM actuals >
   audit-reported 12-mo > Audette modeled > estimates) and `rule` names which hierarchy rule
   fired. Then call `verifier__record_finding` (kind `data-quality`, severity by materiality
-  of the field to targets/economics) and store the returned `finding_id` on the row.
+  of the field to targets/economics, verdict `conflict`, with `evidence[]` — the candidate
+  values and their sources — and `sources[]`) and store the returned `finding_id` on the row.
 
 **NO auto-resolution.** Every conflict waits for Gate 1.
 
@@ -191,7 +195,8 @@ On the user's adjudications:
 
 1. Write each decision into the conflict row's `adjudication`:
    `{value, source, adjudicated_by: "user", date}`.
-2. Call `verifier__resolve_finding` for each adjudicated conflict's `finding_id`.
+2. Call `verifier__resolve_finding` for each adjudicated conflict's `finding_id`, with
+   `resolution` `confirmed` or `dismissed` plus `note` (the adjudication rationale).
 3. Promote adjudicated values into `state.baseline` with the adjudicated source.
 4. On target confirmation, set `state.targets.confirmed_at`.
 
@@ -233,7 +238,7 @@ Set `phase: "GATE2"` and save.
 Present, then **stop and wait for the user**:
 
 1. **Roster** — every measure under all four screening labels
-   (recommended / defensive / screened-out / deferred), each with its reason, including the
+   (recommended / defensive / screened-out / needs-data), each with its reason, including the
    named failing test for screened-out measures.
 2. **Phased roadmap** — per-phase capex, NOI delta, and exit impact. **Engine numbers only.**
 3. **Target-gap statement** — `state.measures.gap_statement`, with defensive closures priced.
@@ -257,6 +262,7 @@ Set `phase: "P4"` and save.
 3. **RENDER GATE (HARD):** call `verifier__verification_status` for the asset and write the
    result to `state.report.verification_status`. The deployed tool returns
    `{pass: boolean, open_high: number, open_total: number}` — store that shape verbatim.
+   Enumerate open findings via `verifier__list_findings` before deciding overrides.
    - **Pass** → proceed to P5.
    - **Not pass** → resolve findings, or — only with explicit user approval — record a
      documented override `{finding_id, override_reason, approved_by}` in
@@ -288,23 +294,29 @@ gate (resume may have skipped P4's check).
    | Data Quality & Adjudications appendix | `state.conflicts` (incl. adjudications) + verifier findings |
    | Methodology & Sources | `state.citations` |
 
-2. **Render via template-mcp** (same entry point as the rsra skill, NOT the `report-renderer`
-   subagent, which is built around a different schema/layout/sections contract that
-   `templates/decarb` does not have). Unlike rsra's template, `templates/decarb/layout-agent.html`
-   has no `<script id="report-data">` block and no client-side rendering JS — it is
-   **agent-filled**, so the agent (not the tool) must do the substitution:
-   - Call `get_report_template('decarb')` to fetch `layout-agent.html`. (Tool names verified against the live service 2026-07-03: get_report_template / fill_report — if these error, list the template server's tools and adapt rather than failing silently.)
+2. **Render via direct template fill** (same entry point as the rsra skill, NOT the
+   `report-renderer` subagent, which is built around a different schema/layout/sections
+   contract that `templates/decarb` does not have, and NOT `fill_report` — the deployed
+   template-mcp `fill_report` injects JSON into a `<script id="report-data">` block that the
+   decarb template does not have, and rejects HTML strings, so it must never be called for
+   decarb rendering). `templates/decarb/layout-agent.html` has no `<script id="report-data">`
+   block and no client-side rendering JS — it is **agent-filled**, so the agent (not the
+   tool) must do the substitution and save the result directly:
+   - Call `get_report_template('decarb')` to fetch `layout-agent.html`. (Tool name verified
+     against the live service 2026-07-03 — if it errors, list the template server's tools
+     and adapt rather than failing silently.)
    - Replace every `[[TOKEN]]` scalar placeholder with the assembled data, and expand every
      repeated-row placeholder (`[[SCENARIO_1_ROWS]]`, `[[ROADMAP_ROWS]]`,
      `[[ADJUDICATION_ROWS]]`, `[[CITATION_ROWS]]`, etc.) into literal `<tr>`/card HTML — one
      block per data row, matching the commented example directly below each placeholder in
      the template. Field names exactly as `templates/decarb/example-data.json` documents.
-   - Pass the fully-filled HTML through `fill_report({report_type: 'decarb', data: <filled-html>})` to produce the artifact, then hand off
-     to `report-review` for the interactive loop, same as rsra.
+   - Save/present the fully-filled HTML directly via `create_artifact` or `save_file` (per
+     the runtime) — no rendering tool call — then register the file on the asset and hand
+     off to `report-review` for the interactive loop, same as rsra.
    - Record `state.report.render_iterations` starting at 0.
 
 3. **Loop `report-review`:** present the artifact, apply user revisions (re-fill the template
-   with updated data and re-call `fill_report`; increment `state.report.render_iterations`),
+   with updated data and re-save the HTML directly; increment `state.report.render_iterations`),
    and on approval export **PDF and/or PPTX** — this loop is unchanged from the
    subagent-dispatch flow.
 4. **Register the deliverable in Files** and write all export paths to

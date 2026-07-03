@@ -77,6 +77,16 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "irr_hurdle": {
+          "type": ["object", "null"],
+          "properties": {
+            "value": { "type": ["number", "string", "null"] },
+            "source": {
+              "type": ["string", "null"],
+              "description": "Recorded verbatim from kickoff — never paraphrased"
+            }
+          }
+        },
         "turn_schedule": { "type": ["string", "null"] },
         "disruption_tolerance": {
           "type": ["string", "null"],
@@ -280,8 +290,13 @@
       "properties": {
         "data_json_path": { "type": "string" },
         "verification_status": {
-          "type": ["string", "null"],
-          "description": "Result of verifier__verification_status at the render gate (e.g. pass|fail)"
+          "type": ["object", "null"],
+          "description": "Result of verifier__verification_status at the render gate, stored verbatim.",
+          "properties": {
+            "pass": { "type": "boolean" },
+            "open_high": { "type": "integer" },
+            "open_total": { "type": "integer" }
+          }
         },
         "overrides": {
           "type": "array",

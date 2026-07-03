@@ -98,6 +98,14 @@ module does not yet support.
 
 ## Granularity rule (critical)
 
+### Consumption allocation (when distributing whole-property utility data across building models)
+Never split evenly by default. Allocate in this order: (1) carve out identified common/amenity loads
+first (pool heater, clubhouse, exterior/corridor lighting — use the audit's end-use breakdown) and
+assign them to the building/line-item where they belong; (2) allocate the remainder across residential
+buildings weighted by GFA (adjust for known differences: floors, vintage, equipment); (3) state the
+allocation method with the upload. An even split is only acceptable when buildings are genuinely
+identical in GFA and use — and must still be labeled "GFA-weighted (identical buildings)".
+
 Apply the split at the FINEST granularity the model supports — per building and per end-use — never as
 one blended property-wide percentage. A blended % misattributes savings both ways: in-unit measures get
 phantom landlord credit, and fully-landlord amenity measures get under-credited.

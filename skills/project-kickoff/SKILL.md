@@ -32,10 +32,11 @@ Extract from the invocation text:
 |-----------------|-------------|----------|---------------|
 | retrofit, retrofit analysis, energy retrofit, mechanical retrofit, building retrofit | Retrofit Analysis | retrofit-analysis | asset |
 | portfolio analysis, run portfolio analysis, analyze portfolio, analyze the portfolio, portfolio decarbonization | Portfolio Analysis | portfolio-analysis | portfolio |
+| decarbonization plan, decarbonization report, decarbonization roadmap, net zero plan, BPS compliance plan | Decarb Plan | decarb-plan | asset |
 
 If the project type does not match any entry: ask via AskUserQuestion:
 > "What type of project are we kicking off?"
-> Options: Retrofit Analysis | Portfolio Analysis | Other (describe)
+> Options: Retrofit Analysis | Portfolio Analysis | Decarb Plan | Other (describe)
 
 **For `portfolio-analysis` type:** scope is always **portfolio** — do not ask the scope question.
 The "asset name" becomes the portfolio or client name (e.g. "Greystar Q3" or "BCLC").
@@ -108,7 +109,7 @@ If "Create new": append `-YYYY-MM-DD` to the filename (use today's date).
 
 ## Step 3: Q&A Loop
 
-Ask the 6 questions **one at a time**. For each question:
+Ask the project type's questions **one at a time**. For each question:
 
 1. Check whether pre-flight found data that answers it (fully or partially).
 2. If yes: surface the finding and ask to confirm or update.

@@ -27,6 +27,9 @@ hardcoded client assumptions.
 (energy measures, decarb plan, EUI), the Soapbox DCF engine provides the finance (IRR,
 value creation, NOI uplift).
 
+**Single-asset engagement:** if the ask is a full asset decarbonization engagement (one
+asset, multi-week, gated, client-deliverable), route to the `decarb-plan` skill instead.
+
 ---
 
 ## Design System

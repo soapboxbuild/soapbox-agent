@@ -94,6 +94,14 @@ Track findings:
 - `has_prior_kickoff` — true if the output file already exists
 - `found_docs` — list of matched filenames, classified by type (PCA, audit, utility, etc.)
 
+**Reference-doc-first:** Before asking any questions, also search the **asset and portfolio
+files** for prior kickoff or **engagement reference** material (e.g. an "engagement
+reference", "engagement summary", "scope of work", or a prior kickoff document). Use
+`list_files` / `search_files` (or the filesystem `find` above) with those terms. If found,
+**read it and pre-fill the answers from it** — then in the Q&A loop surface each pre-filled
+value for the user to confirm rather than asking the question cold, citing the reference
+document. Only ask outright the questions the reference material does not already answer.
+
 **Re-run handling:** If `has_prior_kickoff` is true, ask before proceeding:
 > "A kickoff file already exists for this project (`projects/<asset-key>/<type-key>-kickoff.md`).
 > What would you like to do?"

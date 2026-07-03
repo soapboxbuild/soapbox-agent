@@ -44,6 +44,19 @@ org memory, the reference library, and the `decarb` report template.
 boundary. `<asset-key>` follows the project-kickoff convention: lowercase the asset name,
 replace spaces with hyphens.
 
+**Presentation standards** (apply to every number shown at a gate or in the report):
+
+- **Energy in kWh and kWh/m² only.** Convert all energy to kWh (and gas from native
+  units/GJ to kWh) and express intensity as kWh/m². Areas are in **m²**; carbon as **tCO₂e**
+  and intensity as **kgCO₂e/m²**. No therms, kBtu, ft², or kBtu/ft² in presented output.
+- **Max 2 significant figures displayed.** Round for display (e.g. 3.0 GWh, 130 kWh/m²,
+  1,200 tCO₂e). Keep full precision in state/engine inputs; only the *displayed* figure is
+  rounded.
+- **Benchmarking: ENERGY STAR score first, then BPD.** Lead with the asset's ENERGY STAR
+  score (1–100) where available. Where a peer comparison is needed, use the **Building
+  Performance Database filtered by property type + climate zone** — **never national
+  medians** and never an unfiltered peer set.
+
 ---
 
 ## Resume Protocol (run this FIRST, always)
@@ -69,11 +82,20 @@ cat projects/<asset-key>/decarb-plan.json 2>/dev/null
 
 ## P0 — Kickoff
 
-1. Invoke the **project-kickoff** skill with project type **`decarb-plan`**
+1. **FIRST, search the portfolio files for an engagement reference document.** Before asking
+   the user anything, enumerate portfolio + asset files (`list_files` / `search_files`) and
+   look for an **engagement reference** document (search terms: *"engagement reference",
+   "engagement summary", "scope of work", "kickoff", "engagement letter"*). If one exists,
+   read it and **pre-fill the kickoff answers from it** (goal, drivers, target, hold period,
+   hurdle, cap rate, constraints, contacts, deadline), **citing the document** for each
+   pre-filled field. Then ask the user **only what remains open** — do not re-ask questions
+   the reference document already answers; surface the pre-filled values for confirmation.
+2. Invoke the **project-kickoff** skill with project type **`decarb-plan`**
    (`cat skills/project-kickoff/project-types/decarb-plan.md` for the question set).
    Kickoff checks existing asset data before asking and saves
-   `projects/<asset-key>/decarb-plan-kickoff.md`.
-2. Map the kickoff outputs into `state.kickoff` **field-by-field**:
+   `projects/<asset-key>/decarb-plan-kickoff.md`. Pass through the engagement-reference
+   pre-fills so kickoff confirms rather than re-asks them.
+3. Map the kickoff outputs into `state.kickoff` **field-by-field**:
 
    | Kickoff Store-as field | State ledger field |
    |---|---|
@@ -97,10 +119,10 @@ cat projects/<asset-key>/decarb-plan.json 2>/dev/null
    | `deadline` | `kickoff.deadline` |
    | `primary_contact` | `kickoff.primary_contact` |
 
-3. Create the state file with `asset` (`{id, name, portfolio_id}` — `id` is the **Soapbox
+4. Create the state file with `asset` (`{id, name, portfolio_id}` — `id` is the **Soapbox
    asset id**), the mapped `kickoff` block, and `phase: "P0"`. Create the companion
    `decarb-plan.md` and register it in Files.
-4. Set `phase: "P1"` and save.
+5. Set `phase: "P1"` and save.
 
 ---
 
@@ -220,6 +242,14 @@ Set `phase: "P3"` and save.
    - Every economic field must be engine- or source-provenanced; the tool refuses
      unprovenanced numbers — supply real sources, never fabricate provenance.
    - Cap rate for exit math comes from `kickoff.cap_rate` **with its verbatim source string**.
+   - **Savings basis = landlord share only.** A measure's dollar savings accrue only to the
+     party that pays the bill. Before pricing electric/gas/water savings, establish the
+     asset's owner/tenant utility split per fuel via the **utility-split-estimation** skill
+     (`cat skills/utility-split-estimation/SKILL.md`) — never default the split. Use the
+     landlord (net-of-recovery) share as the savings basis for each fuel; an unconfirmed
+     split is recorded as a verifier finding and adjudicated at Gate 1 (see the owner/tenant
+     gas-split conflict pattern in P2). When Audette is in play, its landlord-share settings
+     must reflect the confirmed split or the modeled owner savings will be mis-priced.
    - Record returned measure ids in `state.measures.register_ids`.
 5. `retrofit__screen_measures` to produce the roster labels.
 6. **Roadmap phasing:** read `retrofit__get_retrofit_playbook('staging')` and phase measures

@@ -11,7 +11,7 @@
     "equipment_commitments": ["none planned; gas DHW (2014) and split AHUs w/ gas heat (2009) age naturally within hold"],
     "budget_ceiling": null,
     "financing_appetite": "hurdle-driven",
-    "irr_hurdle": {"value": 0.12, "source": "client guidance, Christopher, 2026-07-03 (12% IRR)"},
+    "irr_hurdle": {"value": 0.10, "source": "10% IRR — Christopher 2026-07-03, supersedes morning 12% verbal"},
     "turn_schedule": null,
     "disruption_tolerance": "light",
     "existing_docs": ["AEI Energy & Water Audit 475250-EA1 (Nov 2023)", "15359-PCA-Cortland Westminster (draft)", "Westminster CO Survey 2021"],

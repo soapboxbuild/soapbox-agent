@@ -293,13 +293,13 @@ gate (resume may have skipped P4's check).
    `templates/decarb` does not have). Unlike rsra's template, `templates/decarb/layout-agent.html`
    has no `<script id="report-data">` block and no client-side rendering JS — it is
    **agent-filled**, so the agent (not the tool) must do the substitution:
-   - Call `get_report_resources('decarb')` to fetch `layout-agent.html`.
+   - Call `get_report_template('decarb')` to fetch `layout-agent.html`. (Tool names verified against the live service 2026-07-03: get_report_template / fill_report — if these error, list the template server's tools and adapt rather than failing silently.)
    - Replace every `[[TOKEN]]` scalar placeholder with the assembled data, and expand every
      repeated-row placeholder (`[[SCENARIO_1_ROWS]]`, `[[ROADMAP_ROWS]]`,
      `[[ADJUDICATION_ROWS]]`, `[[CITATION_ROWS]]`, etc.) into literal `<tr>`/card HTML — one
      block per data row, matching the commented example directly below each placeholder in
      the template. Field names exactly as `templates/decarb/example-data.json` documents.
-   - Pass the fully-filled HTML through `fill_report` to produce the artifact, then hand off
+   - Pass the fully-filled HTML through `fill_report({report_type: 'decarb', data: <filled-html>})` to produce the artifact, then hand off
      to `report-review` for the interactive loop, same as rsra.
    - Record `state.report.render_iterations` starting at 0.
 

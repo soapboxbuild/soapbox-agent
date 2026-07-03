@@ -96,6 +96,23 @@ to produce a best estimate, mark the result **PRESUMED** with **low** confidence
 explicit in the owner question that the split is unconfirmed. Do not fabricate precision the
 module does not yet support.
 
+## Granularity rule (critical)
+
+Apply the split at the FINEST granularity the model supports — per building and per end-use — never as
+one blended property-wide percentage. A blended % misattributes savings both ways: in-unit measures get
+phantom landlord credit, and fully-landlord amenity measures get under-credited.
+
+- Residential buildings with tenant-metered fuel: landlord share for that fuel = 0% in those building
+  models. House-meter loads (corridor/exterior lighting, common HVAC) that live inside residential
+  buildings keep a per-building landlord share for that fuel (typically electricity).
+- Amenity/clubhouse/pool buildings: landlord share = 100% for their fuels.
+- If the model has NO separate amenity building (e.g. a property modeled as N identical residential
+  buildings), set the tenant-metered fuel to 0% landlord across all modeled buildings and evaluate
+  common-load measures (pool heater, clubhouse equipment) as standalone owner-paid line items outside
+  the building models. Say explicitly which loads were handled this way.
+- Only fall back to a blended % when the modeling tool cannot express per-building shares — and label
+  the blend and its composition.
+
 ## Output contract
 
 Produce, for the asset:

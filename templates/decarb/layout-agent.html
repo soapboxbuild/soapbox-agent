@@ -739,7 +739,7 @@
         var block = document.createElement('div');
         var isSel = econ.selected_plan && plan.name === econ.selected_plan;
         block.className = 'plan-block' + (isSel ? ' selected' : '');
-        block.innerHTML = renderPlanWaterfall(plan, isSel);
+        block.innerHTML = renderPlanWaterfall(plan, isSel) + renderPlanCashflow(plan);
         container.appendChild(block);
       });
       /* Legend once, below all plans */
@@ -841,16 +841,12 @@
     /* ════════════════════════════════
        7. CASHFLOW TABLE (selected plan)
     ════════════════════════════════ */
-    var cfSection = document.getElementById('cashflow-section');
-    var cfPlan = null;
-    if (plans.length > 0) {
-      cfPlan = plans.filter(function(p){ return econ.selected_plan && p.name === econ.selected_plan; })[0] || plans[0];
-    }
-    if (cfSection && cfPlan && cfPlan.cashflow && cfPlan.cashflow.length > 0) {
-      setText('cashflow-plan-label', (cfPlan.name || 'Plan') + (cfPlan.label ? ' — ' + cfPlan.label : ''));
-      var cf = cfPlan.cashflow;
+    /* Per-plan annual cashflow table — rendered directly under each plan's waterfall
+       (the model underneath the bridge). Returns '' when a plan has no cashflow. */
+    function renderPlanCashflow(plan) {
+      if (!plan || !plan.cashflow || !plan.cashflow.length) return '';
       var cHtml = '';
-      cf.forEach(function(r) {
+      plan.cashflow.forEach(function(r) {
         cHtml += '<tr>';
         cHtml += '<td class="ctr">' + esc(r.year != null ? String(r.year) : '—') + '</td>';
         cHtml += cfCell(r.revenue);
@@ -865,8 +861,16 @@
         cHtml += cfCell(r.asset_value_impact);
         cHtml += '</tr>';
       });
-      setHtml('cashflow-tbody', cHtml);
-      cfSection.style.display = '';
+      return '<div class="cashflow-block">' +
+        '<div style="font-weight:600;font-size:12px;margin:14px 0 4px;color:var(--muted-foreground,#64748B)">Annual Cashflow — ' +
+          esc((plan.name || 'Plan') + (plan.label ? ' — ' + plan.label : '')) + '</div>' +
+        '<div style="overflow-x:auto"><table class="profile-table"><thead><tr>' +
+          '<th class="ctr">Year</th><th class="num">Revenue</th><th class="num">Utility<br>Savings</th>' +
+          '<th class="num">Like-for-<br>Like CapEx</th><th class="num">Incremental<br>CapEx</th>' +
+          '<th class="num">Incentives</th><th class="num">BPS Fine<br>Avoidance</th>' +
+          '<th class="num">NOI<br>Impact</th><th class="num">Unlevered<br>Incr. CF</th>' +
+          '<th class="num">Cumulative</th><th class="num">Asset Value<br>Impact</th>' +
+        '</tr></thead><tbody>' + cHtml + '</tbody></table></div></div>';
     }
     function cfCell(v) {
       if (v == null || v === '') return '<td class="num">—</td>';
@@ -1063,31 +1067,9 @@
   </div>
 
   <!-- ══════════════════════════════════
-       7. CASHFLOW
+       7. CASHFLOW — now rendered per-plan directly under each plan's waterfall
+          (see renderPlanCashflow in the waterfall section); no standalone section.
   ════════════════════════════════════ -->
-  <div id="cashflow-section" class="section" style="display:none">
-    <div class="section-label">Financial Model</div>
-    <h2 class="section-title">Annual Cashflow — <span id="cashflow-plan-label">Selected Plan</span></h2>
-    <p class="section-intro">The annual model underneath the waterfall. NOI Impact = Revenue + Utility Savings + BPS Fine Avoidance; Unlevered Incremental Cashflow = NOI Impact − Incremental CapEx + Incentives. Asset Value Impact is booked in the exit year.</p>
-    <div style="overflow-x:auto">
-      <table class="profile-table">
-        <thead><tr>
-          <th class="ctr">Year</th>
-          <th class="num">Revenue</th>
-          <th class="num">Utility<br>Savings</th>
-          <th class="num">Like-for-<br>Like CapEx</th>
-          <th class="num">Incremental<br>CapEx</th>
-          <th class="num">Incentives</th>
-          <th class="num">BPS Fine<br>Avoidance</th>
-          <th class="num">NOI<br>Impact</th>
-          <th class="num">Unlevered<br>Incr. CF</th>
-          <th class="num">Cumulative</th>
-          <th class="num">Asset Value<br>Impact</th>
-        </tr></thead>
-        <tbody id="cashflow-tbody"><!-- JS --></tbody>
-      </table>
-    </div>
-  </div>
 
   <!-- ══════════════════════════════════
        8. PLAN COMPARISON

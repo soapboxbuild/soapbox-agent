@@ -66,18 +66,39 @@ killed the OAuth token mid-batch. Until refresh-persistence is fixed platform-si
 - Expect to need a reconnect and resume mid-engagement on large portfolios; design the workflow
   so resuming from the checkpoint is mechanical, not a re-derivation.
 
-## 5. Equipment survey proxy for in-unit gas systems
+## 5. Equipment survey — map to the real system, don't reach for a proxy first
 
-Garden-style buildings with in-unit gas water heaters that serve **both** DHW and space heating
-(via fan coils) don't have a literal equipment match in some modeling tools. Model as:
+**Identify the actual heating system before modeling.** The most common error is defaulting to
+a proxy (or to the tool's electric-heat default) when Audette has a literal match for the real
+equipment. Check the PCA/MEP drawings for what the space-heating system actually is, then map it.
 
-`central_plant_heater = gas_boiler + fan_coil_units`
+### 5a. Hydronic furnaces (garden-style forced-air served by a hot-water/combi source)
 
-This is not a physically accurate description of the actual in-unit equipment, but it produces
-the correct fuel assignment (`NATURAL_GAS`) and distribution type, which matters far more for
-downstream carbon/BPS results than literal equipment fidelity. The tool's own default — absent
-this proxy — wrongly assumes electric heating, which misstates fuel mix and compliance exposure.
-Always document the proxy explicitly in `state` so it isn't mistaken for a data error on review.
+Audette **has a native match** — do NOT use the fan-coil proxy for these. A hydronic furnace is a
+ducted forced-air furnace whose heat exchanger is a hot-water coil (fed by a boiler or combi water
+heater). The correct A4/Type-A survey pattern (Cortland Westminster, adjudicated by Christopher
+2026-07-04) is:
+
+| Audette survey field | Value |
+|---|---|
+| Central plant → **Boiler** | **Hydronic furnace** ← the space-heating system lives here |
+| **Air handler** | Exhaust-only air handler (ventilation only — it is NOT the heat source) |
+| Terminal units → **Cooling** | Split air conditioner |
+| Domestic water heater | Gas heater; **Central distribution: No** (individual in-unit gas DHW) |
+| Packaged rooftop units | Not defined |
+| Additional equipment | Clothes dryers: Electric; clothes washers: Yes (+ ASHRAE densities/ages) |
+
+This yields the correct fuel (`NATURAL_GAS` heating + gas DHW), separates cooling (electric split
+AC) from heating, and keeps DHW as a distinct gas load — all of which drive the electrification
+measures (heating → air-to-water / heat-pump furnace; DHW → HPWH) and BPS/carbon results.
+
+### 5b. True in-unit combi with fan-coil distribution (no forced-air furnace)
+
+ONLY when the in-unit gas water heater serves both DHW and space heat via **fan coils / hydronic
+terminals** (not a ducted furnace) and there is no literal match, model as
+`central_plant_heater = gas_boiler + fan_coil_units`. This is a proxy for fuel/distribution
+fidelity, not a physical description. Document it explicitly in `state` so it isn't read as a data
+error. Do not apply this to hydronic furnaces — use 5a.
 
 ## 6. Utility allocation recipe (never-even-split rule)
 

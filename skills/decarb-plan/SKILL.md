@@ -179,6 +179,8 @@ against ground truth:
   the [[utility-split-estimation]] allocation rule: carve out common/amenity loads first, allocate the
   remainder GFA-weighted (never even), and set landlord shares per building/end-use (tenant-metered
   fuel = 0% on residential buildings, 100% on amenity buildings).
+- For Audette mechanics — building rebuilds, landlord shares, equipment survey patterns — read
+  `references/audette-modeling-recipes.md`.
 
 Set `phase: "P2"` and save.
 

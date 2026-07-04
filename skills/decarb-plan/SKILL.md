@@ -313,6 +313,14 @@ Set `phase: "P4"` and save.
 2. **Survey corrections:** for every adjudicated equipment conflict, `submit_equipment_survey`
    with the corrected values. Record each submission in
    `state.audette.survey_corrections_submitted`.
+   **BEFORE the first submit, read `references/audette-modeling-recipes.md` recipe 5** — the
+   `equipment_survey` arg schema is free-form but the backend inferrer REQUIRES all 10 equipment
+   groups present (each with `<group>_exists`), DHW needs `_central_distribution` +
+   `_average_installation_year` keys, enum values are lowercase_snake (`hydronic_furnace`,
+   `gas_heater`, …), and blank sizes/years must be `null` not `0`. Do NOT guess keys — copy the
+   recipe's payload template. Hydronic furnaces map to `central_plant_heater_type=hydronic_furnace`
+   (native match), never the fan-coil proxy. Submit in batches of ≤6 buildings per turn (the Audette
+   OAuth token dies on large parallel bursts) and verify each with `get_equipment_survey`.
 3. **RENDER GATE (HARD):** call `verifier__verification_status` for the asset and write the
    result to `state.report.verification_status`. The deployed tool returns
    `{pass: boolean, open_high: number, open_total: number}` — store that shape verbatim.

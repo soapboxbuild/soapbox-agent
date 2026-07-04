@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.4.0
+version: 1.5.0
 ---
 
 # Decarb-Plan Engagement
@@ -61,10 +61,10 @@ replace spaces with hyphens.
 internal helper HTML for the engagement, saved via `save_file` to folder **`Helper Files`** as
 **`[state.helper.start_date] - Helper Files - Decarb Plan.html`** (start date fixed at P0, stored
 in `state.helper`). It is a rendered *view of state* — regenerate and re-save it at **every phase
-checkpoint** (P1.5 validation, P2 baseline, P3 measures, P4 write-back). Fill the skeleton at
+checkpoint** (P2 foundation, P3 measures, P4 write-back). Fill the skeleton at
 `skills/helper-files/references/skeleton.html`; the decarb **phase/gate checklist sections** are
-P0 Kickoff · P1 Evidence · P2 Baseline · GATE 1 · P3 Measures · GATE 2 · P4 Write-back+Verify ·
-P5 Deliverables. **Do NOT produce standalone intermediate/gate HTML** (no `p1-baseline.html`,
+P0 Kickoff · P1 Evidence · P2 Model Foundation (2A model · 2B baseline+calibration · 2C split ·
+2D equipment) · GATE 1 · P3 Measures · GATE 2 · P4 Write-back+Verify · P5 Deliverables. **Do NOT produce standalone intermediate/gate HTML** (no `p1-baseline.html`,
 no `building-model-verification.html`) — that material is checklist sections of the helper, and
 **GATE 1 / GATE 2 are reviewed as the helper's checklist sections**, not as polished artifacts.
 Only the **Report** and the **Delivery-Meeting Slides** are design-forward (`Reports/`, gate-only).
@@ -85,8 +85,8 @@ run slow):**
    re-enter values from memory.** Adjudicated values are **LOCKED** — tag them and never revert to
    a superseded number (the 15%→5% / 2031→2034 drift). Re-query IDs/UIDs from Audette; never
    hand-carry them across threads (clubhouse UIDs went stale this way).
-4. **Validate the building model (count / GFA / UID set) at P1.5 BEFORE any upload or calibration.**
-   Discovering a model error after uploads means redoing every upload.
+4. **Validate the building model (count / GFA / UID set) in P2 step 2A BEFORE any upload or
+   calibration.** Discovering a model error after uploads means redoing every upload.
 5. **At each phase start, confirm the required tools/connectors are attached; STOP if missing**
    (don't fabricate — the ESPM tripwire). Checkpoint before every expensive/irreversible action so
    a dropped connection or deploy costs one batch, not the whole run.
@@ -211,7 +211,18 @@ Gather every source; record everything in state as you go.
    `state.targets`. Full jurisdiction source registry + procedure live in the bps-analysis skill
    (Step 1.5).
 
-### P1.5 — Building-model validation (HARD GATE before any upload/calibration)
+Set `phase: "P2"` and save.
+
+---
+
+## P2 — Model Foundation (validate → calibrate → split → equipment; LOCK before Gate 1)
+
+Establish and **LOCK all four foundation inputs before Gate 1 or any measure work.** Every rework
+in prior engagements traced to a foundation input surfacing late or drifting (building set, split,
+equipment, calibration). Gate 1 opens ONLY on a locked foundation. Record each with provenance in
+`state`; any disagreement becomes a `verifier__record_finding` conflict for Gate 1 adjudication.
+
+### 2A — Physical model validation (hard gate)
 
 The Audette building count and per-building GFA are frequently auto-generated (footprint-matched
 or total÷N) and WRONG. Before uploading utility/equipment data or calibrating, reconcile the model
@@ -241,11 +252,14 @@ against ground truth:
 - For Audette mechanics — building rebuilds, landlord shares, equipment survey patterns — read
   `references/audette-modeling-recipes.md`.
 
-Set `phase: "P2"` and save.
+### 2B — Measured-energy baseline + calibration
 
----
-
-## P2 — Baseline Reconciliation
+**Calibrate to measured energy — don't ask whether it's authoritative.** If measured whole-building
+energy exists (ESPM actuals, utility bills) and is sane, extract it, upload it to Audette, and
+adjust calibration factors until the model matches — rather than asking the user to choose between
+measured and modeled. A residual 10–20% gap after calibration is almost always a building-model
+error (revisit 2A), not an emission-factor difference. Pull ESPM via the energy-star tools (verify
+they're attached first — the tripwire); read the energy sub-skill for the exact tool sequence.
 
 Build the baseline table in `state.baseline`. Required fields (each stored as
 `{value, unit, source}`):
@@ -270,21 +284,54 @@ For **each field**: gather ALL candidate values with their sources.
 
 **NO auto-resolution.** Every conflict waits for Gate 1.
 
-Set `phase: "GATE1"` and save.
+### 2C — Utility split (per fuel, per building)
+
+Establish the owner/tenant utility split **per fuel, per building** via the
+**utility-split-estimation** skill (`cat skills/utility-split-estimation/SKILL.md`) — building form
++ jurisdiction RUBS rules + on-file docs + leasing evidence. Never default to 100%-owner or a round
+number. Tenant-metered fuel = 0% owner on residential; amenity/clubhouse buildings are typically
+100% owner on both fuels. The split is the **savings basis for every retrofit IRR**, so it is a
+foundation input, not a P3 afterthought. Record it in `state.baseline`; an unconfirmed or presumed
+split is a `verifier__record_finding` conflict adjudicated at Gate 1.
+
+### 2D — Equipment inventory (establish now — it drives P3 measure sequencing)
+
+Gather the **real** equipment set + install years / remaining useful life (RUL) from the PCA / MEP
+drawings / audit **now** — equipment type and RUL determine electrification timing (electrify at
+end-of-life, DHW→HPWH at RUL), so the roadmap in P3 cannot be sequenced without it. Map each system
+to its Audette representation per `references/audette-modeling-recipes.md` recipe 5 (e.g. hydronic
+furnaces → native `hydronic_furnace`, not a fan-coil proxy). Record the inventory in `state`.
+NOTE: the Audette `submit_equipment_survey` **write-back** happens in P4; here you establish the
+inventory *knowledge* that feeds measure selection.
+
+### Foundation lock
+
+All four inputs — validated physical model (2A), calibrated measured baseline (2B), per-fuel/
+per-building split (2C), equipment inventory (2D) — recorded in `state` with provenance, and every
+disagreement captured as a verifier conflict. **Do not proceed to Gate 1 until the foundation is
+locked.** Set `phase: "GATE1"` and save.
 
 ---
 
-## GATE 1 — Baseline, Conflicts, Targets (user)
+## GATE 1 — Foundation, Conflicts, Split/Exit, Targets (user)
 
-Present exactly three blocks, then **stop and wait for the user**:
+Gate 1 opens **only on a locked Model Foundation (P2)**. Present these blocks, then **stop and wait
+for the user**:
 
-**(a) Verified baseline** — every agreed field with value, unit, source.
+**(a) Verified foundation** — the validated building model (count/GFA/types), calibrated baseline
+(with the measured source + residual calibration gap), and every agreed field with value, unit, source.
 
 **(b) Conflicts** — every row of `state.conflicts` as a **numbered decision**: candidates
 with sources, the suggested resolution, and the hierarchy rule that produced the suggestion.
 The user decides each one; the suggestion is never applied without their word.
 
-**(c) Target trajectory** — computed from `kickoff.target.type`, engine math only:
+**(c) Split & exit — the two economic-gating decisions.** Present the per-fuel/per-building
+utility split (2C) and the exit assumptions (exit year + cap rate) for explicit confirmation.
+These gate every IRR, so they must be adjudicated and **LOCKED here** — once locked, no later phase
+re-enters a superseded value (past runs drifted 15%→5% / 2031→2034). Record the locked values with
+`adjudicated_by: "user"` in `state.baseline` / `state.kickoff`.
+
+**(d) Target trajectory** — computed from `kickoff.target.type`, engine math only:
 
 | Target type | How the trajectory is computed |
 |---|---|
@@ -325,19 +372,19 @@ Set `phase: "P3"` and save.
    - Every economic field must be engine- or source-provenanced; the tool refuses
      unprovenanced numbers — supply real sources, never fabricate provenance.
    - Cap rate for exit math comes from `kickoff.cap_rate` **with its verbatim source string**.
-   - **Savings basis = landlord share only.** A measure's dollar savings accrue only to the
-     party that pays the bill. Before pricing electric/gas/water savings, establish the
-     asset's owner/tenant utility split per fuel via the **utility-split-estimation** skill
-     (`cat skills/utility-split-estimation/SKILL.md`) — never default the split. Use the
-     landlord (net-of-recovery) share as the savings basis for each fuel; an unconfirmed
-     split is recorded as a verifier finding and adjudicated at Gate 1 (see the owner/tenant
-     gas-split conflict pattern in P2). When Audette is in play, its landlord-share settings
-     must reflect the confirmed split or the modeled owner savings will be mis-priced.
+   - **Savings basis = the LOCKED landlord share (from Gate 1).** A measure's dollar savings
+     accrue only to the party that pays the bill. Use the per-fuel/per-building split locked at
+     Gate 1 (established in P2 step 2C) as the savings basis — do NOT re-derive or re-open it here.
+     Audette's landlord-share settings must reflect that locked split or modeled owner savings are
+     mis-priced.
    - Record returned measure ids in `state.measures.register_ids`.
 5. `retrofit__screen_measures` to produce the roster labels.
-6. **Roadmap phasing:** read `retrofit__get_retrofit_playbook('staging')` and phase measures
-   against `kickoff.capital_events` and equipment end-of-life (from the equipment survey +
-   adjudicated install years). Write `state.measures.roadmap_phases`.
+6. **Roadmap phasing — sequence by decarb logic + equipment RUL, not independent IRR.** Read
+   `retrofit__get_retrofit_playbook('staging')`. Order measures as: load-reduction / controls &
+   retro-commissioning FIRST, then electrification of heating/DHW **timed to each system's RUL**
+   (from the 2D equipment inventory) and to `kickoff.capital_events`, then supply (solar/storage)
+   aligned to roof life. Screen by IRR ≥ hurdle *within* that sequence — never let a high-IRR
+   measure jump ahead of the load-reduction it depends on. Write `state.measures.roadmap_phases`.
 7. **Target-gap statement:** does the recommended set reach the confirmed target
    (`state.targets`)? If not, which defensive additions close the gap and at what cost —
    engine math only. Write `state.measures.gap_statement`.
@@ -369,9 +416,10 @@ Set `phase: "P4"` and save.
 1. **Audette write-back:** `create_custom_plan` with the confirmed measure set — or
    `update_custom_plan_measures` if `state.audette.custom_plan_id` already exists. Record the
    plan id in `state.audette.custom_plan_id`.
-2. **Survey corrections:** for every adjudicated equipment conflict, `submit_equipment_survey`
-   with the corrected values. Record each submission in
-   `state.audette.survey_corrections_submitted`.
+2. **Equipment survey write-back:** submit the equipment inventory established in P2 (step 2D) —
+   and any Gate-1-adjudicated corrections — to Audette via `submit_equipment_survey`. (The inventory
+   *knowledge* was gathered in 2D to drive P3 sequencing; this is the deferred *write*.) Record each
+   submission in `state.audette.survey_corrections_submitted`.
    **BEFORE the first submit, read `references/audette-modeling-recipes.md` recipe 5** — the
    `equipment_survey` arg schema is free-form but the backend inferrer REQUIRES all 10 equipment
    groups present (each with `<group>_exists`), DHW needs `_central_distribution` +

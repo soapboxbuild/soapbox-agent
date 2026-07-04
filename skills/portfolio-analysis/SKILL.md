@@ -11,7 +11,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.4.0
+version: 1.5.0
 ---
 
 # Portfolio Analysis
@@ -1029,13 +1029,17 @@ never present unverified data as verified.
 
 ---
 
-## Phase 5: Phase 2 Artifact — Full Report
+## Phase 5: Full Report — render via `fill_report` (mirror RSRA/decarb; do NOT hand-write HTML)
 
-Update the same `{client-slug}-portfolio-analysis.html` artifact. Do not create a new file.
+**Render the report by computing the data object and calling `fill_report(template:'portfolio-analysis', data)`** — the same client-render path RSRA and decarb use. The server injects your JSON into `templates/portfolio-analysis/layout-agent.html`'s `<script id="report-data">` block and the template's own JavaScript renders every section and chart (including the **asset-prioritization quadrant** SVG). **You write NO report HTML and draw NO charts** — your only job is to assemble the data object.
 
-**Typography:** Pure sans-serif everywhere. Zero Georgia, zero serif, zero web fonts.
-**Citation links:** All external references use `target="_blank" rel="noopener noreferrer"`.
-**Numeric precision:** 2 significant figures throughout.
+1. **Assemble the data object** per `templates/portfolio-analysis/schema.json`. Top-level keys (from Phase 4 aggregation): `client_name, portfolio_id, report_date, prepared_by, parameters, portfolio_kpis, asset_source_data, assets, fund_summary, top_assets, all_measures, measure_categories, emissions_trajectory` (if include_crrem), `crrem_trajectory` (if include_crrem), `bps_assets` (if include_bps), `below_hurdle, deferred`, **plus the `prioritization` block** (per-asset ranking + driving dimensions — value_creation, pct_reduction, irr, gav, exit, above_hurdle — that powers the quadrant; see schema).
+2. **Call `fill_report(template:'portfolio-analysis', data:<object>, title:"<Client> — Portfolio Decarbonization Analysis")`.** It returns the rendered artifact in the preview pane. On revisions, recompute the data and call `fill_report` again — never edit HTML.
+3. 2 significant figures throughout; the template enforces sans-serif/no-web-fonts and safe citation links.
+
+The template renders these sections (reference — this is the template's contract, not something you build): Document Header, Executive Summary, Portfolio KPIs, Asset-Prioritization Quadrant, Fund-Level Summary, Top Assets by Value Creation, Emissions Trajectory (if include_crrem), CRREM Pathway (if include_crrem), BPS Exposure (if include_bps), Measure Category Summary, Asset-by-Asset Detail, Below-Hurdle, Deferred, Data Quality & Verification, Methodology & Sources.
+
+<details><summary>Legacy structure reference (the template implements this — kept for data-shape context)</summary>
 
 ### Report structure
 
@@ -1123,11 +1127,13 @@ Update the same `{client-slug}-portfolio-analysis.html` artifact. Do not create 
 
 ---
 
+</details>
+
 ## Phase 6: Save and Offer Follow-Ups
 
-After generating the Phase 2 report:
+After `fill_report` renders the report:
 
-1. Save to portfolio documents: `{client-slug}-portfolio-analysis-{YYYYMMDD}.html`
+1. Register the rendered artifact in portfolio documents as `{client-slug}-portfolio-analysis-{YYYYMMDD}.html`
 2. Save per-asset JSON outputs to `.cashflow-models/portfolio-{client-slug}/`
 3. **Generate the XLSX companion — best-effort.** If `build_xlsx.py` is available in the
    runtime, produce the analyst verification workbook (source data, measure economics, and all

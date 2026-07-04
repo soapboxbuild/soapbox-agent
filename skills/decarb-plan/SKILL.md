@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.5.0
+version: 1.6.0
 ---
 
 # Decarb-Plan Engagement
@@ -448,46 +448,34 @@ Set `phase: "P5"` and save.
 Before dispatching any render, re-run `verifier__verification_status` and re-confirm the
 gate (resume may have skipped P4's check).
 
-1. **Assemble the report data JSON** per `templates/decarb/example-data.json` — the
-   **authoritative example payload** (created by Task 3; its field names are exactly what the
-   template consumes). Save it and record the path in `state.report.data_json_path`.
-   Section mapping:
+1. **Assemble the report data object** per `templates/decarb/schema.json` — the authoritative
+   schema the template consumes (its field names are exactly what the template's `populateReport()`
+   JS reads). Include the **`economics`** object (per-plan `waterfall` 5 components + annual
+   `cashflow` + `plans` + exit cap/year) built per **recipe 8** in `references/audette-modeling-recipes.md`.
+   Record the object in `state.report.data`. Section→source mapping:
 
-   | Template section | Source in state |
+   | Data key | Source in state |
    |---|---|
-   | Baseline Performance | `state.baseline` (values + sources) |
-   | Decarbonization Feasibility | `state.targets` (trajectory, milestones, fine exposure) |
-   | Recommended Measures | measure register via `state.measures.register_ids` |
-   | CRREM-Aligned Measures | measure register, CRREM-flagged entries |
-   | Exit-value scenarios | engine outputs (capitalized at `kickoff.cap_rate`, source cited) |
-   | Data Quality & Adjudications appendix | `state.conflicts` (incl. adjudications) + verifier findings |
-   | Methodology & Sources | `state.citations` |
+   | property / baseline | `state.baseline` (validated model + calibrated baseline, values + sources) |
+   | targets / trajectory | `state.targets` (trajectory, BPS milestones, fine exposure) |
+   | measures / roadmap | measure register via `state.measures.register_ids` + `state.measures.roadmap_phases` |
+   | economics (waterfall + cashflow + plans) | `state.economics` (recipe 8 — owner-share, incremental-over-LfL, fines as PV, capitalized savings/ancillary) |
+   | data_quality | `state.conflicts` (incl. adjudications) + verifier findings |
+   | sources | `state.citations` |
 
-2. **Render via direct template fill** (same entry point as the rsra skill, NOT the
-   `report-renderer` subagent, which is built around a different schema/layout/sections
-   contract that `templates/decarb` does not have, and NOT `fill_report` — the deployed
-   template-mcp `fill_report` injects JSON into a `<script id="report-data">` block that the
-   decarb template does not have, and rejects HTML strings, so it must never be called for
-   decarb rendering). `templates/decarb/layout-agent.html` has no `<script id="report-data">`
-   block and no client-side rendering JS — it is **agent-filled**, so the agent (not the
-   tool) must do the substitution and save the result directly:
-   - Call `get_report_template('decarb')` to fetch `layout-agent.html`. (Tool name verified
-     against the live service 2026-07-03 — if it errors, list the template server's tools
-     and adapt rather than failing silently.)
-   - Replace every `[[TOKEN]]` scalar placeholder with the assembled data, and expand every
-     repeated-row placeholder (`[[SCENARIO_1_ROWS]]`, `[[ROADMAP_ROWS]]`,
-     `[[ADJUDICATION_ROWS]]`, `[[CITATION_ROWS]]`, etc.) into literal `<tr>`/card HTML — one
-     block per data row, matching the commented example directly below each placeholder in
-     the template. Field names exactly as `templates/decarb/example-data.json` documents.
-   - Save/present the fully-filled HTML directly via `create_artifact` or `save_file` (per
-     the runtime) — no rendering tool call — then register the file on the asset and hand
-     off to `report-review` for the interactive loop, same as rsra.
-   - Record `state.report.render_iterations` starting at 0.
+2. **Render via `fill_report` — the SAME path RSRA uses (default; do not hand-write HTML or draw
+   charts).** Call `fill_report(template: 'decarb', data: <the object from step 1>, title: "<Asset> — Decarbonization Roadmap")`.
+   The server injects the JSON into the template's `<script id="report-data">` block and the
+   template's own JavaScript renders every section and the **value-creation waterfall SVG chart**
+   from it. You write NO report HTML and draw NO charts — your only job is to compute the data
+   object. (This mirrors rsra exactly. The old `[[TOKEN]]` / `get_report_template` + agent-fill
+   path is retired — `templates/decarb/layout-agent.html` is now a client-render template.) The
+   render is verifier-gated server-side; if blocked, fix findings and retry. Record
+   `state.report.render_iterations` starting at 0.
 
-3. **Loop `report-review`:** present the artifact, apply user revisions (re-fill the template
-   with updated data and re-save the HTML directly; increment `state.report.render_iterations`),
-   and on approval export **PDF and/or PPTX** — this loop is unchanged from the
-   subagent-dispatch flow.
+3. **Revision loop:** on user revisions, recompute the data object and call `fill_report` again
+   with the updated `data` (increment `state.report.render_iterations`); on approval export
+   **PDF and/or PPTX**.
 4. **Register the deliverable in Files** and write all export paths to
    `state.report.exports`.
 5. **Retain lessons:** call `verifier__retain_shared_expertise` with the generalizable,

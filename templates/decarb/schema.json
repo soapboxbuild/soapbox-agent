@@ -1,0 +1,231 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "decarb",
+  "title": "Decarbonization Plan",
+  "description": "Schema for the decarb report type — full-engagement decarbonization plan: validated building model, calibrated baseline, emissions trajectory, phased measure roadmap, and a direct-cap value-creation waterfall + annual cashflow per plan (Audette investment models, recipe 8). CLIENT-RENDER template: the server injects this object into <script id=\"report-data\"> and templates/decarb/layout-agent.html renders every section and chart from it (fill_report path, same as RSRA). The Measure Roadmap renders from economics.measures[]; the waterfall, cashflow, and plan comparison render from economics.plans[].",
+  "type": "object",
+  "required": ["property", "baseline", "economics"],
+  "additionalProperties": false,
+  "properties": {
+    "property": {
+      "type": "object",
+      "description": "Core property identification and physical attributes. Renders the cover header and meta bar.",
+      "required": ["name", "address", "type", "year_built"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "description": "Property / asset name." },
+        "address": { "type": "string", "description": "Full street address including city, state." },
+        "type": {
+          "type": "string",
+          "description": "Asset class.",
+          "enum": ["multifamily", "office", "industrial", "retail", "hotel", "senior-living", "student-housing", "mixed-use"]
+        },
+        "units": { "type": "integer", "description": "Unit count. Required for multifamily/senior-living/student-housing; omit for CRE.", "minimum": 1 },
+        "gfa_sqft": { "type": "integer", "description": "Gross floor area in square feet. Used for CRE; drives the meta-bar Size line when units is absent.", "minimum": 1 },
+        "gfa_m2": { "type": "number", "description": "Gross floor area in m². Optional; supports kWh·m⁻² derivations.", "minimum": 1 },
+        "year_built": { "type": "integer", "description": "Year of original construction.", "minimum": 1800, "maximum": 2100 },
+        "climate_zone": { "type": "string", "description": "ASHRAE / IECC climate zone (e.g. 'ASHRAE Zone 5A')." },
+        "zip": { "type": "string", "description": "Five-digit ZIP.", "pattern": "^[0-9]{5}(-[0-9]{4})?$" }
+      }
+    },
+
+    "prepared_by": { "type": "string", "description": "Name/team that produced this plan (e.g. 'Aris / Soapbox Sustainability Intelligence')." },
+    "prepared_for": { "type": "string", "description": "Recipient organization or deal team." },
+    "report_date": { "type": "string", "description": "ISO 8601 date the report was generated.", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+
+    "executive_summary": {
+      "description": "Top-line summary. Either a plain string (rendered as the narrative) or an object with a headline + narrative.",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "headline": { "type": "string", "description": "One-line bold conclusion (e.g. 'Deep electrification is CRREM-aligned and value-accretive at exit')." },
+            "narrative": { "type": "string", "description": "One to three sentences naming the recommended plan, the net value creation, and the primary decision driver." }
+          }
+        }
+      ]
+    },
+
+    "baseline": {
+      "type": "object",
+      "description": "Validated building model + calibrated baseline. All displayed metrics rendered at 2 significant figures; energy in kWh and kWh·m⁻².",
+      "additionalProperties": false,
+      "properties": {
+        "model_validation": { "type": "string", "description": "One line on how the building model was validated (e.g. 'Geometry reconciled against ALTA/PCA; equipment from on-site survey 2026-05')." },
+        "calibrated_kwh": { "type": "number", "description": "Calibrated annual site energy in kWh/yr.", "minimum": 0 },
+        "eui_kwh_m2": { "type": "number", "description": "Calibrated energy intensity in kWh·m⁻²·yr⁻¹.", "minimum": 0 },
+        "energy_star_score": { "type": "integer", "description": "ENERGY STAR score (1–100) if available.", "minimum": 1, "maximum": 100 },
+        "emissions_tco2e": { "type": "number", "description": "Baseline annual emissions in tCO₂e/yr.", "minimum": 0 },
+        "fuel_profile": { "type": "string", "description": "Primary energy/fuel profile (e.g. 'Dual-fuel — gas heat + DHW, electric cooling')." },
+        "utility_structure": { "type": "string", "description": "Who pays utilities and how metered." },
+        "calibration_basis": { "type": "string", "description": "Basis for calibration (e.g. '24 months ESPM-linked actuals; zero-variance GFA-weighted building allocation')." }
+      }
+    },
+
+    "targets": {
+      "type": "object",
+      "description": "Carbon pathway targets and trajectory. Feeds the Emissions Trajectory line chart.",
+      "additionalProperties": false,
+      "properties": {
+        "crrem_stranding_year": { "type": "integer", "description": "Year the planned trajectory crosses (strands against) the CRREM 1.5°C target. Optional; shown as a chart footnote." },
+        "trajectory": {
+          "type": "array",
+          "description": "Per-year carbon-intensity points (kgCO₂e·m⁻²·yr⁻¹) for BAU, the planned trajectory, and the CRREM 1.5°C target. Minimum 2 points to render a line.",
+          "items": {
+            "type": "object",
+            "required": ["year"],
+            "additionalProperties": false,
+            "properties": {
+              "year": { "type": "integer", "description": "Calendar year." },
+              "bau": { "type": "number", "description": "Business-as-usual carbon intensity (kgCO₂e·m⁻²)." },
+              "planned": { "type": "number", "description": "Planned/selected-plan carbon intensity (kgCO₂e·m⁻²)." },
+              "crrem_target": { "type": "number", "description": "CRREM 1.5°C target intensity for this asset type/geography (kgCO₂e·m⁻²)." }
+            }
+          }
+        }
+      }
+    },
+
+    "economics": {
+      "type": "object",
+      "description": "Direct-cap value-creation economics (recipe 8). Carries the exit assumptions, the measure list (renders the Measure Roadmap), and one or more plans each with a waterfall + annual cashflow.",
+      "required": ["plans"],
+      "additionalProperties": false,
+      "properties": {
+        "exit_cap": { "type": "number", "description": "Exit cap rate as a decimal (e.g. 0.0575 for 5.75%). Used to capitalize recurring NOI changes." },
+        "exit_year": { "type": "integer", "description": "Modeled exit / disposition year." },
+        "selected_plan": { "type": "string", "description": "The `name` of the recommended plan. Visually emphasized in the waterfall; drives which plan's cashflow is shown." },
+
+        "measures": {
+          "type": "array",
+          "description": "All modeled measures. Renders the Measure Roadmap table (measure, type, install year, incremental cost, savings). Only the incremental cost over like-for-like hits capex/IRR.",
+          "items": {
+            "type": "object",
+            "required": ["name", "type", "incremental_cost"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "description": "Measure name (e.g. 'Air-source heat pump conversion — 2 of 4 plants')." },
+              "type": { "type": "string", "description": "Measure family (e.g. 'Electrification', 'Add-on', 'Replacement-at-RUL', 'Solar PV')." },
+              "install_year": { "type": "integer", "description": "Staged install year (to equipment RUL / capital event)." },
+              "total_cost": { "type": "number", "description": "Total installed cost in USD.", "minimum": 0 },
+              "like_for_like_cost": { "type": "number", "description": "Like-for-like replacement cost in USD (0 for pure add-ons).", "minimum": 0 },
+              "incremental_cost": { "type": "number", "description": "Incremental cost over like-for-like (= total − like_for_like). The IRR/capex basis.", "minimum": 0 },
+              "elec_reduction_kwh": { "type": "number", "description": "Annual electricity reduction in kWh. NEGATIVE for electrification measures (electricity rises)." },
+              "gas_reduction_kwh": { "type": "number", "description": "Annual gas reduction in kWh-equivalent." }
+            }
+          }
+        },
+
+        "plans": {
+          "type": "array",
+          "description": "Scenario bundles (e.g. Plan 1 near-term positive-IRR set, Plan 2 deep electrification). Each renders its own value-creation waterfall + a row in the Plan Comparison; the selected plan's cashflow is shown.",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "waterfall"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "description": "Short plan identifier (e.g. 'Plan 1')." },
+              "label": { "type": "string", "description": "Human-readable descriptor (e.g. 'Near-term positive-IRR')." },
+              "irr_incremental": { "type": "number", "description": "IRR on incremental spend as a decimal (e.g. 0.25 for 25%)." },
+              "waterfall": {
+                "type": "object",
+                "description": "The 5 value-creation-bridge components plus the net total. incremental_capex is stored NEGATIVE (it pulls the bridge down); all additive components are positive. net_value_creation should equal the sum of the five components.",
+                "required": ["incremental_capex", "incentives", "capitalized_utility_savings", "capitalized_ancillary_revenue", "pv_bps_fine_avoidance", "net_value_creation"],
+                "additionalProperties": false,
+                "properties": {
+                  "incremental_capex": { "type": "number", "description": "Σ incremental cost over like-for-like across the plan's measures. NEGATIVE (decrement)." },
+                  "incentives": { "type": "number", "description": "Rebates/incentives offsetting capex. Positive." },
+                  "capitalized_utility_savings": { "type": "number", "description": "Stabilized annual owner-share utility $ savings ÷ exit cap. Positive." },
+                  "capitalized_ancillary_revenue": { "type": "number", "description": "Stabilized annual solar/EV ancillary revenue ÷ exit cap. Positive." },
+                  "pv_bps_fine_avoidance": { "type": "number", "description": "Discounted present value of the avoided-fine stream (a finite, scheduled penalty — PV, never capitalized). Positive." },
+                  "net_value_creation": { "type": "number", "description": "Impact on asset value at exit = sum of the five components." }
+                }
+              },
+              "cashflow": {
+                "type": "array",
+                "description": "Annual cashflow underneath the waterfall. NOI Impact = Revenue + Utility Savings + BPS Fine Avoidance; Unlevered Incremental Cashflow = NOI Impact − Incremental CapEx + Incentives; Asset Value Impact booked in the exit year.",
+                "items": {
+                  "type": "object",
+                  "required": ["year"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "year": { "type": "integer", "description": "Calendar year." },
+                    "revenue": { "type": "number", "description": "Incremental ancillary revenue (e.g. solar/EV) in USD." },
+                    "utility_savings": { "type": "number", "description": "Owner-share utility $ savings in USD." },
+                    "like_for_like_capex": { "type": "number", "description": "Like-for-like capex in USD (informational; not in the incremental IRR)." },
+                    "incremental_capex": { "type": "number", "description": "Incremental capex in USD (positive spend in the install year)." },
+                    "incentives": { "type": "number", "description": "Incentives received in USD." },
+                    "bps_fine_avoidance": { "type": "number", "description": "BPS fine avoided that year in USD." },
+                    "noi_impact": { "type": "number", "description": "Revenue + Utility Savings + BPS Fine Avoidance." },
+                    "unlevered_incremental_cashflow": { "type": "number", "description": "NOI Impact − Incremental CapEx + Incentives." },
+                    "cumulative": { "type": "number", "description": "Running cumulative unlevered incremental cashflow." },
+                    "asset_value_impact": { "type": "number", "description": "Capitalized NOI uplift booked at exit (nonzero only in the exit year)." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "data_quality": {
+      "type": "object",
+      "description": "Data quality summary, per-input confidence dots, and the Gate-1 adjudication ledger.",
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string", "description": "One-line confidence statement and basis. Also populates the footer confidence note." },
+        "items": {
+          "type": "array",
+          "description": "Per-input data-quality flags rendered as colored-dot bullets.",
+          "items": {
+            "type": "object",
+            "required": ["dot", "text"],
+            "additionalProperties": false,
+            "properties": {
+              "dot": { "type": "string", "description": "Confidence color.", "enum": ["green", "amber", "red"] },
+              "text": { "type": "string", "description": "The data-quality note." }
+            }
+          }
+        },
+        "adjudications": {
+          "type": "array",
+          "description": "Gate-1 conflict adjudications — every baseline field with disagreeing sources that the user resolved.",
+          "items": {
+            "type": "object",
+            "required": ["field", "adjudicated_value"],
+            "additionalProperties": false,
+            "properties": {
+              "field": { "type": "string", "description": "The baseline field in conflict." },
+              "candidates": { "type": "string", "description": "Candidate values with sources; may include <br> to separate lines." },
+              "adjudicated_value": { "type": "string", "description": "The value the user selected." },
+              "adjudicated_by": { "type": "string", "description": "Who adjudicated (e.g. 'user')." },
+              "date": { "type": "string", "description": "Adjudication date." },
+              "finding": { "type": "string", "description": "Finding id/status (e.g. 'Resolved DQ-014')." }
+            }
+          }
+        }
+      }
+    },
+
+    "methodology": { "type": "string", "description": "Methodology note — provenance statement (e.g. 'Every reported number traces to an engine output or cited source; no figure is LLM-computed.')." },
+
+    "sources": {
+      "type": "array",
+      "description": "Citations for regulatory, incentive, and market claims. Rendered in a collapsible Sources list.",
+      "items": {
+        "type": "object",
+        "required": ["label"],
+        "additionalProperties": false,
+        "properties": {
+          "label": { "type": "string", "description": "Short description of what this source provided." },
+          "url": { "type": "string", "description": "Full URL (http/https only; validated before rendering)." },
+          "value_cited": { "type": "string", "description": "The specific data point taken from this source." }
+        }
+      }
+    }
+  }
+}

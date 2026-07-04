@@ -1,736 +1,1166 @@
-<!--
-  TEMPLATE SLOT CONVENTION (decarb / layout-agent.html)
-  ------------------------------------------------------
-  This template does NOT use the generic template-mcp `<script id="report-data">`
-  JSON-injection convention that data-driven templates (e.g. rsra) use. It is an
-  AGENT-FILLED prose/markup template: every double-bracket placeholder is replaced
-  in-place by the calling skill/agent with plain text or literal HTML before the
-  filled HTML is handed off (e.g. via fill_report's report_type 'decarb', which
-  serves this file as-is for the agent to edit).
-  - Scalar placeholders: double-bracket UPPER_SNAKE_CASE names — replace with a formatted
-    string.
-  - Repeated-row placeholders (e.g. `[[SCENARIO_1_ROWS]]`, `[[ROADMAP_ROWS]]`,
-    `[[ADJUDICATION_ROWS]]`, `[[CITATION_ROWS]]`) — replace with one or more
-    literal `<tr>...</tr>` (or card `<div>`) blocks; an HTML comment immediately
-    below each such placeholder shows the exact markup shape expected per row.
-  - `templates/decarb/example-data.json` is the authoritative, field-complete
-    reference payload for every placeholder in this file (scalars and row-array
-    inputs alike) — treat its field names as the schema.
--->
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>[[PROPERTY_NAME]] — Decarbonization Report</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
-.report{max-width:960px;margin:0 auto;padding:40px 0 80px}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decarbonization Plan</title>
+  <!--
+    CLIENT-RENDER TEMPLATE (decarb / layout-agent.html)
+    ---------------------------------------------------
+    This template mirrors templates/rsra/layout-agent.html's architecture exactly:
+    the server injects a JSON data object into <script id="report-data"> and THIS
+    template's own JavaScript renders every section and chart from it. The agent
+    writes no HTML and draws no charts — populateReport() does everything.
+    This is the fill_report render path (report_type 'decarb'). It REPLACES the
+    old [[TOKEN]] hand-fill mechanism entirely.
 
-/* ─── COVER ──────────────────────────────────────────────── */
-.cover{background:#12253A;color:#fff;padding:40px 40px 0;position:relative;overflow:hidden}
-.cover::before{content:'';position:absolute;right:-80px;top:-80px;width:360px;height:360px;background:rgba(76,175,130,.06);border-radius:50%}
-.cover-eyebrow{font-size:8px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:#4CAF82;margin-bottom:12px}
-.cover-title{font-size:32px;font-weight:700;line-height:1.15;margin-bottom:6px}
-.cover-address{font-size:13px;font-weight:300;color:rgba(255,255,255,.6);margin-bottom:5px}
-.cover-meta{font-size:12px;color:rgba(255,255,255,.4);margin-bottom:24px}
-.cover-tags{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:24px}
-.cover-tag{padding:4px 10px;border:1px solid rgba(255,255,255,.18);border-radius:3px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.6)}
-.cover-tag.alert{border-color:rgba(245,158,11,.5);color:#FCD34D}
-.meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.04em}
+    Data contract: see templates/decarb/schema.json. The Measure Roadmap section
+    renders from economics.measures[]; the waterfall, cashflow, and plan comparison
+    render from economics.plans[]. incremental_capex is stored NEGATIVE ($ sign
+    convention) in each plan's waterfall.
 
-/* ─── HEADLINE METRICS ───────────────────────────────────── */
-.metrics-bar{display:flex;background:#fff;border-bottom:2px solid #E2E8F0}
-.metric{flex:1;padding:18px 20px;border-right:1px solid #E2E8F0}
-.metric:last-child{border-right:none}
-.m-label{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#64748B;margin-bottom:6px}
-.m-val{font-size:26px;font-weight:700;color:#12253A;font-variant-numeric:tabular-nums;line-height:1}
-.m-val.green{color:#1F6B45}
-.m-sub{font-size:11px;color:#94A3B8;margin-top:3px}
+    Hard prohibitions (match RSRA): self-contained single file — inline CSS + inline
+    JS only. NO external stylesheets, NO CDN scripts, NO Paged.js, NO web fonts, NO
+    canvas, NO external images. All charts are JS-drawn inline SVG.
+  -->
+  <style>
+    /* ─── DESIGN TOKENS (copied from RSRA for visual consistency) ─── */
+    :root {
+      --navy:   #12253A;
+      --stone:  #2C3E50;
+      --ink:    #1A1A2E;
+      --sage:   #1F6B45;
+      --cloud:  #F8F9FB;
+      --card:   #FFFFFF;
+      --muted:  #64748B;
+      --border: #CBD5E1;
+      --rule:   #E2E8EF;
 
-/* ─── SECTIONS ───────────────────────────────────────────── */
-.section{padding:32px 40px;background:#fff;margin-bottom:2px}
-.section-label{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
-.section-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
-.section-body{font-size:13px;line-height:1.7;color:#334155}
+      /* Waterfall / economics colors */
+      --wf-decrement: #B45309;  /* incremental capex — decrement */
+      --wf-add:       #1F6B45;  /* additive value bars — green */
+      --wf-net:       #12253A;  /* net value creation — anchor */
+    }
 
-/* Scenario divider */
-.scenario-label{display:inline-block;background:#12253A;color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 12px;border-radius:2px;margin-bottom:12px}
-.scenario-label.s2{background:#1F6B45}
+    /* ─── RESET ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ─── CALLOUT BOX ────────────────────────────────────────── */
-.callout{background:#FFF7ED;border-left:3px solid #F59E0B;padding:12px 16px;margin:0 0 16px;font-size:13px;font-weight:600;color:#92400E;line-height:1.5}
-.callout.positive{background:#F0FDF4;border-color:#10B981;color:#065F46}
-.callout.info{background:#EFF6FF;border-color:#2563EB;color:#1E40AF}
+    html, body {
+      background: #F8F9FB;
+      margin: 0;
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.6;
+    }
 
-/* ─── BASELINE TWO-COL ───────────────────────────────────── */
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.sub-heading{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B;margin-bottom:8px;margin-top:16px}
-.sub-heading:first-child{margin-top:0}
+    /* ─── REPORT WRAPPER ─── */
+    .report {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 0 80px;
+    }
 
-/* End-use bar cards */
-.enduse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin:8px 0}
-.eu-card{background:#F8F9FB;border:1px solid #E2E8F0;border-radius:3px;padding:8px 10px}
-.eu-label{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#64748B;margin-bottom:5px}
-.eu-bar-bg{height:3px;background:#E2E8F0;border-radius:2px;margin-bottom:5px}
-.eu-bar{height:3px;border-radius:2px;background:#2563EB}
-.eu-bar.carbon{background:#DC2626}
-.eu-val{font-size:12px;font-weight:700;color:#12253A;font-variant-numeric:tabular-nums}
-.eu-pct{font-size:11px;color:#94A3B8;margin-left:3px}
+    /* ─────────────────────────────────
+       1. DOCUMENT HEADER (mirrors RSRA)
+    ───────────────────────────────── */
+    .doc-header {
+      background: #12253A;
+      color: white;
+      padding: 32px 40px 0;
+    }
+    .doc-header-eyebrow {
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #4CAF82;
+      margin-bottom: 8px;
+    }
+    .doc-header-property-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 8px 0 4px;
+      line-height: 1.2;
+    }
+    .doc-header-address {
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 24px;
+    }
+    .doc-header-meta-strip {
+      background: #1A3550;
+      padding: 8px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+    }
+    .doc-header-meta-strip span { color: rgba(255,255,255,0.5); }
+    .meta-confidential {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #4CAF82;
+      font-variant: small-caps;
+    }
+    #cover-meta-date { white-space: nowrap; }
 
-/* ─── FEASIBILITY SUMMARY ────────────────────────────────── */
-.feasibility{display:flex;gap:0;background:#F8F9FB;border:1px solid #E2E8F0;border-radius:4px;overflow:hidden;margin:12px 0}
-.fc{flex:1;padding:14px 18px;border-right:1px solid #E2E8F0;text-align:center}
-.fc:last-child{border-right:none}
-.fc-label{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B;margin-bottom:5px}
-.fc-val{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
-.fc-val.dim{color:#64748B}
-.fc-val.green{color:#1F6B45}
-.fc-val.blue{color:#2563EB}
-.fc-sub{font-size:10px;color:#94A3B8;margin-top:2px}
+    /* ─── Meta bar ─── */
+    .meta-bar {
+      display: flex;
+      gap: 32px;
+      padding: 14px 40px;
+      background: #F1F4F8;
+      border-top: 1px solid #CBD5E1;
+      font-size: 11px;
+    }
+    .meta-item { display: flex; flex-direction: column; gap: 2px; }
+    .meta-item .meta-label {
+      color: #64748B;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 9px;
+    }
+    .meta-item .meta-value {
+      color: #12253A;
+      font-weight: 600;
+      font-size: 12px;
+    }
 
-/* ─── TRAJECTORY CHART ───────────────────────────────────── */
-.chart-wrap{background:#FAFBFC;border:1px solid #E2E8F0;border-radius:4px;padding:16px;margin:12px 0;overflow-x:auto}
-.chart-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-size:11px;color:#475569}
-.leg{display:flex;align-items:center;gap:6px}
-.leg-line{width:24px;height:2px;border-radius:1px}
+    /* ─────────────────────────────────
+       EXECUTIVE SUMMARY (mirrors RSRA cover-signal-row)
+    ───────────────────────────────── */
+    #exec-summary-row {
+      background: #EDF7F2;
+      padding: 20px 40px;
+      margin: 0;
+      display: block;
+      border-left: 4px solid #1F6B45;
+    }
+    .exec-summary-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #64748B;
+      margin-bottom: 8px;
+      display: block;
+    }
+    #exec-summary-row .exec-headline {
+      display: block;
+      font-size: 20px;
+      font-weight: 700;
+      color: #0D5C39;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    #exec-summary-row .exec-narrative {
+      display: block;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #2C3E50;
+      max-width: 680px;
+    }
 
-/* ─── MEASURES TABLE ─────────────────────────────────────── */
-table{width:100%;border-collapse:collapse;font-size:11.5px;margin:12px 0}
-th{background:#F1F4F8;text-align:left;padding:7px 9px;font-weight:600;border:1px solid #E2E8F0;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:#475569;white-space:nowrap}
-td{padding:7px 9px;border:1px solid #E2E8F0;vertical-align:top;color:#334155}
-tr:nth-child(even) td{background:#FAFBFC}
-th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
-th.ctr,td.ctr{text-align:center}
-tr.totals-row td{font-weight:700;background:#F1F4F8 !important;color:#12253A}
+    /* ─────────────────────────────────
+       SECTIONS — white cards with 2px gap
+    ───────────────────────────────── */
+    .section {
+      padding: 32px 40px;
+      background: white;
+      margin-bottom: 2px;
+    }
+    .section-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #1F6B45;
+      margin-bottom: 4px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #12253A;
+      margin-bottom: 16px;
+      border-bottom: 1.5px solid #12253A;
+      padding-bottom: 8px;
+    }
+    .section-intro {
+      font-size: 12px;
+      color: #475569;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .sub-heading {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748B;
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
 
-/* Row highlights */
-.row-above td{background:#F0FDF4 !important}
-.row-above td:first-child{border-left:3px solid #10B981}
-.row-below td{background:#FFFBEB !important}
-.row-below td:first-child{border-left:3px solid #F59E0B}
-.row-reg td{background:#EFF6FF !important}
-.row-reg td:first-child{border-left:3px solid #2563EB}
+    /* ─── Headline metrics bar (baseline) ─── */
+    .metrics-bar {
+      display: flex;
+      flex-wrap: wrap;
+      background: #fff;
+      border: 1px solid #E2E8F0;
+      margin-bottom: 8px;
+    }
+    .metric {
+      flex: 1;
+      min-width: 120px;
+      padding: 16px 18px;
+      border-right: 1px solid #E2E8F0;
+    }
+    .metric:last-child { border-right: none; }
+    .m-label {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #64748B;
+      margin-bottom: 6px;
+    }
+    .m-val {
+      font-size: 24px;
+      font-weight: 700;
+      color: #12253A;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .m-val.green { color: #1F6B45; }
+    .m-sub { font-size: 11px; color: #94A3B8; margin-top: 3px; }
 
-/* Badges */
-.badge{display:inline-block;padding:2px 6px;border-radius:3px;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
-.b-above{background:#D1FAE5;color:#065F46}
-.b-below{background:#FEF3C7;color:#92400E}
-.b-reg{background:#DBEAFE;color:#1E40AF}
+    /* ─── Profile definition list (mirrors RSRA) ─── */
+    .profile-dl {
+      display: table;
+      width: 100%;
+      border-collapse: collapse;
+      border-top: 1px solid #E2E8EF;
+      margin-top: 8px;
+    }
+    .profile-row { display: table-row; }
+    .profile-dt, .profile-dd {
+      display: table-cell;
+      padding: 10px 12px;
+      font-size: 13px;
+      border-bottom: 1px solid #E2E8EF;
+      line-height: 1.5;
+      vertical-align: top;
+    }
+    .profile-row:last-child .profile-dt,
+    .profile-row:last-child .profile-dd { border-bottom: none; }
+    .profile-dt {
+      font-weight: 600;
+      font-size: 11px;
+      color: #64748B;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: #F8F9FB;
+      width: 200px;
+    }
+    .profile-dd { color: var(--ink); background: var(--card); }
 
-/* ─── FINANCIAL SUMMARY (VALUE IMPACT BLOCK) ─────────────── */
-.value-block{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin:12px 0}
-.vb-section{background:#F8F9FB;border:1px solid #E2E8F0;border-radius:4px;overflow:hidden}
-.vb-header{background:#12253A;color:#fff;padding:8px 14px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
-.vb-header.green{background:#1F6B45}
-.vb-row{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #E2E8F0;font-size:12px}
-.vb-row:last-child{border-bottom:none}
-.vb-row.total{font-weight:700;background:#fff;color:#12253A}
-.vb-row.total .vb-val{color:#1F6B45}
-.vb-label{color:#475569}
-.vb-val{font-weight:600;font-variant-numeric:tabular-nums;color:#12253A}
-.vb-val.negative{color:#991B1B}
-.vb-val.positive{color:#1F6B45}
+    /* ─── SHARED TABLE (mirrors RSRA profile-table) ─── */
+    .profile-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .profile-table th {
+      background: #12253A;
+      color: #fff;
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .profile-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #E2E8F0;
+      vertical-align: top;
+      color: #334155;
+    }
+    .profile-table tr:nth-child(even) td { background: #F8F9FB; }
+    .profile-table td.num, .profile-table th.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .profile-table td.ctr, .profile-table th.ctr { text-align: center; }
+    .profile-table tr.totals-row td {
+      font-weight: 700;
+      background: #F1F4F8 !important;
+      color: #12253A;
+      border-top: 1.5px solid #12253A;
+    }
+    .neg { color: #B45309; font-weight: 600; }
+    .pos { color: #1F6B45; font-weight: 600; }
 
-.irr-summary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;margin-top:2px}
-.irr-cell{background:#12253A;color:#fff;padding:12px 16px;text-align:center;border-radius:0}
-.irr-cell:first-child{border-radius:4px 0 0 4px}
-.irr-cell:last-child{border-radius:0 4px 4px 0}
-.irr-label{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:5px}
-.irr-val{font-size:22px;font-weight:700;color:#4CAF82;font-variant-numeric:tabular-nums}
-.irr-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+    /* ─── Chart wrap (mirrors decarb chart-wrap + RSRA chart chrome) ─── */
+    .chart-block { margin: 12px 0 4px; }
+    .chart-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748B;
+      margin-bottom: 8px;
+    }
+    .chart-source { font-size: 11px; color: #94A3B8; margin-top: 6px; }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: #475569;
+    }
+    .leg { display: flex; align-items: center; gap: 6px; }
+    .leg-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+    .leg-line { width: 24px; height: 2px; border-radius: 1px; flex-shrink: 0; }
 
-/* ─── STRANDING ALERT ────────────────────────────────────── */
-.stranding-alert{display:flex;gap:10px;padding:11px 14px;border-radius:4px;margin:10px 0;font-size:12px;line-height:1.6}
-.stranding-alert.stranded{background:#FEE2E2;border-left:3px solid #DC2626;color:#991B1B}
-.stranding-alert.at-risk{background:#FEF3C7;border-left:3px solid #F59E0B;color:#92400E}
-.stranding-alert.aligned{background:#D1FAE5;border-left:3px solid #10B981;color:#065F46}
+    /* ─── Waterfall per-plan block ─── */
+    .plan-block { margin-bottom: 24px; }
+    .plan-heading {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .plan-name {
+      display: inline-block;
+      background: #12253A;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+    .plan-block.selected .plan-name { background: #1F6B45; }
+    .plan-label { font-size: 13px; font-weight: 600; color: #12253A; }
+    .plan-tag-selected {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #1F6B45;
+    }
+    .plan-net {
+      margin-left: auto;
+      font-size: 12px;
+      color: #64748B;
+      font-variant-numeric: tabular-nums;
+    }
+    .plan-net strong { color: #12253A; font-size: 14px; }
 
-/* ─── DATA QUALITY ───────────────────────────────────────── */
-.dq-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
-.dq-item{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#334155;line-height:1.5}
-.dq-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
-.dq-dot.green{background:#10B981}.dq-dot.amber{background:#F59E0B}.dq-dot.red{background:#EF4444}
+    /* ─── Data quality dots (mirrors old decarb) ─── */
+    .dq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .dq-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 12px;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .dq-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .dq-dot.green { background: #10B981; }
+    .dq-dot.amber { background: #F59E0B; }
+    .dq-dot.red   { background: #EF4444; }
 
-/* ─── FOOTER ─────────────────────────────────────────────── */
-.report-footer{padding:24px 40px;background:#F1F4F8;border-top:2px solid #E2E8F0;font-size:11px;color:#64748B;line-height:1.7}
-.footer-sources{font-weight:600;color:#475569;margin-bottom:4px}
-.footer-limit{font-style:italic;color:#94A3B8;font-size:10px;margin-top:8px}
+    /* ─── Sources (collapsible, mirrors RSRA) ─── */
+    #sources-section details {
+      background: var(--card);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    #sources-section summary {
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #12253A;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    #sources-section summary::before {
+      content: '▶';
+      font-size: 9px;
+      transition: transform 0.15s;
+    }
+    #sources-section details[open] summary::before { transform: rotate(90deg); }
+    #sources-section .sources-inner { padding: 0 16px 12px; }
+    .sources-list { list-style: none; margin: 0; padding: 0; }
+    .source-item {
+      display: flex;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--rule);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .source-item:last-child { border-bottom: none; }
+    .source-num { flex-shrink: 0; width: 18px; font-weight: 600; color: var(--muted); }
+    .source-body { flex: 1; }
+    .source-label { font-weight: 500; color: var(--ink); }
+    .source-value { color: var(--muted); }
+    .source-url {
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #1F6B45;
+      text-decoration: none;
+      word-break: break-all;
+    }
 
-/* Legend for table key */
-.table-key{display:flex;gap:16px;margin-top:6px;font-size:10px;color:#64748B}
-.tk{display:flex;align-items:center;gap:5px}
-.tk-swatch{width:8px;height:14px;border-radius:1px}
-</style>
+    /* ─── Confidence note ─── */
+    .confidence-note {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-style: italic;
+      padding: 0 40px;
+    }
+    .confidence-note strong { color: var(--ink); font-weight: 600; font-style: normal; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      overflow: hidden; clip: rect(0,0,0,0);
+    }
+  </style>
 </head>
 <body>
+
+<script id="report-data" type="application/json">
+{}
+</script>
+
+<script>
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { populateReport(); });
+  } else {
+    populateReport();
+  }
+
+  function populateReport() {
+    var dataEl = document.getElementById('report-data');
+    if (!dataEl) return;
+
+    var data;
+    try {
+      data = JSON.parse(dataEl.textContent);
+    } catch(e) {
+      console.error('decarb: failed to parse report-data JSON', e);
+      return;
+    }
+
+    var prop     = data.property     || {};
+    var baseline = data.baseline     || {};
+    var targets  = data.targets      || {};
+    var econ     = data.economics    || {};
+    var plans    = econ.plans        || [];
+    var measures = econ.measures     || [];
+    var dq       = data.data_quality || {};
+
+    /* ── Helpers (reused from RSRA) ── */
+    function safe(val) {
+      return (val !== undefined && val !== null && val !== '') ? String(val) : '—';
+    }
+    function esc(val) {
+      var s = (val !== undefined && val !== null && val !== '') ? String(val) : '—';
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function safeUrl(url) {
+      if (!url) return null;
+      try { var u = new URL(String(url)); return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : null; } catch(e) { return null; }
+    }
+
+    /* fmtCurrency — RSRA's, FIXED to handle negatives ($M / $K, 2 sig figs).
+       RSRA's version fell through to '$' + Math.round(n) for negative n
+       (e.g. incremental_capex), producing '$-1200000'. We format abs + sign. */
+    function fmtCurrency(n) {
+      if (typeof n !== 'number' || !isFinite(n)) return '—';
+      var sign = n < 0 ? '−' : '';
+      var a = Math.abs(n);
+      if (a >= 1000000) {
+        var m = a / 1000000;
+        return sign + '$' + (m >= 10 ? Math.round(m) : parseFloat(m.toFixed(1))) + 'M';
+      }
+      if (a >= 1000) {
+        var k = a / 1000;
+        return sign + '$' + (k >= 100 ? Math.round(k) : parseFloat(k.toFixed(1))) + 'K';
+      }
+      return sign + '$' + Math.round(a);
+    }
+    /* Explicit +/− signed currency for waterfall bar labels. */
+    function fmtSignedCurrency(n) {
+      if (typeof n !== 'number' || !isFinite(n)) return '—';
+      if (n < 0) return fmtCurrency(n);          /* already carries '−' */
+      if (n === 0) return fmtCurrency(0);
+      return '+' + fmtCurrency(n);
+    }
+
+    /* 2 significant figures for energy / emissions metrics (no existing helper). */
+    function fmt2sig(n) {
+      if (typeof n !== 'number' || !isFinite(n)) return '—';
+      if (n === 0) return '0';
+      var neg = n < 0;
+      var a = Math.abs(n);
+      var mag = Math.floor(Math.log10(a));
+      var round = Math.pow(10, mag - 1);
+      var r = Math.round(a / round) * round;
+      /* Strip float noise, add thousands separators for readable large numbers. */
+      var out = (r >= 1000) ? Math.round(r).toLocaleString('en-US')
+              : parseFloat(r.toPrecision(2)).toString();
+      return (neg ? '−' : '') + out;
+    }
+
+    /* Percent from decimal fraction, e.g. 0.25 → "25%". */
+    function fmtPct(dec) {
+      if (typeof dec !== 'number' || !isFinite(dec)) return '—';
+      var p = dec * 100;
+      return (Math.abs(p) >= 10 ? Math.round(p) : parseFloat(p.toFixed(1))) + '%';
+    }
+
+    /* ── DOM helpers ── */
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    function setHtml(id, val) { var el = document.getElementById(id); if (el) el.innerHTML = val; }
+    function showEl(id) { var el = document.getElementById(id); if (el) el.style.display = ''; }
+    function capitalise(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+    /* ════════════════════════════════
+       1. COVER / DOCUMENT HEADER
+    ════════════════════════════════ */
+    setText('cover-property-name', safe(prop.name));
+    setText('cover-property-address', safe(prop.address));
+    setText('cover-meta-for',  safe(data.prepared_for));
+    setText('cover-meta-by',   safe(data.prepared_by));
+    setText('cover-meta-date', safe(data.report_date));
+
+    setText('cover-meta-type', safe(capitalise(prop.type)));
+    var sizeStr = prop.units ? (prop.units + ' units')
+                : prop.gfa_sqft ? (prop.gfa_sqft.toLocaleString('en-US') + ' sqft')
+                : '—';
+    setText('cover-meta-size', sizeStr);
+    setText('cover-meta-built', prop.year_built ? String(prop.year_built) : '—');
+    setText('cover-meta-zone',  safe(prop.climate_zone));
+
+    /* ════════════════════════════════
+       2. EXECUTIVE SUMMARY
+    ════════════════════════════════ */
+    var execRow = document.getElementById('exec-summary-row');
+    var exec = data.executive_summary || {};
+    /* Accept either a plain string or { headline, narrative }. */
+    if (typeof exec === 'string') exec = { narrative: exec };
+    if (execRow && (exec.headline || exec.narrative)) {
+      if (exec.headline) {
+        execRow.querySelector('.exec-headline').textContent = exec.headline;
+      } else {
+        execRow.querySelector('.exec-headline').style.display = 'none';
+      }
+      execRow.querySelector('.exec-narrative').textContent = safe(exec.narrative);
+      execRow.style.display = '';
+    }
+
+    /* ════════════════════════════════
+       3. MODEL FOUNDATION / BASELINE
+    ════════════════════════════════ */
+    var baselineSection = document.getElementById('baseline-section');
+    var hasBaseline = baseline.calibrated_kwh != null || baseline.eui_kwh_m2 != null ||
+                      baseline.emissions_tco2e != null || baseline.energy_star_score != null;
+    if (baselineSection && hasBaseline) {
+      /* Metrics bar */
+      var mHtml = '';
+      if (baseline.calibrated_kwh != null) {
+        mHtml += metricCell('Calibrated Baseline', fmt2sig(baseline.calibrated_kwh), 'kWh/yr', false);
+      }
+      if (baseline.eui_kwh_m2 != null) {
+        mHtml += metricCell('Energy Intensity', fmt2sig(baseline.eui_kwh_m2), 'kWh·m⁻²·yr⁻¹', false);
+      }
+      if (baseline.energy_star_score != null) {
+        mHtml += metricCell('ENERGY STAR Score', fmt2sig(baseline.energy_star_score), 'of 100', false);
+      }
+      if (baseline.emissions_tco2e != null) {
+        mHtml += metricCell('Baseline Emissions', fmt2sig(baseline.emissions_tco2e), 'tCO₂e/yr', true);
+      }
+      setHtml('baseline-metrics', mHtml);
+
+      /* Profile detail rows */
+      var rows = [
+        ['Building Model', baseline.model_validation],
+        ['Fuel Profile', baseline.fuel_profile],
+        ['Utility Structure', baseline.utility_structure],
+        ['Calibration Basis', baseline.calibration_basis]
+      ];
+      var dlHtml = '';
+      rows.forEach(function(r) {
+        if (r[1]) {
+          dlHtml += '<div class="profile-row"><dt class="profile-dt">' + esc(r[0]) + '</dt>';
+          dlHtml += '<dd class="profile-dd">' + esc(r[1]) + '</dd></div>';
+        }
+      });
+      setHtml('baseline-dl', dlHtml);
+
+      baselineSection.style.display = '';
+    }
+
+    function metricCell(label, val, sub, green) {
+      return '<div class="metric"><div class="m-label">' + esc(label) + '</div>' +
+             '<div class="m-val' + (green ? ' green' : '') + '">' + esc(val) + '</div>' +
+             '<div class="m-sub">' + esc(sub) + '</div></div>';
+    }
+
+    /* ════════════════════════════════
+       4. EMISSIONS TRAJECTORY (targets vs BAU)
+       JS-drawn inline SVG multi-line chart — built with the same min/max
+       scaling technique RSRA uses for its scatter chart.
+    ════════════════════════════════ */
+    var trajSection = document.getElementById('trajectory-section');
+    var traj = targets.trajectory || [];
+    if (trajSection && traj.length > 1) {
+      drawTrajectory(traj, targets);
+      trajSection.style.display = '';
+    }
+
+    function drawTrajectory(pts, tgt) {
+      /* Series keys present in the data. */
+      var yrs = pts.map(function(p){ return Number(p.year); });
+      var yMin = Math.min.apply(null, yrs), yMax = Math.max.apply(null, yrs);
+      var series = [
+        { key: 'bau',          label: 'Business-as-Usual', color: '#94A3B8', dash: '' },
+        { key: 'planned',      label: 'Planned Trajectory', color: '#1F6B45', dash: '' },
+        { key: 'crrem_target', label: 'CRREM 1.5°C Target', color: '#B91C1C', dash: '5,4' }
+      ];
+      var allV = [];
+      pts.forEach(function(p){ series.forEach(function(s){ if (p[s.key] != null) allV.push(Number(p[s.key])); }); });
+      if (!allV.length) return;
+      var vMax = Math.max.apply(null, allV) * 1.15 || 1;
+      var vMin = 0;
+
+      var X1=48, X2=540, Y1=16, Y2=190, W=X2-X1, H=Y2-Y1;
+      function px(yr){ return (X1 + (yMax===yMin?0:(yr-yMin)/(yMax-yMin))*W); }
+      function py(v){ return (Y2 - (v-vMin)/(vMax-vMin)*H); }
+
+      var grid='', xLabs='', yLabs='';
+      for (var i=0;i<=4;i++){
+        var gy = vMin + (vMax-vMin)*i/4;
+        grid += '<line x1="'+X1+'" y1="'+py(gy).toFixed(1)+'" x2="'+X2+'" y2="'+py(gy).toFixed(1)+'" stroke="#F1F4F8" stroke-width="1"/>';
+        yLabs += '<text x="'+(X1-6)+'" y="'+(py(gy)+3).toFixed(1)+'" font-size="9" fill="#94A3B8" text-anchor="end">'+fmt2sig(gy)+'</text>';
+      }
+      pts.forEach(function(p){
+        xLabs += '<text x="'+px(p.year).toFixed(1)+'" y="'+(Y2+14)+'" font-size="9" fill="#94A3B8" text-anchor="middle">'+esc(String(p.year))+'</text>';
+      });
+      var lines='';
+      series.forEach(function(s){
+        var poly = pts.filter(function(p){ return p[s.key] != null; })
+                      .map(function(p){ return px(p.year).toFixed(1)+','+py(Number(p[s.key])).toFixed(1); });
+        if (poly.length > 1) {
+          lines += '<polyline points="'+poly.join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="2"'
+                 + (s.dash ? ' stroke-dasharray="'+s.dash+'"' : '') + '/>';
+        }
+      });
+      var svg = '<svg viewBox="0 0 560 210" width="100%" style="display:block;overflow:visible" aria-label="Emissions trajectory chart">'
+              + grid + yLabs + xLabs + lines
+              + '<line x1="'+X1+'" y1="'+Y2+'" x2="'+X2+'" y2="'+Y2+'" stroke="#E2E8F0" stroke-width="1"/>'
+              + '<text x="12" y="'+((Y1+Y2)/2).toFixed(0)+'" font-size="9" fill="#64748B" text-anchor="middle" transform="rotate(-90,12,'+((Y1+Y2)/2).toFixed(0)+')">kgCO₂e·m⁻²·yr⁻¹</text>'
+              + '</svg>';
+      var leg = '';
+      series.forEach(function(s){
+        leg += '<div class="leg"><div class="leg-line" style="background:'+s.color+(s.dash?';border-top:1px dashed '+s.color+';height:0;background:none':'')+'"></div>'+esc(s.label)+'</div>';
+      });
+      var strand = tgt.crrem_stranding_year ? '<div class="chart-source">CRREM 1.5°C stranding year (planned trajectory): <strong>'+esc(String(tgt.crrem_stranding_year))+'</strong></div>' : '';
+      setHtml('trajectory-chart', '<div class="chart-title">Carbon Intensity 2025–2050 — planned vs. BAU vs. CRREM target</div>' + svg + '<div class="chart-legend">'+leg+'</div>' + strand);
+    }
+
+    /* ════════════════════════════════
+       5. MEASURE ROADMAP (from economics.measures)
+    ════════════════════════════════ */
+    var roadmapSection = document.getElementById('roadmap-section');
+    if (roadmapSection && measures.length > 0) {
+      var rHtml = '';
+      measures.forEach(function(m) {
+        var savings = [];
+        if (m.elec_reduction_kwh != null) savings.push('Elec ' + fmt2sig(m.elec_reduction_kwh) + ' kWh');
+        if (m.gas_reduction_kwh  != null) savings.push('Gas ' + fmt2sig(m.gas_reduction_kwh) + ' kWh');
+        rHtml += '<tr>';
+        rHtml += '<td><strong>' + esc(m.name) + '</strong></td>';
+        rHtml += '<td>' + esc(m.type) + '</td>';
+        rHtml += '<td class="ctr">' + esc(m.install_year != null ? String(m.install_year) : '—') + '</td>';
+        rHtml += '<td class="num">' + (m.incremental_cost != null ? fmtCurrency(Number(m.incremental_cost)) : '—') + '</td>';
+        rHtml += '<td>' + (savings.length ? esc(savings.join(' · ')) : '—') + '</td>';
+        rHtml += '</tr>';
+      });
+      /* Totals */
+      var totIncr = measures.reduce(function(s,m){ return s + (Number(m.incremental_cost)||0); }, 0);
+      rHtml += '<tr class="totals-row"><td colspan="3">Total incremental cost</td>' +
+               '<td class="num">' + fmtCurrency(totIncr) + '</td><td></td></tr>';
+      setHtml('roadmap-tbody', rHtml);
+      roadmapSection.style.display = '';
+    }
+
+    /* ════════════════════════════════
+       6. VALUE-CREATION WATERFALL (per plan)
+       JS-drawn inline SVG bridge. incremental_capex is NEGATIVE by contract.
+    ════════════════════════════════ */
+    var wfSection = document.getElementById('waterfall-section');
+    if (wfSection && plans.length > 0) {
+      var container = document.getElementById('waterfall-plans');
+      plans.forEach(function(plan) {
+        var block = document.createElement('div');
+        var isSel = econ.selected_plan && plan.name === econ.selected_plan;
+        block.className = 'plan-block' + (isSel ? ' selected' : '');
+        block.innerHTML = renderPlanWaterfall(plan, isSel);
+        container.appendChild(block);
+      });
+      /* Legend once, below all plans */
+      setHtml('waterfall-legend',
+        '<div class="leg"><div class="leg-swatch" style="background:var(--wf-decrement)"></div>Incremental cost (decrement)</div>' +
+        '<div class="leg"><div class="leg-swatch" style="background:var(--wf-add)"></div>Value added</div>' +
+        '<div class="leg"><div class="leg-swatch" style="background:var(--wf-net)"></div>Net value creation</div>');
+      wfSection.style.display = '';
+    }
+
+    function renderPlanWaterfall(plan, isSel) {
+      var w = plan.waterfall || {};
+      var comps = [
+        { name: 'Incremental CapEx',            short: 'Incr. CapEx',      amount: Number(w.incremental_capex)||0,             type: 'capex' },
+        { name: 'Incentives',                   short: 'Incentives',       amount: Number(w.incentives)||0,                    type: 'add' },
+        { name: 'Capitalized Utility Savings',  short: 'Util. Savings',    amount: Number(w.capitalized_utility_savings)||0,   type: 'add' },
+        { name: 'Capitalized Ancillary Revenue',short: 'Ancillary Rev.',   amount: Number(w.capitalized_ancillary_revenue)||0, type: 'add' },
+        { name: 'PV of BPS Fine Avoidance',     short: 'PV Fine Avoid.',   amount: Number(w.pv_bps_fine_avoidance)||0,          type: 'add' }
+      ];
+      var sum5 = comps.reduce(function(s,c){ return s + c.amount; }, 0);
+      var net = (w.net_value_creation != null) ? Number(w.net_value_creation) : sum5;
+      if (Math.abs(sum5 - net) > 1) {
+        console.warn('decarb waterfall: components sum (' + sum5 + ') != net_value_creation (' + net + ') for ' + (plan.name||'?') + ' — check incremental_capex sign convention (must be negative).');
+      }
+
+      /* Floating bars via running cumulative. */
+      var cum = 0, bars = [];
+      comps.forEach(function(c) {
+        var start = cum; cum += c.amount; var end = cum;
+        bars.push({ name: c.name, short: c.short, amount: c.amount, type: c.type,
+                    lo: Math.min(start,end), hi: Math.max(start,end), level: end });
+      });
+      bars.push({ name: 'Net Value Creation', short: 'Net Value', amount: net, type: 'net',
+                  lo: Math.min(0,net), hi: Math.max(0,net), level: net });
+
+      /* Domain — must include 0 and net as candidates. */
+      var allV = [0, net];
+      bars.forEach(function(b){ allV.push(b.lo); allV.push(b.hi); });
+      var dMin = Math.min.apply(null, allV), dMax = Math.max.apply(null, allV);
+      if (dMin === dMax) dMax = dMin + 1;
+      var pad = (dMax - dMin) * 0.15;
+      dMin -= pad; dMax += pad;
+
+      var n = bars.length;
+      var X1=64, X2=556, Y1=18, Y2=196, W=X2-X1, H=Y2-Y1;
+      function Y(v){ return (Y2 - (v-dMin)/(dMax-dMin)*H); }
+      var band = W / n, barW = band * 0.56;
+      function barX(i){ return X1 + band*i + (band-barW)/2; }
+
+      /* Grid + y labels */
+      var grid='', yLabs='';
+      for (var i=0;i<=4;i++){
+        var gv = dMin + (dMax-dMin)*i/4;
+        grid += '<line x1="'+X1+'" y1="'+Y(gv).toFixed(1)+'" x2="'+X2+'" y2="'+Y(gv).toFixed(1)+'" stroke="#F1F4F8" stroke-width="1"/>';
+        yLabs += '<text x="'+(X1-6)+'" y="'+(Y(gv)+3).toFixed(1)+'" font-size="9" fill="#94A3B8" text-anchor="end">'+fmtCurrency(gv)+'</text>';
+      }
+      /* Zero baseline if within domain */
+      var zero = (dMin < 0 && dMax > 0) ? '<line x1="'+X1+'" y1="'+Y(0).toFixed(1)+'" x2="'+X2+'" y2="'+Y(0).toFixed(1)+'" stroke="#CBD5E1" stroke-width="1"/>' : '';
+
+      /* Bars + labels */
+      var barSvg='', labSvg='', xLabs='';
+      bars.forEach(function(b, i) {
+        var color = b.type==='capex' ? 'var(--wf-decrement)' : b.type==='net' ? 'var(--wf-net)' : 'var(--wf-add)';
+        var x = barX(i), yTop = Y(b.hi), hgt = Math.max(1, Y(b.lo)-Y(b.hi));
+        barSvg += '<rect x="'+x.toFixed(1)+'" y="'+yTop.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hgt.toFixed(1)+'" fill="'+color+'" rx="1"/>';
+        /* Value label: above bar top, or below when the bar is a pure downward capex. */
+        var val = fmtSignedCurrency(b.amount);
+        var labY = (b.type==='capex') ? (Y(b.lo)+12) : (yTop-5);
+        labSvg += '<text x="'+(x+barW/2).toFixed(1)+'" y="'+labY.toFixed(1)+'" font-size="9" font-weight="600" fill="#334155" text-anchor="middle">'+esc(val)+'</text>';
+        /* X-axis component label (wrap into up to 2 lines). */
+        var words = b.short.split(' ');
+        var l1 = words.slice(0, Math.ceil(words.length/2)).join(' ');
+        var l2 = words.slice(Math.ceil(words.length/2)).join(' ');
+        xLabs += '<text x="'+(x+barW/2).toFixed(1)+'" y="'+(Y2+13)+'" font-size="8" fill="#64748B" text-anchor="middle">'+esc(l1)
+              +  (l2 ? '<tspan x="'+(x+barW/2).toFixed(1)+'" dy="10">'+esc(l2)+'</tspan>' : '') + '</text>';
+      });
+
+      /* Cumulative connectors: bar i right edge → bar i+1 left edge at level of bar i. */
+      var conn='';
+      for (var j=0;j<bars.length-1;j++){
+        var yl = Y(bars[j].level);
+        conn += '<line x1="'+(barX(j)+barW).toFixed(1)+'" y1="'+yl.toFixed(1)+'" x2="'+barX(j+1).toFixed(1)+'" y2="'+yl.toFixed(1)+'" stroke="#94A3B8" stroke-width="1" stroke-dasharray="2,2"/>';
+      }
+
+      var svg = '<svg viewBox="0 0 570 224" width="100%" style="display:block;overflow:visible" aria-label="Value creation waterfall for '+esc(plan.name||'')+'">'
+              + grid + zero + conn + barSvg + labSvg + xLabs
+              + '</svg>';
+
+      var head = '<div class="plan-heading">'
+               + '<span class="plan-name">' + esc(plan.name || 'Plan') + '</span>'
+               + '<span class="plan-label">' + esc(plan.label || '') + '</span>'
+               + (isSel ? '<span class="plan-tag-selected">✓ Selected</span>' : '')
+               + '<span class="plan-net">Net value creation <strong>' + fmtSignedCurrency(net) + '</strong>'
+               + (plan.irr_incremental != null ? ' · IRR ' + fmtPct(Number(plan.irr_incremental)) : '') + '</span>'
+               + '</div>';
+      return head + svg;
+    }
+
+    /* ════════════════════════════════
+       7. CASHFLOW TABLE (selected plan)
+    ════════════════════════════════ */
+    var cfSection = document.getElementById('cashflow-section');
+    var cfPlan = null;
+    if (plans.length > 0) {
+      cfPlan = plans.filter(function(p){ return econ.selected_plan && p.name === econ.selected_plan; })[0] || plans[0];
+    }
+    if (cfSection && cfPlan && cfPlan.cashflow && cfPlan.cashflow.length > 0) {
+      setText('cashflow-plan-label', (cfPlan.name || 'Plan') + (cfPlan.label ? ' — ' + cfPlan.label : ''));
+      var cf = cfPlan.cashflow;
+      var cHtml = '';
+      cf.forEach(function(r) {
+        cHtml += '<tr>';
+        cHtml += '<td class="ctr">' + esc(r.year != null ? String(r.year) : '—') + '</td>';
+        cHtml += cfCell(r.revenue);
+        cHtml += cfCell(r.utility_savings);
+        cHtml += cfCell(r.like_for_like_capex);
+        cHtml += cfCell(r.incremental_capex);
+        cHtml += cfCell(r.incentives);
+        cHtml += cfCell(r.bps_fine_avoidance);
+        cHtml += cfCell(r.noi_impact);
+        cHtml += cfCell(r.unlevered_incremental_cashflow);
+        cHtml += cfCell(r.cumulative);
+        cHtml += cfCell(r.asset_value_impact);
+        cHtml += '</tr>';
+      });
+      setHtml('cashflow-tbody', cHtml);
+      cfSection.style.display = '';
+    }
+    function cfCell(v) {
+      if (v == null || v === '') return '<td class="num">—</td>';
+      var n = Number(v);
+      var cls = n < 0 ? ' neg' : (n > 0 ? ' pos' : '');
+      return '<td class="num"><span class="' + cls.trim() + '">' + fmtSignedCurrency(n) + '</span></td>';
+    }
+
+    /* ════════════════════════════════
+       8. PLAN COMPARISON
+    ════════════════════════════════ */
+    var cmpSection = document.getElementById('comparison-section');
+    if (cmpSection && plans.length > 0) {
+      var cmpHtml = '';
+      plans.forEach(function(p) {
+        var w = p.waterfall || {};
+        var isSel = econ.selected_plan && p.name === econ.selected_plan;
+        cmpHtml += '<tr' + (isSel ? ' class="totals-row"' : '') + '>';
+        cmpHtml += '<td><strong>' + esc(p.name || '—') + '</strong>' + (isSel ? ' ✓' : '') + '<br><span style="font-size:11px;color:#64748B">' + esc(p.label || '') + '</span></td>';
+        cmpHtml += '<td class="num neg">' + fmtCurrency(Number(w.incremental_capex)||0) + '</td>';
+        cmpHtml += '<td class="num">' + fmtCurrency(Number(w.incentives)||0) + '</td>';
+        cmpHtml += '<td class="num">' + fmtCurrency(Number(w.capitalized_utility_savings)||0) + '</td>';
+        cmpHtml += '<td class="num">' + fmtCurrency(Number(w.capitalized_ancillary_revenue)||0) + '</td>';
+        cmpHtml += '<td class="num">' + fmtCurrency(Number(w.pv_bps_fine_avoidance)||0) + '</td>';
+        cmpHtml += '<td class="num pos">' + fmtSignedCurrency(w.net_value_creation != null ? Number(w.net_value_creation) : 0) + '</td>';
+        cmpHtml += '<td class="num">' + (p.irr_incremental != null ? fmtPct(Number(p.irr_incremental)) : '—') + '</td>';
+        cmpHtml += '</tr>';
+      });
+      setHtml('comparison-tbody', cmpHtml);
+      /* Exit assumptions note */
+      var exitBits = [];
+      if (econ.exit_cap != null)  exitBits.push('Exit cap ' + fmtPct(Number(econ.exit_cap)));
+      if (econ.exit_year != null) exitBits.push('Exit year ' + esc(String(econ.exit_year)));
+      if (exitBits.length) setText('comparison-exit-note', exitBits.join(' · '));
+      cmpSection.style.display = '';
+    }
+
+    /* ════════════════════════════════
+       9. DATA QUALITY & ADJUDICATIONS
+    ════════════════════════════════ */
+    var dqSection = document.getElementById('dataquality-section');
+    var dqItems = dq.items || [];
+    var adjud = dq.adjudications || [];
+    if (dqSection && (dq.summary || dqItems.length > 0 || adjud.length > 0)) {
+      if (dq.summary) { setHtml('dq-summary', esc(dq.summary)); showEl('dq-summary'); }
+      if (dqItems.length > 0) {
+        var itemsHtml = '';
+        dqItems.forEach(function(it) {
+          var dot = (it.dot === 'green' || it.dot === 'amber' || it.dot === 'red') ? it.dot : 'green';
+          itemsHtml += '<div class="dq-item"><span class="dq-dot ' + dot + '"></span><span>' + esc(it.text) + '</span></div>';
+        });
+        setHtml('dq-items', itemsHtml);
+        showEl('dq-items');
+      }
+      if (adjud.length > 0) {
+        var adjHtml = '';
+        adjud.forEach(function(a) {
+          adjHtml += '<tr>';
+          adjHtml += '<td><strong>' + esc(a.field) + '</strong></td>';
+          adjHtml += '<td>' + esc(a.candidates) + '</td>';
+          adjHtml += '<td>' + esc(a.adjudicated_value) + '</td>';
+          adjHtml += '<td>' + esc(a.adjudicated_by) + '</td>';
+          adjHtml += '<td>' + esc(a.date) + '</td>';
+          adjHtml += '<td>' + esc(a.finding) + '</td>';
+          adjHtml += '</tr>';
+        });
+        setHtml('adjud-tbody', adjHtml);
+        showEl('adjud-table');
+      }
+      dqSection.style.display = '';
+    }
+
+    /* ════════════════════════════════
+       10. METHODOLOGY & SOURCES
+    ════════════════════════════════ */
+    var methodSection = document.getElementById('methodology-section');
+    var methodology = data.methodology;
+    var srcs = data.sources || [];
+    if (methodSection && (methodology || srcs.length > 0)) {
+      if (methodology) { setHtml('methodology-intro', esc(methodology)); showEl('methodology-intro'); }
+      if (srcs.length > 0) {
+        var srcHtml = '';
+        srcs.forEach(function(s, i) {
+          srcHtml += '<li class="source-item">';
+          srcHtml += '<span class="source-num">' + (i + 1) + '</span>';
+          srcHtml += '<span class="source-body">';
+          srcHtml += '<span class="source-label">' + esc(s.label) + '</span>';
+          if (s.value_cited) srcHtml += ' <span class="source-value">— ' + esc(s.value_cited) + '</span>';
+          var validUrl = safeUrl(s.url);
+          if (validUrl) srcHtml += '<br><a class="source-url" target="_blank" rel="noopener noreferrer" href="' + esc(validUrl) + '">' + esc(validUrl) + '</a>';
+          srcHtml += '</span></li>';
+        });
+        setHtml('sources-list', srcHtml);
+        showEl('sources-section');
+      }
+      methodSection.style.display = '';
+    }
+
+    /* ── Confidence note ── */
+    if (dq.summary) {
+      var confNote = document.getElementById('confidence-note');
+      if (confNote) confNote.innerHTML = '<strong>Data quality:</strong> ' + esc(dq.summary);
+    }
+  }
+</script>
+
 <div class="report">
 
-  <!-- ── COVER ─────────────────────────────────────────── -->
-  <div class="cover">
-    <div class="cover-eyebrow">Soapbox Sustainability Intelligence &mdash; Decarbonization Report</div>
-    <div class="cover-title">[[PROPERTY_NAME]]</div>
-    <div class="cover-address">[[FULL_ADDRESS]]</div>
-    <div class="cover-meta">[[PROPERTY_TYPE]] &nbsp;&middot;&nbsp; [[GFA_SF]] SF ([[GFA_UNITS]] units) &nbsp;&middot;&nbsp; Built [[YEAR_BUILT]] &nbsp;&middot;&nbsp; [[CLIMATE_ZONE]]</div>
-    <div class="cover-tags">
-      <div class="cover-tag">[[CRREM_STATUS_TAG]]</div><!-- e.g. "CRREM: Stranding 2031" -->
-      <div class="cover-tag [[BPS_TAG_CLASS]]">[[BPS_STATUS_TAG]]</div><!-- e.g. "LL97: $42K Exposure" -->
-      <div class="cover-tag">[[DATA_SOURCE_TAG]]</div><!-- e.g. "Audette-Verified" or "Estimated EUI" -->
-    </div>
-  </div>
-  <div class="meta-strip">
-    <span>Analysis completed: [[REPORT_DATE]]</span>
-    <span>Prepared by: Aris (Soapbox AI) for [[ORG_NAME]]</span>
-    <span style="color:#4CAF82;font-weight:600">CONFIDENTIAL</span>
-  </div>
-
-  <!-- ── HEADLINE METRICS ────────────────────────────────── -->
-  <div class="metrics-bar">
-    <div class="metric">
-      <div class="m-label">Baseline Carbon</div>
-      <div class="m-val">[[BASELINE_CARBON_TCO2]]</div>
-      <div class="m-sub">tCO₂e/yr total</div>
-    </div>
-    <div class="metric">
-      <div class="m-label">Carbon Intensity</div>
-      <div class="m-val">[[CARBON_INTENSITY]]</div>
-      <div class="m-sub">kgCO₂e/[[INTENSITY_UNIT]]/yr</div>
-    </div>
-    <div class="metric">
-      <div class="m-label">Achievable Reduction</div>
-      <div class="m-val green">[[ACHIEVABLE_REDUCTION_PCT]]%</div>
-      <div class="m-sub">[[ACHIEVABLE_REDUCTION_TCO2]] tCO₂e/yr</div>
-    </div>
-    <div class="metric">
-      <div class="m-label">Net CapEx</div>
-      <div class="m-val">[[NET_CAPEX]]</div>
-      <div class="m-sub">after incentives</div>
-    </div>
-    <div class="metric">
-      <div class="m-label">Value at Exit</div>
-      <div class="m-val green">[[VALUE_AT_EXIT]]</div>
-      <div class="m-sub">impact on asset value</div>
+  <!-- ══════════════════════════════════
+       1. DOCUMENT HEADER
+  ════════════════════════════════════ -->
+  <div class="doc-header">
+    <div class="doc-header-eyebrow">Soapbox Sustainability Intelligence — Decarbonization Plan</div>
+    <div class="doc-header-property-name" id="cover-property-name">Property Name</div>
+    <div class="doc-header-address" id="cover-property-address">Address</div>
+    <div class="doc-header-meta-strip">
+      <span>
+        Prepared for: <span id="cover-meta-for">—</span>
+        &nbsp;·&nbsp;
+        Prepared by: <span id="cover-meta-by">—</span>
+        &nbsp;·&nbsp;
+        <span id="cover-meta-date">—</span>
+      </span>
+      <span class="meta-confidential">Confidential</span>
     </div>
   </div>
 
-  <!-- ── SECTION 1: BASELINE PERFORMANCE ───────────────── -->
-  <div class="section">
-    <div class="section-label">Section 1</div>
-    <h2 class="section-title">Baseline Performance</h2>
-    <div class="two-col">
-      <div>
-        <div class="sub-heading">Energy</div>
-        <table>
-          <tr><td style="color:#475569;font-size:11px">Total Annual Consumption</td><td class="num">[[TOTAL_ENERGY_GWH]] GWh</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Site EUI</td><td class="num">[[SITE_EUI]] kBtu/SF/yr</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Average Intensity</td><td class="num">[[ENERGY_INTENSITY]] kWh/[[INTENSITY_UNIT]]</td></tr>
-          <tr><td style="color:#475569;font-size:11px">ENERGY STAR Score</td><td class="num">[[ENERGY_STAR_SCORE]] / 100</td></tr>
-        </table>
-        <div class="sub-heading">Carbon</div>
-        <table>
-          <tr><td style="color:#475569;font-size:11px">Total Annual Emissions</td><td class="num">[[BASELINE_CARBON_TCO2]] tCO₂e</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Average Intensity</td><td class="num">[[CARBON_INTENSITY]] kgCO₂e/[[INTENSITY_UNIT]]</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Grid Emission Factor</td><td class="num">[[GRID_EF]] kgCO₂e/kWh</td></tr>
-        </table>
-      </div>
-      <div>
-        <div class="sub-heading">Energy Costs</div>
-        <table>
-          <tr><td style="color:#475569;font-size:11px">Total Annual Cost</td><td class="num">[[TOTAL_ENERGY_COST]]/yr</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Landlord-Controlled</td><td class="num">[[LANDLORD_ENERGY_COST]]/yr</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Tenant-Controlled</td><td class="num">[[TENANT_ENERGY_COST]]/yr</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Cost / [[INTENSITY_UNIT]]</td><td class="num">$[[COST_PER_UNIT]]/yr</td></tr>
-        </table>
-        <div class="sub-heading">Utility Rate</div>
-        <table>
-          <tr><td style="color:#475569;font-size:11px">Electricity Rate</td><td class="num">$[[ELECTRICITY_RATE]]/kWh</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Gas Rate</td><td class="num">$[[GAS_RATE]]/therm</td></tr>
-          <tr><td style="color:#475569;font-size:11px">Rate Source</td><td class="num">[[RATE_SOURCE]]</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <div class="sub-heading" style="margin-top:20px">Energy End-Use Breakdown</div>
-    <div class="enduse-grid">
-      [[ENERGY_ENDUSE_CARDS]]
-    </div>
-
-    <div class="sub-heading">Emissions End-Use Breakdown</div>
-    <div class="enduse-grid">
-      [[CARBON_ENDUSE_CARDS]]
-    </div>
-    <!-- Each card:
-    <div class="eu-card">
-      <div class="eu-label">Heating</div>
-      <div class="eu-bar-bg"><div class="eu-bar" style="width:[[PCT]]%"></div></div>
-      <div><span class="eu-val">[[VALUE]]</span><span class="eu-pct">[[PCT]]%</span></div>
-    </div>
-    -->
+  <!-- Meta bar -->
+  <div class="meta-bar">
+    <div class="meta-item"><span class="meta-label">Asset Type</span><span class="meta-value" id="cover-meta-type">—</span></div>
+    <div class="meta-item"><span class="meta-label">Size</span><span class="meta-value" id="cover-meta-size">—</span></div>
+    <div class="meta-item"><span class="meta-label">Year Built</span><span class="meta-value" id="cover-meta-built">—</span></div>
+    <div class="meta-item"><span class="meta-label">Climate Zone</span><span class="meta-value" id="cover-meta-zone">—</span></div>
   </div>
 
-  <!-- ── SECTION 2: DECARBONIZATION FEASIBILITY ─────────── -->
-  <div class="section">
-    <div class="section-label">Section 2</div>
-    <h2 class="section-title">Decarbonization Feasibility</h2>
-
-    <div class="feasibility">
-      <div class="fc">
-        <div class="fc-label">Baseline Emissions</div>
-        <div class="fc-val dim">[[BASELINE_CARBON_TCO2]]</div>
-        <div class="fc-sub">tCO₂e/yr</div>
-      </div>
-      <div class="fc">
-        <div class="fc-label">Achievable End State</div>
-        <div class="fc-val green">[[ACHIEVABLE_END_STATE]]</div>
-        <div class="fc-sub">tCO₂e/yr</div>
-      </div>
-      <div class="fc">
-        <div class="fc-label">Max Reduction</div>
-        <div class="fc-val blue">[[ACHIEVABLE_REDUCTION_PCT]]%</div>
-        <div class="fc-sub">[[ACHIEVABLE_REDUCTION_TCO2]] tCO₂e/yr</div>
-      </div>
-      <div class="fc">
-        <div class="fc-label">At [[IRR_HURDLE]]% Hurdle</div>
-        <div class="fc-val green">[[HURDLE_REDUCTION_PCT]]%</div>
-        <div class="fc-sub">[[HURDLE_REDUCTION_TCO2]] tCO₂e/yr</div>
-      </div>
-    </div>
-
-    <div class="sub-heading" style="margin-top:20px">Emissions Trajectory (2025–2050)</div>
-    <div class="chart-wrap">
-      [[DECARB_TRAJECTORY_SVG]]
-    </div>
-    <div class="chart-legend">
-      <div class="leg"><div class="leg-line" style="background:#94A3B8"></div>BAU</div>
-      <div class="leg"><div class="leg-line" style="background:#2563EB"></div>Scenario 1 — Accretive (&ge;[[IRR_HURDLE]]% IRR)</div>
-      <div class="leg"><div class="leg-line" style="background:#059669"></div>Scenario 2 — CRREM-Aligned</div>
-      <div class="leg"><div class="leg-line" style="background:#DC2626;border-top:1px dashed #DC2626;height:0;border-radius:0"></div>CRREM 1.5°C Target</div>
-    </div>
+  <!-- ══════════════════════════════════
+       2. EXECUTIVE SUMMARY
+  ════════════════════════════════════ -->
+  <div id="exec-summary-row" style="display:none">
+    <div class="exec-summary-label">Executive Summary</div>
+    <span class="exec-headline">—</span>
+    <span class="exec-narrative">—</span>
   </div>
 
-  <!-- ── SECTION 3A: SCENARIO 1 — ACCRETIVE MEASURES ───── -->
-  <div class="section">
-    <div class="section-label">Section 3</div>
-    <h2 class="section-title">Recommended Measures</h2>
+  <!-- ══════════════════════════════════
+       3. MODEL FOUNDATION / BASELINE
+  ════════════════════════════════════ -->
+  <div id="baseline-section" class="section" style="display:none">
+    <div class="section-label">Model Foundation</div>
+    <h2 class="section-title">Validated Building Model &amp; Calibrated Baseline</h2>
+    <div class="metrics-bar" id="baseline-metrics"><!-- JS --></div>
+    <dl class="profile-dl" id="baseline-dl"><!-- JS --></dl>
+  </div>
 
-    <div class="scenario-label">Scenario 1 &mdash; Accretive Retrofits (&ge;[[IRR_HURDLE]]% IRR)</div>
+  <!-- ══════════════════════════════════
+       4. EMISSIONS TRAJECTORY
+  ════════════════════════════════════ -->
+  <div id="trajectory-section" class="section" style="display:none">
+    <div class="section-label">Carbon Pathway</div>
+    <h2 class="section-title">Emissions Trajectory — Targets vs. BAU</h2>
+    <div class="chart-block" id="trajectory-chart"><!-- JS-drawn SVG --></div>
+  </div>
 
-    <div class="callout">[[SCENARIO_1_CALLOUT]]</div>
-    <!-- e.g. "Recommended measures deliver [[IRR_ON_INCREMENTAL]]% IRR on incremental spend and increase asset value at exit by [[VALUE_AT_EXIT]]." -->
-
+  <!-- ══════════════════════════════════
+       5. MEASURE ROADMAP
+  ════════════════════════════════════ -->
+  <div id="roadmap-section" class="section" style="display:none">
+    <div class="section-label">Capital Planning</div>
+    <h2 class="section-title">Phased Measure Roadmap</h2>
+    <p class="section-intro">Modeled measures with install-year staging. Only the incremental cost over like-for-like replacement is shown — the basis the IRR is computed against.</p>
     <div style="overflow-x:auto">
-    <table>
-      <thead><tr>
-        <th>Measure</th>
-        <th class="ctr">Year</th>
-        <th class="num">Emissions<br>Savings<br>(tCO₂e)</th>
-        <th class="num">Like-for-Like<br>Cost</th>
-        <th class="num">Incremental<br>Cost</th>
-        <th class="num">Incentives</th>
-        <th class="num">Net Total<br>Cost</th>
-        <th class="num">Landlord<br>Utility Savings</th>
-        <th class="num">Tenant<br>Utility Savings</th>
-        <th class="num">Ancillary<br>Savings</th>
-        <th class="num">Y1 Return<br>on Cost</th>
-        <th class="num">IRR</th>
-        <th class="ctr">Hurdle</th>
-      </tr></thead>
-      <tbody>
-        [[SCENARIO_1_ROWS]]
-        <!--
-        Row class: row-above (green) / row-reg (blue, regulatory driver)
-        <tr class="row-above">
-          <td>Install LED Lighting</td>
-          <td class="ctr">2026</td>
-          <td class="num">23</td>
-          <td class="num">—</td>
-          <td class="num">$241k</td>
-          <td class="num">—</td>
-          <td class="num">$241k</td>
-          <td class="num">$12k</td>
-          <td class="num">—</td>
-          <td class="num">—</td>
-          <td class="num">5.0%</td>
-          <td class="num">24%</td>
-          <td class="ctr"><span class="badge b-above">Above</span></td>
-        </tr>
-        -->
-        <tr class="totals-row">
-          <td colspan="2"><strong>Scenario 1 Total</strong></td>
-          <td class="num">[[S1_TOTAL_EMISSIONS]]</td>
-          <td class="num">[[S1_TOTAL_LIKEFORLIKE]]</td>
-          <td class="num">[[S1_TOTAL_INCREMENTAL]]</td>
-          <td class="num">[[S1_TOTAL_INCENTIVES]]</td>
-          <td class="num">[[S1_TOTAL_NET]]</td>
-          <td class="num">[[S1_TOTAL_LANDLORD]]</td>
-          <td class="num">[[S1_TOTAL_TENANT]]</td>
-          <td class="num">[[S1_TOTAL_ANCILLARY]]</td>
-          <td class="num">[[S1_TOTAL_Y1ROC]]</td>
-          <td class="num">[[S1_BLENDED_IRR]]</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
-    <div class="table-key">
-      <div class="tk"><div class="tk-swatch" style="background:#10B981"></div>Above hurdle</div>
-      <div class="tk"><div class="tk-swatch" style="background:#2563EB"></div>Regulatory driver</div>
+      <table class="profile-table">
+        <thead><tr>
+          <th>Measure</th>
+          <th>Type</th>
+          <th class="ctr">Install Year</th>
+          <th class="num">Incremental Cost</th>
+          <th>Modeled Savings</th>
+        </tr></thead>
+        <tbody id="roadmap-tbody"><!-- JS --></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ── SECTION 3B: SCENARIO 1 FINANCIAL SUMMARY ──────── -->
-  <div class="section">
-    <div class="section-label">Section 3 &mdash; Financial Impact</div>
-    <h2 class="section-title">Impact on Asset Value at Exit &mdash; Scenario 1</h2>
-
-    <div class="callout positive">[[FINANCIAL_CALLOUT_S1]]</div>
-    <!-- e.g. "If no mitigation steps are taken, a future buyer could push for a price adjustment in the range of [[NO_ACTION_EXPOSURE]]." -->
-
-    <div class="value-block">
-      <div class="vb-section">
-        <div class="vb-header">Capital Investment</div>
-        <div class="vb-row"><span class="vb-label">Like-for-Like Capital Expenses</span><span class="vb-val">[[S1_VB_LIKEFORLIKE]]</span></div>
-        <div class="vb-row"><span class="vb-label">Incremental Capital Expenses</span><span class="vb-val negative">([[S1_VB_INCREMENTAL]])</span></div>
-        <div class="vb-row"><span class="vb-label">Incentives</span><span class="vb-val positive">+[[S1_VB_INCENTIVES]]</span></div>
-        <div class="vb-row total"><span class="vb-label">Net CapEx</span><span class="vb-val">[[S1_VB_NET_CAPEX]]</span></div>
-      </div>
-      <div class="vb-section">
-        <div class="vb-header green">Value of OpEx Impacts (÷ [[EXIT_CAP_RATE]]% cap)</div>
-        <div class="vb-row"><span class="vb-label">Landlord Utility Savings ÷ cap rate</span><span class="vb-val positive">+[[S1_VB_CAP_UTILITY]]</span></div>
-        <div class="vb-row"><span class="vb-label">Ancillary Savings ÷ cap rate</span><span class="vb-val positive">+[[S1_VB_CAP_ANCILLARY]]</span></div>
-        <div class="vb-row"><span class="vb-label">PV of BPS Fine Avoidance</span><span class="vb-val positive">+[[S1_VB_BPS_PV]]</span></div>
-        <div class="vb-row total"><span class="vb-label">Impact on Asset Value at Exit</span><span class="vb-val positive">+[[S1_VB_TOTAL_IMPACT]]</span></div>
-      </div>
-    </div>
-
-    <div class="irr-summary">
-      <div class="irr-cell">
-        <div class="irr-label">IRR on Total Spend</div>
-        <div class="irr-val">[[S1_IRR_TOTAL]]%</div>
-        <div class="irr-sub">like-for-like + incremental</div>
-      </div>
-      <div class="irr-cell">
-        <div class="irr-label">IRR on Incremental Spend</div>
-        <div class="irr-val">[[S1_IRR_INCREMENTAL]]%</div>
-        <div class="irr-sub">incremental cost only</div>
-      </div>
-      <div class="irr-cell">
-        <div class="irr-label">Exit Cap Rate</div>
-        <div class="irr-val">[[EXIT_CAP_RATE]]%</div>
-        <div class="irr-sub">underwriting assumption</div>
-      </div>
-      <div class="irr-cell">
-        <div class="irr-label">Exit Year</div>
-        <div class="irr-val">[[EXIT_YEAR]]</div>
-        <div class="irr-sub">hold period [[HOLD_PERIOD]] yrs</div>
-      </div>
-    </div>
+  <!-- ══════════════════════════════════
+       6. VALUE-CREATION WATERFALL
+  ════════════════════════════════════ -->
+  <div id="waterfall-section" class="section" style="display:none">
+    <div class="section-label">Value Creation</div>
+    <h2 class="section-title">Impact on Asset Value at Exit — Value-Creation Waterfall</h2>
+    <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the present value of BPS fine avoidance. Recurring NOI changes are capitalized (÷ exit cap); fine avoidance is a discounted present value.</p>
+    <div id="waterfall-plans"><!-- JS: one waterfall per plan --></div>
+    <div class="chart-legend" id="waterfall-legend"><!-- JS --></div>
   </div>
 
-  <!-- ── SECTION 4A: SCENARIO 2 — CRREM-ALIGNED ────────── -->
-  <div class="section">
-    <div class="section-label">Section 4</div>
-    <h2 class="section-title">CRREM-Aligned Measures</h2>
-
-    <div class="scenario-label s2">Scenario 2 &mdash; CRREM-Aligned (All Pathway Measures)</div>
-
-    <div class="callout info">[[SCENARIO_2_CALLOUT]]</div>
-    <!-- e.g. "Adds [[S2_ADDITIONAL_MEASURES]] measures below the IRR hurdle that are required to align with the CRREM 1.5°C pathway by [[CRREM_ALIGN_YEAR]]." -->
-
+  <!-- ══════════════════════════════════
+       7. CASHFLOW
+  ════════════════════════════════════ -->
+  <div id="cashflow-section" class="section" style="display:none">
+    <div class="section-label">Financial Model</div>
+    <h2 class="section-title">Annual Cashflow — <span id="cashflow-plan-label">Selected Plan</span></h2>
+    <p class="section-intro">The annual model underneath the waterfall. NOI Impact = Revenue + Utility Savings + BPS Fine Avoidance; Unlevered Incremental Cashflow = NOI Impact − Incremental CapEx + Incentives. Asset Value Impact is booked in the exit year.</p>
     <div style="overflow-x:auto">
-    <table>
-      <thead><tr>
-        <th>Measure</th>
-        <th class="ctr">Year</th>
-        <th class="num">Emissions<br>Savings<br>(tCO₂e)</th>
-        <th class="num">Like-for-Like<br>Cost</th>
-        <th class="num">Incremental<br>Cost</th>
-        <th class="num">Incentives</th>
-        <th class="num">Net Total<br>Cost</th>
-        <th class="num">Landlord<br>Utility Savings</th>
-        <th class="num">Tenant<br>Utility Savings</th>
-        <th class="num">Ancillary<br>Savings</th>
-        <th class="num">Y1 Return<br>on Cost</th>
-        <th class="num">IRR</th>
-        <th class="ctr">Hurdle</th>
-      </tr></thead>
-      <tbody>
-        [[SCENARIO_2_ROWS]]
-        <tr class="totals-row">
-          <td colspan="2"><strong>Scenario 2 Total</strong></td>
-          <td class="num">[[S2_TOTAL_EMISSIONS]]</td>
-          <td class="num">[[S2_TOTAL_LIKEFORLIKE]]</td>
-          <td class="num">[[S2_TOTAL_INCREMENTAL]]</td>
-          <td class="num">[[S2_TOTAL_INCENTIVES]]</td>
-          <td class="num">[[S2_TOTAL_NET]]</td>
-          <td class="num">[[S2_TOTAL_LANDLORD]]</td>
-          <td class="num">[[S2_TOTAL_TENANT]]</td>
-          <td class="num">[[S2_TOTAL_ANCILLARY]]</td>
-          <td class="num">[[S2_TOTAL_Y1ROC]]</td>
-          <td class="num">[[S2_BLENDED_IRR]]</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
-    <div class="table-key">
-      <div class="tk"><div class="tk-swatch" style="background:#10B981"></div>Above hurdle</div>
-      <div class="tk"><div class="tk-swatch" style="background:#F59E0B"></div>Below hurdle (CRREM driver)</div>
-      <div class="tk"><div class="tk-swatch" style="background:#2563EB"></div>Regulatory driver</div>
+      <table class="profile-table">
+        <thead><tr>
+          <th class="ctr">Year</th>
+          <th class="num">Revenue</th>
+          <th class="num">Utility<br>Savings</th>
+          <th class="num">Like-for-<br>Like CapEx</th>
+          <th class="num">Incremental<br>CapEx</th>
+          <th class="num">Incentives</th>
+          <th class="num">BPS Fine<br>Avoidance</th>
+          <th class="num">NOI<br>Impact</th>
+          <th class="num">Unlevered<br>Incr. CF</th>
+          <th class="num">Cumulative</th>
+          <th class="num">Asset Value<br>Impact</th>
+        </tr></thead>
+        <tbody id="cashflow-tbody"><!-- JS --></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ── SECTION 4B: SCENARIO 2 FINANCIAL SUMMARY ──────── -->
-  <div class="section">
-    <div class="section-label">Section 4 &mdash; Financial Impact</div>
-    <h2 class="section-title">Impact on Asset Value at Exit &mdash; Scenario 2</h2>
-
-    <div class="value-block">
-      <div class="vb-section">
-        <div class="vb-header">Capital Investment</div>
-        <div class="vb-row"><span class="vb-label">Like-for-Like Capital Expenses</span><span class="vb-val">[[S2_VB_LIKEFORLIKE]]</span></div>
-        <div class="vb-row"><span class="vb-label">Incremental Capital Expenses</span><span class="vb-val negative">([[S2_VB_INCREMENTAL]])</span></div>
-        <div class="vb-row"><span class="vb-label">Incentives</span><span class="vb-val positive">+[[S2_VB_INCENTIVES]]</span></div>
-        <div class="vb-row total"><span class="vb-label">Net CapEx</span><span class="vb-val">[[S2_VB_NET_CAPEX]]</span></div>
-      </div>
-      <div class="vb-section">
-        <div class="vb-header green">Value of NOI Impacts</div>
-        <div class="vb-row"><span class="vb-label">Capitalized Utility Savings</span><span class="vb-val positive">+[[S2_VB_CAP_UTILITY]]</span></div>
-        <div class="vb-row"><span class="vb-label">Capitalized Ancillary Savings</span><span class="vb-val positive">+[[S2_VB_CAP_ANCILLARY]]</span></div>
-        <div class="vb-row"><span class="vb-label">PV of BPS Fine Avoidance</span><span class="vb-val positive">+[[S2_VB_BPS_PV]]</span></div>
-        <div class="vb-row total"><span class="vb-label">Impact on Asset Value at Exit</span><span class="vb-val positive">+[[S2_VB_TOTAL_IMPACT]]</span></div>
-      </div>
-    </div>
-
-    <div class="irr-summary">
-      <div class="irr-cell">
-        <div class="irr-label">IRR on Total Spend</div>
-        <div class="irr-val">[[S2_IRR_TOTAL]]%</div>
-        <div class="irr-sub">like-for-like + incremental</div>
-      </div>
-      <div class="irr-cell">
-        <div class="irr-label">IRR on Incremental Spend</div>
-        <div class="irr-val">[[S2_IRR_INCREMENTAL]]%</div>
-        <div class="irr-sub">incremental cost only</div>
-      </div>
-      <div class="irr-cell">
-        <div class="irr-label">Exit Cap Rate</div>
-        <div class="irr-val">[[EXIT_CAP_RATE]]%</div>
-        <div class="irr-sub">underwriting assumption</div>
-      </div>
-      <div class="irr-cell">
-        <div class="irr-label">Exit Year</div>
-        <div class="irr-val">[[EXIT_YEAR]]</div>
-        <div class="irr-sub">hold period [[HOLD_PERIOD]] yrs</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── SECTION 5: CRREM PATHWAY ──────────────────────── -->
-  <div class="section">
-    <div class="section-label">Section 5</div>
-    <h2 class="section-title">CRREM Pathway Alignment</h2>
-
-    <div class="stranding-alert [[STRANDING_CLASS]]">
-      <div>[[STRANDING_TEXT]]</div>
-    </div>
-
-    <div class="chart-wrap">[[CRREM_SVG]]</div>
-
-    <table style="margin-top:12px">
-      <thead><tr>
-        <th>Year</th>
-        <th class="num">Asset (kgCO₂e/m²)</th>
-        <th class="num">CRREM 1.5°C</th>
-        <th class="num">Gap</th>
-        <th class="num">Scenario 1</th>
-        <th class="num">Scenario 2</th>
-        <th>Status</th>
-      </tr></thead>
-      <tbody>[[CRREM_PATHWAY_ROWS]]</tbody>
-    </table>
-  </div>
-
-  <!-- ── SECTION 6: REGULATORY EXPOSURE ───────────────── -->
-  <div class="section">
-    <div class="section-label">Section 6</div>
-    <h2 class="section-title">Regulatory &amp; BPS Exposure</h2>
+  <!-- ══════════════════════════════════
+       8. PLAN COMPARISON
+  ════════════════════════════════════ -->
+  <div id="comparison-section" class="section" style="display:none">
+    <div class="section-label">Scenario Comparison</div>
+    <h2 class="section-title">Plan Comparison</h2>
     <div style="overflow-x:auto">
-    <table>
-      <thead><tr>
-        <th>Regulation</th>
-        <th>Jurisdiction</th>
-        <th>Current Status</th>
-        <th class="num">Annual Fine<br>(No Action)</th>
-        <th class="num">PV of Total<br>Exposure</th>
-        <th class="num">Fine Avoidance<br>(Scenario 1)</th>
-        <th>Deadline</th>
-      </tr></thead>
-      <tbody>[[REGULATORY_ROWS]]</tbody>
-    </table>
+      <table class="profile-table">
+        <thead><tr>
+          <th>Plan</th>
+          <th class="num">Incr. CapEx</th>
+          <th class="num">Incentives</th>
+          <th class="num">Cap. Utility<br>Savings</th>
+          <th class="num">Cap. Ancillary<br>Revenue</th>
+          <th class="num">PV Fine<br>Avoidance</th>
+          <th class="num">Net Value<br>Creation</th>
+          <th class="num">Incr. IRR</th>
+        </tr></thead>
+        <tbody id="comparison-tbody"><!-- JS --></tbody>
+      </table>
     </div>
-    <div class="section-body" style="margin-top:10px">[[REGULATORY_NARRATIVE]]</div>
+    <div class="chart-source" id="comparison-exit-note"></div>
   </div>
 
-  <!-- ── SECTION 7: IMPLEMENTATION NOTES ───────────────── -->
-  <div class="section">
-    <div class="section-label">Section 7</div>
-    <h2 class="section-title">Implementation Considerations</h2>
-    <div class="section-body" style="margin-bottom:14px">[[IMPLEMENTATION_INTRO]]</div>
-    [[IMPLEMENTATION_NOTES]]
-    <!--
-    <div style="background:#F8F9FB;border:1px solid #E2E8F0;border-radius:3px;padding:12px 16px;margin:6px 0">
-      <div style="font-size:12px;font-weight:700;color:#12253A;margin-bottom:5px">Rooftop Solar (No-Export PV)</div>
-      <div style="font-size:12px;color:#475569;line-height:1.6">Tenant PPAs required to monetize onsite generation. Confirm roof structural capacity (2–4 lbs psf). Verify net-metering tariff with local utility before procurement.</div>
-    </div>
-    -->
-  </div>
-
-  <!-- ── SECTION 8: DATA INPUTS ─────────────────────────── -->
-  <div class="section">
-    <div class="section-label">Section 8</div>
-    <h2 class="section-title">Data Inputs &amp; Quality</h2>
-    <div class="dq-grid">[[DATA_QUALITY_ITEMS]]</div>
-    <div class="section-body" style="margin-top:14px">[[DATA_CAVEATS]]</div>
-  </div>
-
-  <!-- ── SECTION 9: PHASED IMPLEMENTATION ROADMAP ──────── -->
-  <div class="section">
-    <div class="section-label">Section 9</div>
-    <h2 class="section-title">Phased Implementation Roadmap</h2>
-    <div class="section-body" style="margin-bottom:14px">[[ROADMAP_INTRO]]</div>
-    <div style="overflow-x:auto">
-    <table>
-      <thead><tr>
-        <th>Phase</th>
-        <th>Timeframe</th>
-        <th>Trigger</th>
-        <th>Measures</th>
-        <th class="num">Phase CapEx</th>
-        <th class="num">Annual NOI Delta</th>
-        <th class="num">Exit Value Impact</th>
-      </tr></thead>
-      <tbody>
-        [[ROADMAP_ROWS]]
-        <!--
-        <tr>
-          <td>Phase 1</td>
-          <td>2026–2027</td>
-          <td>Boiler EOL (installed 2001)</td>
-          <td>LED Lighting; Condensing Boiler Replacement</td>
-          <td class="num">$412k</td>
-          <td class="num">$38k</td>
-          <td class="num">$760k</td>
-        </tr>
-        -->
-      </tbody>
-    </table>
-    </div>
-    <div class="callout info" style="margin-top:14px">[[ROADMAP_GAP_CALLOUT]]</div>
-    <!-- e.g. "The recommended roster closes [[GAP_PCT_CLOSED]]% of the confirmed target; [[GAP_DEFENSIVE_MEASURES]] defensive measure(s) totaling [[GAP_DEFENSIVE_COST]] close the remainder." -->
-  </div>
-
-  <!-- ── SECTION 10: DATA QUALITY & ADJUDICATIONS APPENDIX ─ -->
-  <div class="section">
-    <div class="section-label">Section 10 &mdash; Appendix</div>
-    <h2 class="section-title">Data Quality &amp; Adjudications</h2>
-    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.5">[[ADJUDICATIONS_INTRO]]</p>
-    <!-- e.g. "Every baseline field with disagreeing sources was surfaced as a conflict at Gate 1. The user adjudicated each; no value was auto-resolved." -->
-    <div style="overflow-x:auto">
-    <table>
-      <thead><tr>
-        <th>Field</th>
-        <th>Candidates (value &middot; source)</th>
-        <th>Suggested (hierarchy rule)</th>
-        <th>Adjudicated Value</th>
-        <th>Adjudicated By</th>
-        <th>Date</th>
-        <th>Finding</th>
-      </tr></thead>
-      <tbody>
-        [[ADJUDICATION_ROWS]]
-        <!--
-        <tr>
-          <td>Electricity (kWh/yr)</td>
-          <td>612,400 &middot; ESPM actuals<br>598,000 &middot; Audette modeled</td>
-          <td>612,400 (measured &gt; modeled)</td>
-          <td>612,400</td>
-          <td>user</td>
-          <td>2026-06-14</td>
-          <td><span class="badge b-above">Resolved</span> DQ-014</td>
-        </tr>
-        -->
-      </tbody>
-    </table>
-    </div>
-  </div>
-
-  <!-- ── SECTION 11: METHODOLOGY & SOURCES ─────────────── -->
-  <div class="section">
-    <div class="section-label">Section 11 &mdash; Appendix</div>
-    <h2 class="section-title">Methodology &amp; Sources</h2>
-    <div class="section-body" style="margin-bottom:14px">[[METHODOLOGY_INTRO]]</div>
-    <div style="overflow-x:auto">
-    <table>
-      <thead><tr>
-        <th>Claim</th>
-        <th>Source</th>
-        <th>Provenance</th>
-        <th>Reference</th>
-      </tr></thead>
-      <tbody>
-        [[CITATION_ROWS]]
-        <!--
-        <tr>
-          <td>NY LL97 Period 1 (2024–2029) emissions limit for Group B</td>
-          <td>NYC Local Law 97 of 2019, §28-320.3</td>
-          <td>library</td>
-          <td>retrofit reference library: nyc-ll97-limits.md</td>
-        </tr>
-        -->
-      </tbody>
-    </table>
-    </div>
-  </div>
-
-  <!-- ── APPENDIX: PROJECT ORIGINATION (FULL LIST) ──────── -->
-  <div class="section">
+  <!-- ══════════════════════════════════
+       9. DATA QUALITY & ADJUDICATIONS
+  ════════════════════════════════════ -->
+  <div id="dataquality-section" class="section" style="display:none">
     <div class="section-label">Appendix</div>
-    <h2 class="section-title">Project Origination — Full Measure List</h2>
-    <p style="font-size:12px;color:#64748B;margin-bottom:12px;line-height:1.5">Complete list of modeled measures, including those below the IRR hurdle. Shown for reference — not all are recommended for implementation.</p>
-    <div style="overflow-x:auto">
-    <table>
-      <thead><tr>
-        <th>Measure</th>
-        <th class="ctr">Year</th>
-        <th class="num">Emissions Savings (tCO₂e)</th>
-        <th class="num">Net Total Cost</th>
-        <th class="num">Landlord Utility Savings</th>
-        <th class="num">Tenant Utility Savings</th>
-        <th class="num">Ancillary Savings</th>
-        <th class="num">IRR</th>
-        <th class="ctr">Status</th>
-      </tr></thead>
-      <tbody>
-        [[PROJECT_ORIGINATION_ROWS]]
-      </tbody>
-    </table>
-    </div>
-    <div class="table-key">
-      <div class="tk"><div class="tk-swatch" style="background:#10B981"></div>In Scenario 1</div>
-      <div class="tk"><div class="tk-swatch" style="background:#059669"></div>In Scenario 2 only</div>
-      <div class="tk"><div class="tk-swatch" style="background:#F59E0B"></div>Below hurdle (reference)</div>
+    <h2 class="section-title">Data Quality &amp; Adjudications</h2>
+    <p class="section-intro" id="dq-summary" style="display:none"></p>
+    <div class="dq-grid" id="dq-items" style="display:none"><!-- JS --></div>
+    <div style="overflow-x:auto;display:none" id="adjud-table">
+      <table class="profile-table" style="margin-top:12px">
+        <thead><tr>
+          <th>Field</th>
+          <th>Candidates (value · source)</th>
+          <th>Adjudicated Value</th>
+          <th>By</th>
+          <th>Date</th>
+          <th>Finding</th>
+        </tr></thead>
+        <tbody id="adjud-tbody"><!-- JS --></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ── FOOTER ─────────────────────────────────────────── -->
-  <div class="report-footer">
-    <div class="footer-sources">Energy model: Audette physics-based platform &middot; Financial model: Soapbox DCF engine &middot; Pathway: CRREM v2 (2024) &middot; Incentives: IRA §48E/§179D &middot; Compliance: BPD (LBNL)</div>
-    <div style="margin-top:4px">Parameters: Hurdle [[IRR_HURDLE]]% [[HURDLE_TYPE]] &middot; Utility escalation [[UTILITY_ESCALATION]]%/yr &middot; Exit cap [[EXIT_CAP_RATE]]% &middot; Exit year [[EXIT_YEAR]] &middot; Analysis date [[REPORT_DATE]]</div>
-    <div class="footer-limit">CapEx estimates carry ±30% uncertainty without site inspection. IRR is sensitive to exit cap rate — ±50bp moves IRR ~3–5pp. Actual savings depend on occupancy, operations, and climate. Incentive eligibility subject to program rules at time of application. Verify with qualified engineering and legal counsel before committing capital.</div>
+  <!-- ══════════════════════════════════
+       10. METHODOLOGY & SOURCES
+  ════════════════════════════════════ -->
+  <div id="methodology-section" class="section" style="display:none">
+    <div class="section-label">Appendix</div>
+    <h2 class="section-title">Methodology &amp; Sources</h2>
+    <p class="section-intro" id="methodology-intro" style="display:none"></p>
+    <div id="sources-section" style="display:none">
+      <details>
+        <summary>Sources &amp; Citations</summary>
+        <div class="sources-inner">
+          <ol class="sources-list" id="sources-list"></ol>
+        </div>
+      </details>
+    </div>
   </div>
 
-</div>
+  <!-- ══════════════════════════════════
+       CONFIDENCE NOTE
+  ════════════════════════════════════ -->
+  <div class="confidence-note" id="confidence-note">
+    <strong>Data quality:</strong> —
+  </div>
+
+</div><!-- /report -->
+
 </body>
 </html>

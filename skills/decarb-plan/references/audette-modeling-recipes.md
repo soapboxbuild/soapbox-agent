@@ -170,3 +170,59 @@ be repointed to the new UID set. This is a platform-side update. Generate the ne
 programmatically from the freshly created buildings' API responses — never hand-transcribe
 UUIDs from logs or chat output; a single transposed character silently breaks the asset-to-model
 link with no error at write time.
+
+## 8. Direct-cap value-creation waterfall + cashflow (from Audette investment models)
+
+The economics deliverable is a **value-creation bridge** (waterfall chart) backed by an annual
+cashflow, mirroring the Audette per-asset investment models ("Plan N Waterfall Chart Data" +
+"Plan N Cashflow" + "Plan N Summary"). Reverse-engineered from 40 live models 2026-07-04.
+
+### Waterfall = 5 components → Impact on Asset Value at Exit
+Start at the incremental capex and bridge to net value creation:
+
+| Bar | Sign | Computation |
+|---|---|---|
+| Incremental Capital Expenses | − | Σ **incremental cost over like-for-like** across the plan's measures |
+| Incentives | + | rebates/incentives offsetting capex |
+| Capitalized Utility Savings | + | stabilized annual **owner-share** utility $ savings **÷ exit cap** |
+| Capitalized Ancillary Revenue | + | stabilized annual solar/EV revenue **÷ exit cap** |
+| PV of BPS Fine Avoidance | + | **discounted present value** of the avoided-fine stream |
+
+**Capitalize vs PV — the rule the skill kept getting wrong:** recurring/perpetual NOI changes
+(utility savings, ancillary revenue) are **capitalized** (÷ exit cap → perpetuity value at exit);
+the BPS fine-avoidance stream is a **present value** (discounted, finite) because fines are a
+*scheduled* penalty, not a perpetual NOI change. Never capitalize fine avoidance.
+
+### Cashflow (annual) — the model underneath the waterfall
+Columns: `Year | Revenue | Utility Savings | Like-for-like CapEx | Incremental CapEx | Incentives | BPS Fine Avoidance | NOI Impact | Unlevered Incremental Cashflow | Cumulative | Asset Value Impact`.
+- **NOI Impact** = Revenue + Utility Savings + BPS Fine Avoidance
+- **Unlevered Incremental Cashflow** = NOI Impact − Incremental CapEx + Incentives
+- **Asset Value Impact** is booked in the **exit year** = capitalized NOI uplift at exit
+- **IRR on Incremental Spend** = `irr(annual incremental cashflows + terminal Asset Value Impact)`.
+  The waterfall and the IRR are the SAME model viewed two ways.
+
+### Measure-type treatment (universal: incremental cost over like-for-like)
+Each measure carries Total cost, Like-for-like cost, Incremental cost (= Total − LfL). Only the
+**incremental** hits capex/IRR.
+- **Replacement-at-RUL** (ASHP heating/DHW, HP dryers, roof insulation, advanced glazing, LED):
+  nonzero like-for-like → only the **premium** counts; **stage the install year to equipment RUL**.
+- **Add-ons** (controls, RCx, elevator regen drives, EV chargers, weatherization, DWHR):
+  like-for-like = 0 → full cost is incremental.
+- **Electrification / fuel-switching** (ASHP heating & DHW): electricity reduction is **negative**
+  (elec rises), gas reduction large positive; value the net at owner-share prices; carbon from gas.
+- **Solar PV / EV charging** → a **Revenue** stream → Capitalized Ancillary Revenue (not "savings").
+- **Emissions measures under a binding BPS** → reduce the penalty → BPS Fine Avoidance stream → PV.
+
+Every $ savings/revenue stream is taken at the **locked Gate-1 owner-share split** before
+capitalizing — tenant-paid savings never enter the owner's waterfall.
+
+### Plans (scenarios) + exit
+Carry **Plan 1 / Plan 2 / Plan 3** as measure-bundle scenarios (e.g. near-term positive-IRR set vs
+deep electrification), each with its own waterfall + cashflow + summary, plus a comparison. Exit
+Cap and Exit Year from kickoff/Inputs; capitalization uses the exit cap.
+
+### Render (mirror RSRA's process exactly)
+Do NOT hand-draw the chart. The economics data object is passed to `fill_report` and the
+`templates/decarb/layout.html` template's JS renders the waterfall as inline SVG (floating bars +
+cumulative connectors, green adds / distinct capex decrement / anchor totals), plus the cashflow
+table and plan comparison — the same fill_report + client-rendering path RSRA uses.

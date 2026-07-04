@@ -11,7 +11,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.3.1
+version: 1.4.0
 ---
 
 # Portfolio Analysis
@@ -126,6 +126,14 @@ All RSRA HTML output must conform to these rules. Claude must apply them on ever
 - Never save the Phase 1 skeleton to asset documents — only the completed Phase 2 report
 - Numeric precision: 2 significant figures (`$1.4M` not `$1,427,000`; `42 kgCO₂e` not `41.7`)
 - Mark all benchmark-derived estimates inline with `(est.)`
+- The portfolio **report is the design-forward deliverable** (Reports/, gate-only). All
+  working/checklist material — per-asset readiness, financial-parameter provenance, open
+  questions, adjudication log, verification findings — goes in the ONE growing **helper file**
+  per the shared pattern in `skills/helper-files/SKILL.md`: `save_file` to folder `Helper Files`
+  as `[start date] - Helper Files - Portfolio Analysis.html` (start date fixed, stored in
+  `state.helper`), regenerated from state at each phase. Phase/checklist sections:
+  Config · Readiness+Params · Per-Asset · Aggregation · Verification gate · Report. Do not create
+  standalone intermediate HTML.
 
 ---
 
@@ -1183,6 +1191,15 @@ data from another client's account would silently corrupt the analysis.
 **DCF engine failure:**
 If the cashflow MCP DCF tools (`run_dcf` / `run_intervention_irr`) return an error for an asset,
 mark that asset `analysis_failed`, report the error, continue with remaining assets.
+
+**Verifier or retrofit tools unavailable at runtime:**
+If `verifier__*` or `retrofit__*` tools error or are absent, say so at the top of the run
+("⚠ Verifier/Retrofit plugin unreachable — running without the findings ledger / measure
+register"). You may still produce the analysis from Audette + docs + the DCF engine, but: do NOT
+fabricate finding ids, verification-status results, or register entries; note that conflicts were
+not logged to the ledger and the measure register was not updated; and tell the user to reconnect
+the plugin to restore verification and the shared register. Never present the report as verified
+when the verifier was unreachable.
 
 **Verifier or retrofit tools unavailable at runtime:**
 If `verifier__*` or `retrofit__*` tools error or are absent, say so at the top of the run

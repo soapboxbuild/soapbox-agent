@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Decarb-Plan Engagement
@@ -56,6 +56,18 @@ replace spaces with hyphens.
   score (1–100) where available. Where a peer comparison is needed, use the **Building
   Performance Database filtered by property type + climate zone** — **never national
   medians** and never an unfiltered peer set.
+
+**Working files (helper) — read `skills/helper-files/SKILL.md`:** maintain exactly ONE growing
+internal helper HTML for the engagement, saved via `save_file` to folder **`Helper Files`** as
+**`[state.helper.start_date] - Helper Files - Decarb Plan.html`** (start date fixed at P0, stored
+in `state.helper`). It is a rendered *view of state* — regenerate and re-save it at **every phase
+checkpoint** (P1.5 validation, P2 baseline, P3 measures, P4 write-back). Fill the skeleton at
+`skills/helper-files/references/skeleton.html`; the decarb **phase/gate checklist sections** are
+P0 Kickoff · P1 Evidence · P2 Baseline · GATE 1 · P3 Measures · GATE 2 · P4 Write-back+Verify ·
+P5 Deliverables. **Do NOT produce standalone intermediate/gate HTML** (no `p1-baseline.html`,
+no `building-model-verification.html`) — that material is checklist sections of the helper, and
+**GATE 1 / GATE 2 are reviewed as the helper's checklist sections**, not as polished artifacts.
+Only the **Report** and the **Delivery-Meeting Slides** are design-forward (`Reports/`, gate-only).
 
 ---
 

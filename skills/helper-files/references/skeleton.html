@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[[DELIVERABLE_TYPE]] — Helper File — [[ASSET_OR_PORTFOLIO]]</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+         margin: 0; padding: 24px; max-width: 1100px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; margin: 22px 0 8px;
+       border-bottom: 1px solid currentColor; padding-bottom: 4px; opacity: .85; }
+  .badge { display: inline-block; font-weight: 700; background: #b91c1c; color: #fff;
+           padding: 4px 10px; border-radius: 4px; letter-spacing: .03em; }
+  .meta { opacity: .7; font-size: 12px; margin: 8px 0 0; }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid rgba(128,128,128,.3);
+           vertical-align: top; font-size: 13px; }
+  th { opacity: .7; font-weight: 600; }
+  .tier { font-size: 11px; opacity: .7; }
+  .locked::after { content: " 🔒"; }
+  details { margin: 6px 0; border: 1px solid rgba(128,128,128,.3); border-radius: 4px; padding: 6px 10px; }
+  summary { cursor: pointer; font-weight: 600; }
+  .st-done::before   { content: "✓ "; color: #16a34a; }
+  .st-active::before { content: "○ "; color: #d97706; }
+  .st-blocked::before{ content: "⚠ "; color: #b91c1c; }
+  ul.checklist { margin: 8px 0 4px; padding-left: 18px; }
+  ul.checklist li { margin: 2px 0; }
+  code { background: rgba(128,128,128,.15); padding: 0 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<p><span class="badge">INTERNAL WORKING FILE — NOT THE DELIVERABLE</span></p>
+<h1>[[DELIVERABLE_TYPE]] — Helper File</h1>
+<p class="meta">
+  [[ASSET_OR_PORTFOLIO]] · Engagement start [[START_DATE]] ·
+  Current phase: [[CURRENT_PHASE]] · Last updated [[LAST_UPDATED]]
+</p>
+
+<h2>Source of Truth</h2>
+<table>
+  <thead><tr><th>Input</th><th>Value</th><th>Source</th><th class="tier">Tier</th></tr></thead>
+  <tbody>
+    <!-- [[SOT_ROWS]] — one <tr> per key input. Add class="locked" to the value cell when adjudicated/locked.
+         Tier ∈ measured | audit | modeled | estimate (measured > audit > modeled > estimate).
+         Example:
+    <tr><td>Owner electricity share (residential)</td><td class="locked">5%</td><td>audit-calibrated</td><td class="tier">audit</td></tr>
+    -->
+  </tbody>
+</table>
+
+<h2>Open Questions / Pending Adjudications</h2>
+<ul class="checklist">
+  <!-- [[OPEN_QUESTIONS]] — one <li> per unresolved item; note who owns it.
+       Example: <li>Owner-paid common gas at clubhouses? — confirm with client (Cass)</li> -->
+</ul>
+
+<h2>Adjudication Log</h2>
+<table>
+  <thead><tr><th>Date</th><th>Decision</th><th>Locked value</th></tr></thead>
+  <tbody>
+    <!-- [[ADJUDICATION_ROWS]] — append-only; one <tr> per resolved conflict.
+         Example: <tr><td>2026-07-04</td><td>Owner elec share</td><td>5% (was 15%)</td></tr> -->
+  </tbody>
+</table>
+
+<h2>Phases</h2>
+<!-- [[PHASE_SECTIONS]] — one <details> per workflow phase from the calling skill's phase list.
+     Set the <summary> class to st-done / st-active / st-blocked. Body = a checklist + minimal detail.
+     Example:
+<details open>
+  <summary class="st-active">P2 — Baseline (ESPM)</summary>
+  <ul class="checklist">
+    <li>Pull 2021 CY actuals — ✓</li>
+    <li>Compute Reg 28 ceilings (−7%/2026, −20%/2030) — ○</li>
+  </ul>
+</details>
+-->
+
+</body>
+</html>

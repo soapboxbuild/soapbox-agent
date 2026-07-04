@@ -8,9 +8,11 @@
     CLIENT-RENDER TEMPLATE (delivery-presentation / layout-agent.html)
     ------------------------------------------------------------------
     fill_report template family (report_type 'delivery-presentation').
-    The server injects a JSON payload into <script id="report-data"> and
+    The server injects a JSON payload into the report-data script block and
     THIS template's own JavaScript builds every slide from it. The agent
     writes no HTML — populateReport() does everything.
+    NOTE: never write the literal report-data script open-tag anywhere but
+    the real block — the server's injection regex targets its first match.
 
     This is an HTML SLIDE DECK in the Soapbox MARKETING brand (the live
     soapbox.build look): warm paper ground, layered radial washes,

@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.3.0
+version: 1.4.0
 ---
 
 # Decarb-Plan Engagement
@@ -92,6 +92,14 @@ run slow):**
    a dropped connection or deploy costs one batch, not the whole run.
 6. **Parallelize independent READS in one turn** (documents, ESPM pulls, reference-library, memory
    recall) — the slow pattern is calling reads one at a time.
+7. **Kickoff in ONE consolidated pass.** When an engagement reference doc exists (it usually does —
+   P0 step 1), pre-fill every kickoff answer from it + any needed research and present them **all at
+   once for confirmation**; ask only the genuinely-open items. Do NOT walk 8 questions one-at-a-time
+   across many turns (the first Westminster run burned ~30 min doing this).
+8. **Resume cheaply. `switch_customer_account` ONCE per session, then cache it.** On resume, do the
+   whole re-orientation in a SINGLE parallel turn — state file + account switch + required-tool
+   presence check + the reconciled-model doc — then continue. Don't spend multiple turns re-loading
+   context after every interruption (the original run re-oriented ~7 times).
 
 ---
 
@@ -220,6 +228,12 @@ against ground truth:
   severity high) describing the discrepancy and surface it for adjudication. Do NOT upload utility
   data, calibrate, or generate measures against a model that fails validation — a 10–20% calibration
   "gap" is usually a building-model error, not an emission-factor difference.
+- **Materialize the COMPLETE, correct building set here — before any per-building write.** If the
+  model is short buildings (e.g. Audette has 17 but the survey shows 27), create ALL the missing
+  buildings, assign the shared property_id, and lock the final UID set into state IN ONE validated
+  step. Do not begin per-building edits/uploads on a partial set and discover the missing ones
+  mid-stream (the first run churned 17→27 that way, forcing rework). Batch the `create_building`
+  calls ≤6/turn per the Audette-write rule, checkpointing UIDs after each batch.
 - Only once the model reconciles (or the owner adjudicates the correct structure) proceed. Then apply
   the [[utility-split-estimation]] allocation rule: carve out common/amenity loads first, allocate the
   remainder GFA-weighted (never even), and set landlord shares per building/end-use (tenant-metered

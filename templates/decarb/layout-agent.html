@@ -8,7 +8,7 @@
     CLIENT-RENDER TEMPLATE (decarb / layout-agent.html)
     ---------------------------------------------------
     This template mirrors templates/rsra/layout-agent.html's architecture exactly:
-    the server injects a JSON data object into <script id="report-data"> and THIS
+    the server injects a JSON data object into the report-data script block and THIS
     template's own JavaScript renders every section and chart from it. The agent
     writes no HTML and draws no charts — populateReport() does everything.
     This is the fill_report render path (report_type 'decarb'). It REPLACES the

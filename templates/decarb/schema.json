@@ -48,6 +48,46 @@
       ]
     },
 
+    "dashboard": {
+      "type": "object",
+      "description": "Decision Dashboard — the hero section rendered right after the doc header. Every field is nullable/omittable: a missing field hides its tile. If this object is ABSENT entirely, the template falls back to the legacy executive-summary row, so old payloads keep working. All figures must come from engines/Audette models — never LLM-computed.",
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "description": "Dashboard headline. Defaults to 'Fund decision at a glance' when omitted." },
+        "compliance": {
+          "type": "object",
+          "description": "Compliance status chip (BPS / primary regulatory driver, with-plan).",
+          "additionalProperties": false,
+          "properties": {
+            "status": { "type": "string", "description": "Chip color: green = compliant with plan, amber = marginal/conditional, red = non-compliant.", "enum": ["green", "amber", "red"] },
+            "label": { "type": "string", "description": "Chip text (e.g. 'Columbus BPS: compliant through 2030 (with plan)')." }
+          }
+        },
+        "net_value_creation": { "type": "number", "description": "Hero tile: net value creation at exit in USD (selected plan's waterfall net)." },
+        "irr": { "type": "number", "description": "Hero tile: unlevered incremental IRR as a decimal (e.g. 0.09 for 9%)." },
+        "irr_hurdle": { "type": "number", "description": "IRR hurdle as a decimal; shown as the IRR tile's comparison sub-line and in the chip caption." },
+        "capital_ask": { "type": "number", "description": "Tile: incremental capital ask in USD (positive number).", "minimum": 0 },
+        "ghgi_change_pct": { "type": "number", "description": "Tile: GHGI change by the target year as a signed decimal (NEGATIVE for reductions, e.g. -0.46 for −46%)." },
+        "ghgi_target_year": { "type": "integer", "description": "Year the ghgi_change_pct is measured at (e.g. 2030)." },
+        "downside_avoided": { "type": "number", "description": "Tile: PV of avoided downside (fines + stranding-risk value) in USD.", "minimum": 0 },
+        "cf_positive_year": { "type": "integer", "description": "Tile: first year annual unlevered incremental cashflow turns positive." },
+        "recommendation": { "type": "string", "description": "One-line recommendation (e.g. 'Fund Plan 2 — the CRREM-aligned electrification roadmap.'). Falls back to executive_summary.headline when omitted." },
+        "sparkline": {
+          "type": "array",
+          "description": "Cumulative-cashflow J-curve sparkline points (include the exit-year value uplift in the final point). When omitted, the template derives the sparkline from the selected plan's cashflow (cumulative + asset_value_impact).",
+          "items": {
+            "type": "object",
+            "required": ["year", "cumulative"],
+            "additionalProperties": false,
+            "properties": {
+              "year": { "type": "integer", "description": "Calendar year." },
+              "cumulative": { "type": "number", "description": "Cumulative unlevered incremental cashflow in USD (fold the exit uplift into the final year)." }
+            }
+          }
+        }
+      }
+    },
+
     "baseline": {
       "type": "object",
       "description": "Validated building model + calibrated baseline. All displayed metrics rendered at 2 significant figures; energy in kWh and kWh·m⁻².",
@@ -69,7 +109,31 @@
       "description": "Carbon pathway targets and trajectory. Feeds the Emissions Trajectory line chart.",
       "additionalProperties": false,
       "properties": {
-        "crrem_stranding_year": { "type": "integer", "description": "Year the planned trajectory crosses (strands against) the CRREM 1.5°C target. Optional; shown as a chart footnote." },
+        "crrem_stranding_year": { "type": "integer", "description": "Year the planned trajectory crosses (strands against) the CRREM 1.5°C pathway. Optional; shown as an annotated dot + chart footnote. When omitted and crrem_pathway is present, the template computes it as the first year planned > pathway." },
+        "crrem_pathway": {
+          "type": "array",
+          "description": "The REAL CRREM decarbonization pathway for the asset's country/region/property type, from the crrem MCP server (get_pathway) — NEVER fabricated or interpolated by the agent. Drawn as a distinct dashed curve ALONGSIDE the stepped BPS target line: BPS drives fines, CRREM drives stranding. Units must be kgCO₂e·m⁻²·yr⁻¹ to match the trajectory series (convert if the asset's GHGI is tracked per-ft²).",
+          "items": {
+            "type": "object",
+            "required": ["year", "carbon_kgco2_m2yr"],
+            "additionalProperties": false,
+            "properties": {
+              "year": { "type": "integer", "description": "Calendar year." },
+              "carbon_kgco2_m2yr": { "type": "number", "description": "CRREM pathway carbon intensity in kgCO₂/m²/yr.", "minimum": 0 }
+            }
+          }
+        },
+        "crrem_meta": {
+          "type": "object",
+          "description": "Provenance of the CRREM pathway — rendered as a chart footnote so the curve is auditable.",
+          "additionalProperties": false,
+          "properties": {
+            "country": { "type": "string", "description": "Country code/name (e.g. 'US')." },
+            "region": { "type": "string", "description": "CRREM region/climate slice (e.g. 'RMPAc_Cool_5A/5B'). From crrem get_climate_zone(zip) → crrem_region_hint." },
+            "property_type": { "type": "string", "description": "CRREM property type (e.g. 'Large Multi-Family - Low Rise')." },
+            "scenario": { "type": "string", "description": "Pathway scenario (e.g. '1.5C')." }
+          }
+        },
         "trajectory": {
           "type": "array",
           "description": "Per-year carbon-intensity points (kgCO₂e·m⁻²·yr⁻¹) for BAU, the planned trajectory, and the CRREM 1.5°C target. Minimum 2 points to render a line.",
@@ -79,9 +143,10 @@
             "additionalProperties": false,
             "properties": {
               "year": { "type": "integer", "description": "Calendar year." },
-              "bau": { "type": "number", "description": "Business-as-usual carbon intensity (kgCO₂e·m⁻²)." },
+              "bau": { "type": "number", "description": "Business-as-usual carbon intensity (kgCO₂e·m⁻²). Use the Audette-modeled baseline carbon curve where available (grid-factor drift included) — never a fabricated flat line." },
               "planned": { "type": "number", "description": "Planned/selected-plan carbon intensity (kgCO₂e·m⁻²)." },
-              "crrem_target": { "type": "number", "description": "CRREM 1.5°C target intensity for this asset type/geography (kgCO₂e·m⁻²)." }
+              "bps_target": { "type": "number", "description": "BPS / regulatory compliance target intensity for this year (kgCO₂e·m⁻²). Drawn as a STEPPED navy dashed line — the fines driver, distinct from the CRREM stranding pathway. Provide only for years where a target is defined." },
+              "crrem_target": { "type": "number", "description": "LEGACY: CRREM 1.5°C target intensity inline with the trajectory (kgCO₂e·m⁻²). Prefer targets.crrem_pathway (real curve from the crrem MCP server) for new payloads; do not supply both." }
             }
           }
         }
@@ -130,6 +195,8 @@
               "name": { "type": "string", "description": "Short plan identifier (e.g. 'Plan 1')." },
               "label": { "type": "string", "description": "Human-readable descriptor (e.g. 'Near-term positive-IRR')." },
               "irr_incremental": { "type": "number", "description": "IRR on incremental spend as a decimal (e.g. 0.25 for 25%)." },
+              "ghgi_reduction_pct": { "type": "number", "description": "Plan's GHGI reduction by the target year as a positive decimal (e.g. 0.58 for a 58% reduction). Nullable; shown in the Scenario Comparison strip.", "minimum": 0, "maximum": 1 },
+              "compliant": { "type": "boolean", "description": "Whether this plan achieves BPS compliance. Nullable; shown as ✓ Compliant / At risk in the Scenario Comparison strip." },
               "waterfall": {
                 "type": "object",
                 "description": "The 5 value-creation-bridge components plus the net total. incremental_capex is stored NEGATIVE (it pulls the bridge down); all additive components are positive. net_value_creation should equal the sum of the five components.",

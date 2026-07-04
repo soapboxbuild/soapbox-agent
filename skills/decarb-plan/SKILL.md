@@ -452,22 +452,52 @@ gate (resume may have skipped P4's check).
    schema the template consumes (its field names are exactly what the template's `populateReport()`
    JS reads). Include the **`economics`** object (per-plan `waterfall` 5 components + annual
    `cashflow` + `plans` + exit cap/year) built per **recipe 8** in `references/audette-modeling-recipes.md`.
-   Record the object in `state.report.data`. Section→source mapping:
+   Record the object in `state.report.data`.
+
+   The report is **dashboard-first**: the template renders a Decision Dashboard (compliance
+   chip, hero KPI tiles, one-line recommendation, cumulative-cashflow J-curve sparkline)
+   from `data.dashboard`, then a Scenario Comparison strip (renders whenever
+   `economics.plans` has **2+ plans** — present at least 2 scenarios where applicable, e.g.
+   near-term positive-IRR vs CRREM-aligned), then per-plan waterfalls + cashflows, roadmap,
+   emissions trajectory, and appendices. **Populate `data.dashboard`** (every field nullable;
+   values from the selected plan's engine outputs — never LLM-computed) and the per-plan
+   comparison fields (`irr_incremental`, `ghgi_reduction_pct`, `compliant`). If `dashboard`
+   is omitted the template falls back to the legacy executive-summary row.
+
+   **CRREM pathway (`targets.crrem_pathway` + `targets.crrem_meta`):** source the REAL curve
+   from the **crrem MCP server** — call `crrem get_pathway` with the asset's country, region,
+   property type, and scenario (`get_climate_zone(zip)` returns a `crrem_region_hint`), and
+   pass the points as `targets.crrem_pathway` (`[{year, carbon_kgco2_m2yr}]`) with
+   `targets.crrem_meta {country, region, property_type, scenario}`. **Never fabricate,
+   extrapolate, or hand-interpolate the curve.** The template draws it as a distinct dashed
+   line alongside the stepped `bps_target` line — BPS drives fines, CRREM drives stranding —
+   and annotates the stranding year. All trajectory series are kgCO₂e·m⁻²·yr⁻¹; convert
+   per-ft² GHGI values before filling.
+
+   **Baseline/BAU carbon curve:** use the **actual Audette-modeled baseline carbon curve**
+   (`state.targets` trajectory from Audette engine outputs, including grid-factor drift)
+   for `bau`/`planned` wherever available — never a fabricated flat line.
+
+   Section→source mapping:
 
    | Data key | Source in state |
    |---|---|
    | property / baseline | `state.baseline` (validated model + calibrated baseline, values + sources) |
-   | targets / trajectory | `state.targets` (trajectory, BPS milestones, fine exposure) |
+   | dashboard | selected plan in `state.economics` + `state.targets` (compliance status, net value, IRR vs hurdle, capital ask, GHGI change, downside avoided, CF-positive year) |
+   | targets / trajectory | `state.targets` (Audette baseline/planned carbon curves, BPS milestones, fine exposure) |
+   | targets.crrem_pathway / crrem_meta | crrem MCP server `get_pathway` (region via `get_climate_zone(zip)` hint) — real curve only |
    | measures / roadmap | measure register via `state.measures.register_ids` + `state.measures.roadmap_phases` |
-   | economics (waterfall + cashflow + plans) | `state.economics` (recipe 8 — owner-share, incremental-over-LfL, fines as PV, capitalized savings/ancillary) |
+   | economics (waterfall + cashflow + plans, incl. per-plan `ghgi_reduction_pct`/`compliant`) | `state.economics` (recipe 8 — owner-share, incremental-over-LfL, fines as PV, capitalized savings/ancillary) |
    | data_quality | `state.conflicts` (incl. adjudications) + verifier findings |
-   | sources | `state.citations` |
+   | sources | `state.citations` (cite the CRREM pathway export run) |
 
 2. **Render via `fill_report` — the SAME path RSRA uses (default; do not hand-write HTML or draw
    charts).** Call `fill_report(template: 'decarb', data: <the object from step 1>, title: "<Asset> — Decarbonization Roadmap")`.
    The server injects the JSON into the template's `<script id="report-data">` block and the
-   template's own JavaScript renders every section and the **value-creation waterfall SVG chart**
-   from it. You write NO report HTML and draw NO charts — your only job is to compute the data
+   template's own JavaScript renders every section and every chart from it — the **decision
+   dashboard + J-curve sparkline**, the **scenario comparison strip**, the **value-creation
+   waterfall SVG** per plan, and the **emissions trajectory with the CRREM pathway curve**.
+   You write NO report HTML and draw NO charts — your only job is to compute the data
    object. (This mirrors rsra exactly. The old `[[TOKEN]]` / `get_report_template` + agent-fill
    path is retired — `templates/decarb/layout-agent.html` is now a client-render template.) The
    render is verifier-gated server-side; if blocked, fix findings and retry. Record

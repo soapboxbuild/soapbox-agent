@@ -11,7 +11,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.2.0
+version: 1.3.1
 ---
 
 # Portfolio Analysis
@@ -29,6 +29,52 @@ value creation, NOI uplift).
 
 **Single-asset engagement:** if the ask is a full asset decarbonization engagement (one
 asset, multi-week, gated, client-deliverable), route to the `decarb-plan` skill instead.
+
+---
+
+## Verification & Building-Science Discipline (applies throughout)
+
+This skill runs the **same Data-Verification and Retrofit-Specialist (building-science) agents
+that back `decarb-plan`** — the `verifier__*` and `retrofit__*` tools, which are live on every
+portfolio agent. It applies them in a **batch-adapted** form, because a portfolio run screens
+tens of assets in one pass and cannot human-adjudicate every conflict the way a single-asset
+engagement does. These adaptations are deliberate — a full gated single-asset engagement routes
+to `decarb-plan`; this is the screening-scale product.
+
+**Ground rules — hold them on every asset:**
+
+1. **No LLM arithmetic on reported numbers.** Every economic figure comes from the DCF/cashflow
+   engine, an Audette model, or a cited source. You never compute a reported number yourself.
+2. **The DCF engine owns the economics; the retrofit agent owns discipline + building science +
+   the register.** Feed engine outputs *into* `retrofit__evaluate_measure` as
+   `engine`-provenanced fields (`engine: "soapbox-dcf"` / `"cashflow-mcp"`); the tool's
+   provenance gate then passes on real numbers and rejects fabricated ones. The register's
+   server-computed `exit_value_delta` (NOI÷cap) is a screening proxy — report **value creation**
+   always comes from the DCF engine, never the register.
+3. **Recommended = screen AND hurdle.** A measure is *recommended in the report* iff
+   `retrofit__screen_measures` labels it `recommended` **AND** its DCF IRR ≥ `irr_hurdle`.
+   Screen-recommended but IRR-missing → below-hurdle. Screen `defensive` → defensive. Screen
+   `needs-data` → needs-data. Compliance-required measures are included regardless of IRR.
+4. **Conflicts are logged, not silently picked.** A material data conflict (see Step 5) becomes a
+   `verifier__record_finding`; the hierarchy suggestion is auto-applied at screening scale, but
+   the finding is durable and surfaces in the Data Quality section.
+5. **Verification is per-asset, called out — not fail-closed.** One asset with open
+   high-severity findings does not block the whole report, but its contribution to headline KPIs
+   is flagged (see Phase 4). Never let the totals silently absorb unverified data.
+6. **Never fail silently.** Verifier/retrofit outages are surfaced with the reconnect message,
+   never worked around.
+
+**Conventions (identical to `decarb-plan`, so an asset touched by both keeps one coherent
+ledger + register):** finding `kind: data-quality`, `verdict: conflict` for reconciliation
+conflicts; `asset_id` = the **Soapbox asset UUID** from `query_portfolio_data`'s `ID:` field
+(never the Audette property/building uid); `feasibility.score` = integer 1–5.
+
+**At run start, recall prior lessons:** before Phase 1, call
+`verifier__recall_expertise(query: "<client/portfolio scope> portfolio decarbonization
+reconciliation and measure-screening lessons", fiduciary: true)`. Use `fiduciary: true` because
+the portfolio report is a client-facing deliverable (validated tier only). Carry any relevant
+lessons into reconciliation and screening. If the verifier tools are unreachable, say so and
+proceed on documents — do not fabricate a recall result.
 
 ---
 
@@ -276,12 +322,13 @@ For each asset still missing required fields, present a focused card:
 Only show missing fields. `skip` leaves null and excludes the asset from analysis.
 `disposed` marks the asset and includes it in emissions inventory only.
 
-Run LL/TT allocation once inputs are known:
-```bash
-python3 ~/soapbox-agent/scripts/ll_allocation.py --inputs '{"lease_structure":"<val>","metering_config":"<val>","jurisdiction":"<val>","bps_liable":<bool_or_null>,"measure_category":"in_unit_hvac"}'
-```
-If `include_bps: false`, pass `bps_liable: null` — the script treats null as "not assessed"
-and omits fine-avoidance benefit from the LL capture calculation.
+Run LL/TT allocation once inputs are known using the **cashflow MCP `get_ll_capture` tool** —
+the hosted skill runtime does not ship local Python scripts, so always use the MCP tool, never a
+`python3 …ll_allocation.py` call:
+`get_ll_capture(lease_structure, metering_config, jurisdiction, measure_type, bps_liable)`
+→ returns `ll_capture_pct` + warnings.
+If `include_bps: false`, pass `bps_liable: null` — treated as "not assessed", so the
+fine-avoidance benefit is omitted from the LL capture calculation.
 
 Write results to asset metadata:
 ```
@@ -495,7 +542,13 @@ From the returned chunks, extract:
 
 #### Step 5 — Reconcile Audette vs. uploaded docs
 
-Build a unified measure list per asset, reconciling all sources:
+Build a unified measure list per asset, reconciling all sources **against the verifier's
+rubrics**. The first time you reconcile a given data type in a run, pull its checklist —
+`verifier__get_verification_checklist(data_type)` for `energy`, `equipment`, `physical`,
+`financial` as relevant — and follow it (e.g. energy: sanity-check units before comparing
+values, cross-check against ESPM/BPD peer bands; financial: every figure originates from a
+deterministic engine or cited doc). The checklists are the same methodology `decarb-plan` uses;
+they replace the ad-hoc confidence ladder this skill used to carry.
 
 **Source certainty:** Audette and uploaded field documents (energy audits, PCAs,
 engineering studies, drawings, condition assessments) carry **equal weight**. Neither is
@@ -505,18 +558,35 @@ BPD MCP benchmark estimates (no Audette, no uploaded doc) are lower certainty an
 
 1. **De-duplicate**: if a measure appears in both Audette and a doc (e.g. LED upgrade),
    keep one entry. Use whichever source has the more detailed or recent cost/savings data.
-   If figures differ by > 25%, show both with their source and note the discrepancy —
-   don't silently pick one.
+   If figures differ by **> 25%**, this is a **material conflict**: do NOT silently pick one.
+   Auto-apply the reconciliation hierarchy (measured/ESPM actuals > audit-reported 12-mo >
+   Audette modeled > BPD estimate) to choose the working value, **and record the conflict** so
+   it is durable and surfaces in the report's Data Quality section:
+   ```
+   verifier__record_finding(
+     asset_id: "<Soapbox asset UUID>",       # never the Audette uid
+     claim: "<field> for <asset>: Audette says X, <doc> says Y (>25% apart)",
+     verdict: "conflict",
+     severity: "high",                         # material to CapEx/savings/IRR → high; cosmetic → low
+     kind: "data-quality",
+     evidence: ["Audette model: X <unit>", "<doc name>: Y <unit>"],
+     sources: ["Audette", "<doc name>"]
+   )
+   ```
+   Set `severity` by materiality to CapEx, savings, or the IRR screen. At screening scale the
+   hierarchy suggestion is applied automatically (no per-asset user gate) — the finding is the
+   audit trail, and high-severity findings are the ones surfaced for optional review at Phase 4.
 
 2. **Mark completed measures**: if any source shows a measure was already installed (e.g.
    "LED retrofit completed 2023"), **remove it from forward-looking CapEx**. Do not
    double-count. Doc evidence of completion overrides Audette if Audette still lists it
    as recommended.
 
-3. **Confidence levels**:
-   - `High` — two or more sources agree (Audette + doc, or two docs)
-   - `Medium` — single source, either Audette or a field doc
-   - `Low` — BPD MCP benchmark only (no Audette, no uploaded doc)
+3. **Confidence levels** (the verifier's two-source rule):
+   - `High` — two or more independent sources agree (Audette + doc, or two docs)
+   - `Medium` — single source, either Audette or a field doc (provisional)
+   - `Low` — BPD MCP benchmark only (no Audette, no uploaded doc); these assets are handled as
+     `needs-data` in Step 3C and excluded from the verified roster and headline aggregates
 
 4. **Feasibility check per measure**:
    - Technically feasible given building vintage and HVAC config?
@@ -566,7 +636,24 @@ run_dcf(
 
 If hold period < 1 year (already past exit): mark as disposed, skip financial analysis.
 
-### 3C — Apply each measure through the cashflow MCP
+### 3C — Apply each measure through the cashflow MCP + retrofit register
+
+The economics run through the DCF/cashflow engine (Steps 1–6 below); the **retrofit
+(building-science) agent** frames the candidates, supplies feasibility/staging doctrine, and is
+the **system of record** for the resulting measures (Step 0 and Step 7). Persisting to the
+register means a later `decarb-plan` engagement on any of these assets **inherits** this work.
+
+**Step 0 — Candidate framing & feasibility doctrine (retrofit agent):**
+
+- Once per asset, call `retrofit__propose_candidates(asset_attributes: {archetype, jurisdiction,
+  equipment, ...})` with the reconciled asset attributes — it returns the source checklist and
+  origination prompts that make sure you haven't missed a candidate family.
+- Pull the building-science doctrine that governs feasibility and phasing:
+  `retrofit__get_retrofit_playbook('staging')` for sequencing against capital events/end-of-life,
+  and the relevant measure-family playbook (`hvac`, `envelope`, `dhw`, `controls-rcx`,
+  `solar-storage`, `electrification-staging`) for any measure whose feasibility you're scoring.
+  This doctrine — combustion safety after air-sealing, A2L refrigerants, envelope-before-HVAC
+  sizing — informs the feasibility check in Step 5 below and the `feasibility.score` in Step 7.
 
 For each reconciled measure per asset, use the cashflow MCP tools — do NOT use simple payback math:
 
@@ -609,16 +696,10 @@ run_intervention_irr(
 
 **Step 4 — IRR screen (use the `irr_hurdle` parameter):**
 
-```python
-python3 scripts/dcf_engine.py \
-  --base-model {asset_id}_base.json \
-  --intervention-capex <measure.install_cost> \
-  --annual-noi-uplift <annual_noi_uplift> \
-  --install-year <install_year> \
-  --value-creation <annual_noi_uplift / exit_cap_rate> \
-  --irr-method inclusive \
-  --output-json
-```
+Use the IRR, payback, and `exit_value_delta` already returned by `run_intervention_irr`
+in Step 3 — do **not** recompute with a local `dcf_engine.py` script (the hosted skill runtime
+does not ship it; the cashflow MCP is the engine). For batch runs, `screen_measure_portfolio`
+returns the same fields across assets.
 
 IRR is unlevered, inclusive of asset value:
 - Cash outflow at `install_year` = capex
@@ -633,6 +714,11 @@ IRR is unlevered, inclusive of asset value:
 | IRR < hurdle rate | Exclude from recommendations; include in "below hurdle" table |
 | Compliance-required measure | Include regardless of IRR; flag as mandatory |
 
+> This IRR result is an **input** to the final status, not the status itself. Step 7 composes it
+> with the `retrofit__screen_measures` label to produce the authoritative reported status — a
+> measure that clears the IRR hurdle here can still be `screened-out`/`needs-data` if it fails the
+> building-science feasibility or provenance screen. Do not assign a final status at this step.
+
 **Step 6 — IRA incentive check:**
 
 For measures with IRA eligibility:
@@ -645,6 +731,67 @@ Reduce `net_capex = install_cost × (1 - ira_credit_rate)` for IRA-eligible meas
 Re-run IRR on `net_capex` — some measures below hurdle on gross may pass on net.
 
 Label net capex separately from gross in all tables.
+
+**Step 7 — Evaluate, persist, and screen through the retrofit register:**
+
+Now that the DCF engine has produced the economics for the measure, record it in the retrofit
+register through the provenance gate, then screen it. This is what makes the measure durable and
+disciplined — the gate rejects any number without engine or source provenance.
+
+1. **`retrofit__evaluate_measure`** — feed the DCF outputs in as engine-provenanced fields.
+   `feasibility.score` is an **integer 1–5** informed by the Step 0 playbook doctrine; every econ
+   field carries `engine` (the DCF/cashflow engine) or a cited `source`:
+   ```
+   retrofit__evaluate_measure(
+     asset_id: "<Soapbox asset UUID>",
+     measure: {
+       measure_family: "hvac", name: "...", candidate_source: "audette|pca|audit|originated",
+       cost:                 { value: <net or gross capex>, unit: "USD", engine: "soapbox-dcf" },
+       owner_savings_annual: { value: <annual_savings_$ × ll_capture_pct>, unit: "USD/yr", engine: "cashflow-mcp" },
+       noi_delta_annual:     { value: <annual_noi_uplift>, unit: "USD/yr", engine: "soapbox-dcf" },
+       cap_rate:             { value: <exit_cap_rate>, unit: "ratio", source: "<verbatim source of the cap rate>" },
+       incentives:           [{ value: <ira_credit_$>, unit: "USD", program: "§48E|§179D|§45L", eligibility_basis: "...", source: "<statute/rule>" }],
+       feasibility:          { score: <1-5>, site_conditions: "...", disruption: "none|light|in-unit|vacancy-required", contractor_reality: "...", staging: "<from staging playbook>", sources: ["<audit/PCA/Audette/playbook>"] },
+       future_proofing:      { rationale: "...", citations: ["..."] }
+     }
+   )
+   ```
+   **Populate `future_proofing.citations` ONLY when there is a genuine reason to keep a measure
+   despite failing economics** — a pending code/BPS requirement, a forced end-of-life replacement,
+   or a documented future-proofing rationale. Leave it **empty** otherwise. `screen_measures`
+   labels any value-failing measure with non-empty citations `defensive` instead of `screened-out`;
+   filling citations reflexively on every measure inflates the roster and lets weak measures escape
+   the value screen. Empty citations let poor economics screen out honestly.
+   The tool computes `exit_value_delta = noi_delta_annual ÷ cap_rate` server-side as a screening
+   proxy — **do not** use it in report value-creation tables (those stay the DCF engine's
+   `run_intervention_irr` output). If the gate rejects a field, supply the real provenance —
+   never fabricate an `engine`/`source` string to get past it.
+
+2. **`retrofit__screen_measures(asset_id)`** — labels each measure
+   `recommended / defensive / screened-out / needs-data` (feasibility ≥ 3, simple payback ≤ 15y,
+   NOI-positive). This persists the label onto the register.
+
+3. **Compose the portfolio label** (this is the reported status — the two screens must not fight):
+
+   | `screen_measures` label | DCF IRR vs `irr_hurdle` | **Reported status** |
+   |---|---|---|
+   | `recommended` | IRR ≥ hurdle | **recommended** |
+   | `recommended` | IRR < hurdle | **below hurdle** |
+   | `defensive` | any | **defensive** (future-proofing) |
+   | `screened-out` | any | **screened out** (name the failing test) |
+   | `needs-data` | — | **needs-data** (excluded from roster + headline aggregates) |
+   | any | compliance-required | **recommended (mandatory)** regardless of IRR |
+
+4. **BPD-only assets** (no Audette, no doc): do NOT call `evaluate_measure` — its provenance gate
+   will reject the `(est.)` numbers. Label these measures `needs-data`, keep them in the report
+   for visibility, and **exclude them from the verified roster and headline KPI aggregates**.
+
+5. **Register edits** — if a later step changes a measure's lifecycle status (e.g. marking one
+   deferred or implemented), apply it via `retrofit__update_measure_state(asset_id, measure_id,
+   status, note)`, not by editing local state — the register is the system of record.
+
+> Note: `screen_measures`/`evaluate_measure` save sequentially per measure. Across 30–40 assets
+> this is slower than a batch write but does not block; it is a known v1.1 batching follow-up.
 
 ### 3D — Asset-level output
 
@@ -850,6 +997,28 @@ Use inline SVG only — no external charting libraries. The chart should be self
 
 Flag: "Under BAU, [N] assets cross the CRREM stranding threshold before [target_years[0]]. Under the 15% IRR pathway, [M] strand. Under maximum decarb, [P] strand."
 
+### 4F — Verification pass (batch render gate)
+
+`decarb-plan` fails the whole render closed on any open high-severity finding. At portfolio
+scale that would let one bad asset block the entire report, which is wrong — so the gate is
+**per-asset and called out**, not fail-closed:
+
+1. For every analyzed asset, call `verifier__verification_status(asset_id)` → `{pass, open_high,
+   open_total}`. Record each asset's `pass` and `open_high` alongside its output.
+2. Also call `verifier__verification_status()` with **no asset_id** for any portfolio-level
+   findings recorded during the run.
+3. Assets with `pass: false` (open high-severity findings) are **flagged inline** in the
+   Asset-by-Asset table (a ⚠ marker) and **their contribution to the headline KPIs is disclosed**
+   — e.g. "3 assets carry open high-severity data-quality findings; $2.1M of the $14M headline
+   CapEx derives from data still under verification." Never let the totals silently absorb
+   unverified data.
+4. The Data Quality section (Phase 5) lists every open high-severity finding via
+   `verifier__list_findings(status: "open")` — the material Audette-vs-doc conflicts recorded in
+   Step 5 — so the reader sees exactly what is unresolved and on which assets.
+
+This is the batch analog of decarb-plan's fail-closed gate: the report always renders, but it can
+never present unverified data as verified.
+
 ---
 
 ## Phase 5: Phase 2 Artifact — Full Report
@@ -925,9 +1094,15 @@ Update the same `{client-slug}-portfolio-analysis.html` artifact. Do not create 
 [Section: Deferred Measures]
   Measures deferred due to retrofit lead time constraint — install year noted
 
-[Section: Data Quality Notes]
+[Section: Data Quality & Verification]
   Count of assets with Audette-verified vs. estimated EUI
+  Verification summary from Phase 4F: [N] assets passed (no open high-severity findings),
+    [M] flagged with open high-severity data-quality findings
+  Table of open high-severity findings (from verifier__list_findings): asset | conflicting field |
+    Audette value vs. doc value | working value chosen (hierarchy rule) | finding id
   "All values labeled (est.) are based on BPD MCP peer-group median EUI and carry ±40% uncertainty."
+  "Where sources conflicted by >25%, the reconciliation hierarchy (measured/ESPM > audit > Audette
+    model > estimate) selected the working value; each conflict is logged as a verifier finding."
 
 [Footer]
   Data sources: Audette · Soapbox DCF Engine · CRREM 2024 · IRA §48E/§179D · BPD (LBNL)
@@ -946,7 +1121,9 @@ After generating the Phase 2 report:
 
 1. Save to portfolio documents: `{client-slug}-portfolio-analysis-{YYYYMMDD}.html`
 2. Save per-asset JSON outputs to `.cashflow-models/portfolio-{client-slug}/`
-3. **Generate XLSX companion automatically** (no prompt needed — always produce it):
+3. **Generate the XLSX companion — best-effort.** If `build_xlsx.py` is available in the
+   runtime, produce the analyst verification workbook (source data, measure economics, and all
+   report output tables):
    ```bash
    python3 ~/soapbox-agent/scripts/build_xlsx.py \
      --template portfolio-analysis \
@@ -954,9 +1131,10 @@ After generating the Phase 2 report:
      --brand '{ "primary_color": "#12253A", "secondary_color": "#1A3550", "accent_color": "#EFF6FF", "highlight_color": "#4CAF82", "text_color": "#1A1A2E", "text_muted": "#64748B", "border_color": "#E2E8F0" }' \
      --output .cashflow-models/portfolio-{client-slug}/{client-slug}-portfolio-analysis-{YYYYMMDD}.xlsx
    ```
-   The XLSX is the analyst verification workbook — it contains source data, measure economics,
-   and all report output tables. It is always generated alongside the HTML report; do not prompt
-   the user mid-flow to decide whether to create it.
+   The hosted skill runtime typically does **not** include this script. If it is not present, do
+   NOT search the filesystem for it or block the run — skip the XLSX, note "XLSX companion skipped
+   (build_xlsx.py not available in this runtime)", and deliver the HTML report as the primary
+   artifact.
 
    The `--data` JSON must include these top-level keys (assembled from Phase 4 aggregation):
    `client_name`, `portfolio_id`, `report_date`, `prepared_by`, `parameters`, `portfolio_kpis`,
@@ -966,10 +1144,16 @@ After generating the Phase 2 report:
 
 4. Report: "[N] assets analyzed. [N_above] above IRR hurdle. Recommended measures: $[X]M net
    CapEx, $[Y]M value creation, [Z] tCO₂e reduced across portfolio."
-5. Offer:
+5. **Retain generalizable lessons.** For any client-anonymous, cross-portfolio lesson this run
+   produced — a reconciliation pattern (e.g. a recurring Audette-vs-audit gap for a vintage/type),
+   a jurisdiction/incentive finding, a source-reliability observation — call
+   `verifier__retain_shared_expertise(fact, domain, evidence[])`. It requires **≥2 independent
+   sources or a `confirmed_finding_id`** and refuses client/asset-identifying text. **Never
+   rephrase to work around a refusal** — a refusal means the lesson isn't generalizable; drop it.
+6. Offer:
    - **"Build per-asset RSRA threads"** — create individual asset threads pre-loaded with their
      analysis results for deeper due diligence
-   - **"Export to PPTX"** — run `build_pptx.py` for the presentation deck
+   - **"Export to PPTX"** — run `build_pptx.py` if available in the runtime (best-effort; skip with a note if not present)
    - **"Re-run with different parameters"** — change IRR hurdle, exit year floor, or target year
    - **"Filter to one fund"** — re-aggregate for a specific fund only
 
@@ -997,8 +1181,17 @@ user, and ask which one to use. Do not guess. Do not proceed with a wrong accoun
 data from another client's account would silently corrupt the analysis.
 
 **DCF engine failure:**
-If `dcf_engine.py` returns an error for an asset, mark that asset `analysis_failed`,
-report the error, continue with remaining assets.
+If the cashflow MCP DCF tools (`run_dcf` / `run_intervention_irr`) return an error for an asset,
+mark that asset `analysis_failed`, report the error, continue with remaining assets.
+
+**Verifier or retrofit tools unavailable at runtime:**
+If `verifier__*` or `retrofit__*` tools error or are absent, say so at the top of the run
+("⚠ Verifier/Retrofit plugin unreachable — running without the findings ledger / measure
+register"). You may still produce the analysis from Audette + docs + the DCF engine, but: do NOT
+fabricate finding ids, verification-status results, or register entries; note that conflicts were
+not logged to the ledger and the measure register was not updated; and tell the user to reconnect
+the plugin to restore verification and the shared register. Never present the report as verified
+when the verifier was unreachable.
 
 **IRR does not converge:**
 Mark the measure `irr: "no_convergence"`, exclude from recommendations, note in output.

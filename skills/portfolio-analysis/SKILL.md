@@ -11,7 +11,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.3.0
+version: 1.3.1
 ---
 
 # Portfolio Analysis
@@ -322,12 +322,13 @@ For each asset still missing required fields, present a focused card:
 Only show missing fields. `skip` leaves null and excludes the asset from analysis.
 `disposed` marks the asset and includes it in emissions inventory only.
 
-Run LL/TT allocation once inputs are known:
-```bash
-python3 ~/soapbox-agent/scripts/ll_allocation.py --inputs '{"lease_structure":"<val>","metering_config":"<val>","jurisdiction":"<val>","bps_liable":<bool_or_null>,"measure_category":"in_unit_hvac"}'
-```
-If `include_bps: false`, pass `bps_liable: null` — the script treats null as "not assessed"
-and omits fine-avoidance benefit from the LL capture calculation.
+Run LL/TT allocation once inputs are known using the **cashflow MCP `get_ll_capture` tool** —
+the hosted skill runtime does not ship local Python scripts, so always use the MCP tool, never a
+`python3 …ll_allocation.py` call:
+`get_ll_capture(lease_structure, metering_config, jurisdiction, measure_type, bps_liable)`
+→ returns `ll_capture_pct` + warnings.
+If `include_bps: false`, pass `bps_liable: null` — treated as "not assessed", so the
+fine-avoidance benefit is omitted from the LL capture calculation.
 
 Write results to asset metadata:
 ```
@@ -695,16 +696,10 @@ run_intervention_irr(
 
 **Step 4 — IRR screen (use the `irr_hurdle` parameter):**
 
-```python
-python3 scripts/dcf_engine.py \
-  --base-model {asset_id}_base.json \
-  --intervention-capex <measure.install_cost> \
-  --annual-noi-uplift <annual_noi_uplift> \
-  --install-year <install_year> \
-  --value-creation <annual_noi_uplift / exit_cap_rate> \
-  --irr-method inclusive \
-  --output-json
-```
+Use the IRR, payback, and `exit_value_delta` already returned by `run_intervention_irr`
+in Step 3 — do **not** recompute with a local `dcf_engine.py` script (the hosted skill runtime
+does not ship it; the cashflow MCP is the engine). For batch runs, `screen_measure_portfolio`
+returns the same fields across assets.
 
 IRR is unlevered, inclusive of asset value:
 - Cash outflow at `install_year` = capex
@@ -1126,7 +1121,9 @@ After generating the Phase 2 report:
 
 1. Save to portfolio documents: `{client-slug}-portfolio-analysis-{YYYYMMDD}.html`
 2. Save per-asset JSON outputs to `.cashflow-models/portfolio-{client-slug}/`
-3. **Generate XLSX companion automatically** (no prompt needed — always produce it):
+3. **Generate the XLSX companion — best-effort.** If `build_xlsx.py` is available in the
+   runtime, produce the analyst verification workbook (source data, measure economics, and all
+   report output tables):
    ```bash
    python3 ~/soapbox-agent/scripts/build_xlsx.py \
      --template portfolio-analysis \
@@ -1134,9 +1131,10 @@ After generating the Phase 2 report:
      --brand '{ "primary_color": "#12253A", "secondary_color": "#1A3550", "accent_color": "#EFF6FF", "highlight_color": "#4CAF82", "text_color": "#1A1A2E", "text_muted": "#64748B", "border_color": "#E2E8F0" }' \
      --output .cashflow-models/portfolio-{client-slug}/{client-slug}-portfolio-analysis-{YYYYMMDD}.xlsx
    ```
-   The XLSX is the analyst verification workbook — it contains source data, measure economics,
-   and all report output tables. It is always generated alongside the HTML report; do not prompt
-   the user mid-flow to decide whether to create it.
+   The hosted skill runtime typically does **not** include this script. If it is not present, do
+   NOT search the filesystem for it or block the run — skip the XLSX, note "XLSX companion skipped
+   (build_xlsx.py not available in this runtime)", and deliver the HTML report as the primary
+   artifact.
 
    The `--data` JSON must include these top-level keys (assembled from Phase 4 aggregation):
    `client_name`, `portfolio_id`, `report_date`, `prepared_by`, `parameters`, `portfolio_kpis`,
@@ -1155,7 +1153,7 @@ After generating the Phase 2 report:
 6. Offer:
    - **"Build per-asset RSRA threads"** — create individual asset threads pre-loaded with their
      analysis results for deeper due diligence
-   - **"Export to PPTX"** — run `build_pptx.py` for the presentation deck
+   - **"Export to PPTX"** — run `build_pptx.py` if available in the runtime (best-effort; skip with a note if not present)
    - **"Re-run with different parameters"** — change IRR hurdle, exit year floor, or target year
    - **"Filter to one fund"** — re-aggregate for a specific fund only
 
@@ -1183,8 +1181,8 @@ user, and ask which one to use. Do not guess. Do not proceed with a wrong accoun
 data from another client's account would silently corrupt the analysis.
 
 **DCF engine failure:**
-If `dcf_engine.py` returns an error for an asset, mark that asset `analysis_failed`,
-report the error, continue with remaining assets.
+If the cashflow MCP DCF tools (`run_dcf` / `run_intervention_irr`) return an error for an asset,
+mark that asset `analysis_failed`, report the error, continue with remaining assets.
 
 **Verifier or retrofit tools unavailable at runtime:**
 If `verifier__*` or `retrofit__*` tools error or are absent, say so at the top of the run

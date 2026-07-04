@@ -244,3 +244,27 @@ Rules:
   null-cost + costed pairs, no overlapping periods. Reconcile the per-building totals back to the
   ESPM/utility source (recipe 6, zero variance); a doubled building is an immediate tell.
 - Treat this as part of the P2 2B upload step and any P4 re-upload: replace-and-verify, not append.
+
+## 10. Custom & generic measures — lifetime + effects schema (from create_custom_plan.py)
+
+For `create_custom_plan` / `update_custom_plan_measures`:
+
+- **Every custom measure REQUIRES a non-zero `lifetime`** (int, years). A missing/zero lifetime
+  throws a `non-zero lifetime` error (hit on the generic smart-thermostat measure). Set the real
+  measure life per measure — e.g. smart thermostat ≈10, LED ≈15, ASHP/HP-RTU ≈15–20, DHW HPWH ≈15,
+  BTM solar ≈25, envelope (insulation/glazing) ≈25–30. Lifetime drives the engine's NPV/replacement.
+- **Generic measures (`crm_id="generic"`)** must also carry effect specs (used for e.g. smart
+  thermostats, RCx, or any measure without a native CRM):
+  - `consumption_reduction_effects`: `[{endUse, fuel, percentReduction}]`
+  - `load_reduction_effects`: `[{endUse, percentReduction}]`
+  - `fuel_cost_reduction_effects`: `[{fuel, percentReduction, [absoluteReduction]}]`
+  - `carbon_intensity_reduction_effects`: `[{fuel, percentReduction}]`
+- **`endUse` and `fuel` are CASE-SENSITIVE lowercase_snake enum values — NOT free text.**
+  `'heating'` / `'Heating'` are INVALID. Valid **EndUses**: `electricity`, `natural_gas`, `steam`,
+  `outdoor_air_heating`, `skin_heating`, `outdoor_air_cooling`, `skin_cooling`, `refrigeration`,
+  `domestic_hot_water`, `fans`, `pumps`, `lighting`, `plug_load`, `process`, `renewable`. Valid
+  **fuel**: `electricity`, `natural_gas`, `steam`. For a heating-affecting measure use
+  `outdoor_air_heating` / `skin_heating` (there is NO bare `heating`); cooling → `outdoor_air_cooling`
+  / `skin_cooling`. `percentReduction` is a fraction (e.g. 0.00315 = 0.315%).
+- Prefer a **native CRM id** (e.g. `lighting.led.led_lighting`, `heating-cooling.heatpump.rtu_ashp_electric_backup`)
+  over generic whenever one exists — generic is the fallback that needs full effect specs + lifetime.

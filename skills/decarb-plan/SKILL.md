@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Decarb-Plan Engagement
@@ -68,6 +68,30 @@ P5 Deliverables. **Do NOT produce standalone intermediate/gate HTML** (no `p1-ba
 no `building-model-verification.html`) — that material is checklist sections of the helper, and
 **GATE 1 / GATE 2 are reviewed as the helper's checklist sections**, not as polished artifacts.
 Only the **Report** and the **Delivery-Meeting Slides** are design-forward (`Reports/`, gate-only).
+
+**Speed & efficiency (hard rules — learned from live engagements; violating these is what makes a
+run slow):**
+
+1. **Audette WRITES: batch ≤6 per turn, checkpoint state after each batch, NEVER fire a large
+   parallel write burst.** The Audette OAuth token has no persisted refresh and dies mid-burst on
+   ~10+ parallel calls — which kills the turn and loses any uncheckpointed progress, forcing a
+   reconnect + resume. **Parallelize READS freely; serialize/batch WRITES** (`create_building`,
+   `edit_building_attributes`, `add_building_utility_data`, `submit_equipment_survey`,
+   `create_custom_plan`). After each batch, write the done/pending building UIDs to state.
+2. **Read the authoritative schema/reference BEFORE any structured write — never guess arg keys.**
+   One `KeyError` retry-loop (e.g. the equipment-survey DHW keys) costs more than reading
+   `references/audette-modeling-recipes.md` once. Blank numeric fields are `null`, never `0`.
+3. **The state file is the ONE source of truth. Resume from the checkpoint; never recompute or
+   re-enter values from memory.** Adjudicated values are **LOCKED** — tag them and never revert to
+   a superseded number (the 15%→5% / 2031→2034 drift). Re-query IDs/UIDs from Audette; never
+   hand-carry them across threads (clubhouse UIDs went stale this way).
+4. **Validate the building model (count / GFA / UID set) at P1.5 BEFORE any upload or calibration.**
+   Discovering a model error after uploads means redoing every upload.
+5. **At each phase start, confirm the required tools/connectors are attached; STOP if missing**
+   (don't fabricate — the ESPM tripwire). Checkpoint before every expensive/irreversible action so
+   a dropped connection or deploy costs one batch, not the whole run.
+6. **Parallelize independent READS in one turn** (documents, ESPM pulls, reference-library, memory
+   recall) — the slow pattern is calling reads one at a time.
 
 ---
 

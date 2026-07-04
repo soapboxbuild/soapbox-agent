@@ -22,7 +22,7 @@ Every deliverable-producing skill classifies all its outputs into exactly two ti
 
 | Tier | What | Treatment | Location |
 |---|---|---|---|
-| **Working / checklist** | ONE growing "helper" HTML per engagement. Absorbs all intermediate **and gate** material: source-of-truth panel, open questions, adjudication log, and per-phase / per-gate **checklists**. | **Utilitarian** — plain, terse, legible. Never "designed." | `Helper Files/` |
+| **Working / checklist** | ONE growing "helper" HTML per engagement + the verifier's `findings.md` ledger. Absorbs all intermediate **and gate** material: source-of-truth panel, open questions, adjudication log, and per-phase / per-gate **checklists**. | **Utilitarian** — plain, terse, legible. Never "designed." | `Helper Files/` |
 | **Design-forward** | Exactly two client deliverables: the **Report** and the **Delivery-Meeting Slides**. | Polished, brand-quality. Rendered **only at their gate**. | `Reports/` |
 
 Nothing sits between these tiers. Intermediate/gate renders no longer exist as standalone
@@ -99,6 +99,15 @@ legible. Deliberately **not** brand-polished — polish is reserved for the two 
 - **Update** at every phase checkpoint (regenerate from state, save under the fixed name).
 - **Gate review** reads the relevant checklist section of the helper — never a polished artifact.
 - **Never gate on it** — it is a working aid; gates read state, not the helper.
+
+## Verifier findings ledger
+The verifier plugin's `findings.md` ledger is working/checklist material and lives in the same
+`Helper Files/` folder (was `Verification/`). Changed in `verifier-mcp` `src/ledger.ts` (folder
+lookup + insert both → `Helper Files`; committed `aba65e7`). **Deploy deferred** — deploying the
+verifier connector-service severs live engagements' verifier MCP connection; ship between
+engagements. After deploy, migrate the two existing `Verification/findings.md` rows (one asset-,
+one portfolio-scoped) to folder `Helper Files` so the ledger continues updating in place rather
+than orphaning the old rows and creating new ones.
 
 ## Migration / cleanup
 - Going forward, decarb consolidates scattered intermediate/gate HTML (`p1-baseline-…`,

@@ -226,3 +226,21 @@ Do NOT hand-draw the chart. The economics data object is passed to `fill_report`
 `templates/decarb/layout.html` template's JS renders the waterfall as inline SVG (floating bars +
 cumulative connectors, green adds / distinct capex decrement / anchor totals), plus the cashflow
 table and plan comparison — the same fill_report + client-rendering path RSRA uses.
+
+## 9. Utility uploads REPLACE, don't append — dedupe legacy rows
+
+`add_building_utility_data` **appends**. Re-uploading a corrected/clean set on top of an existing
+one leaves BOTH on the building — e.g. a legacy null-cost row AND the clean costed row for the
+same fuel/period — which **double-counts energy and cost** and silently corrupts the baseline,
+calibration, and all downstream economics. This blocked the Westminster Gate-2 economics
+(most residential buildings carried duplicate utility data: legacy null-cost + clean-costed).
+
+Rules:
+- **Before uploading utility data to a building, clear/replace any existing utility data for that
+  building** (delete the prior dataset, or upload a full clean replacement) — never append onto an
+  unknown prior state. On a rebuild (recipe 1) new buildings start clean, but re-runs/resumes on
+  existing buildings must dedupe first.
+- **After upload, verify each building has exactly ONE utility dataset per fuel/period** — no
+  null-cost + costed pairs, no overlapping periods. Reconcile the per-building totals back to the
+  ESPM/utility source (recipe 6, zero variance); a doubled building is an immediate tell.
+- Treat this as part of the P2 2B upload step and any P4 re-upload: replace-and-verify, not append.

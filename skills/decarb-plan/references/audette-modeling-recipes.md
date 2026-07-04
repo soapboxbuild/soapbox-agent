@@ -92,6 +92,56 @@ This yields the correct fuel (`NATURAL_GAS` heating + gas DHW), separates coolin
 AC) from heating, and keeps DHW as a distinct gas load — all of which drive the electrification
 measures (heating → air-to-water / heat-pump furnace; DHW → HPWH) and BPS/carbon results.
 
+#### `submit_equipment_survey` payload — AUTHORITATIVE schema (from Audette source, verified 2026-07-04)
+
+The tool takes `{ building_model_uid, equipment_survey }`. The `equipment_survey` object's JSON
+schema is free-form (`additionalProperties: true`) — it does NOT validate keys — but the backend
+`EquipmentSurveyDTO.from_dict` inferrer **requires all 10 equipment groups to be present** and
+bracket-accesses specific sub-keys. A missing group or required sub-key throws
+`EquipmentSurveyInfererError` / `KeyError: '<key>'` (this is what repeatedly failed when the agent
+guessed keys like `domestic_hot_water`). Rules:
+
+- **All 10 groups are REQUIRED even when the equipment doesn't exist** — include the group with just
+  its `_exists: false`: `air_handling_equipment`, `central_plant_cooler`, `central_plant_heater`,
+  `central_plant_heat_pump`, `domestic_hot_water_heater`, `terminal_cooler`, `terminal_heater`,
+  `rooftop_unit`, `heat_pump`, `other_equipment`. (`generic_hvac_equipment` list + `equipment_survey_uid`
+  are optional.)
+- **Every group needs its `<group>_exists` boolean.** Type/units fields are optional (default null).
+- **`domestic_hot_water_heater` additionally REQUIRES** `domestic_hot_water_heater_central_distribution`
+  (bool) and `domestic_hot_water_heater_average_installation_year` (key must be present; value may be null).
+- **Enum values are the lowercase_snake_case member name.** Valid values:
+  - `central_plant_heater_type`: `condensing_gas_boiler` | `electric_furnace` | `electric_resistance_boiler` | `gas_boiler` | `gas_furnace` | `high_efficiency_gas_furnace` | **`hydronic_furnace`**
+  - `air_handling_equipment_type`: `make_up_air_unit` | `packaged_air_handling_unit` | `split_air_handling_unit` | `suite_air_exchangers` | `suite_energy_recovery_ventilator` | **`exhaust_only_air_handling_unit`**
+  - `air_handling_equipment_heating_type`: `electric_resistance` | `gas` | `hydronic`; `_cooling_type`: `direct_expansion` | `hydronic`
+  - `terminal_cooler_units`: `cooling_ptac` | **`split_air_conditioner`** | `window_air_conditioner`
+  - `terminal_heater_units`: `condensing_gas_unit_heater` | `electric_baseboard` | `electric_resistance_ptac` | `electric_unit_heater` | `gas_ptac` | `gas_unit_heater`
+  - `domestic_hot_water_heater_type`: `electric_heater` | **`gas_heater`** | `indirect_heater`
+  - `central_plant_*_terminal_units`: `baseboards` | `constant_volume_boxes` | `fan_coil_units` | `variable_air_volume_boxes`
+  - `central_plant_cooler_type`: `air_cooled_chiller` | `water_cooled_chiller`; `central_plant_heat_pump_type`: `air_source_heat_pump` | `ground_source_heat_pump`
+  - `rooftop_unit_heating_type`: `electric_resistance` | `gas`; `rooftop_unit_cooling_type`: `direct_expansion`
+  - `clothes_dryers_type`: `electric` | `gas`; `heat_pump_type`: `water_loop_heat_pump` | `split_air_source_heat_pump`
+- **Sizes/years left blank must be `null`, NOT `0`** — a `0` size triggers a divide-by-zero in the inferrer.
+- `other_equipment` REQUIRES: `clothes_dryers_exists`, `clothes_washers_exists`, `elevators_exists`,
+  `escalator_exists`, `rooftop_photovoltaics_exists` (all booleans).
+
+**Exact A4 / Type-A hydronic-furnace payload** (copy this shape for every residential building; adjust
+sizes/years per building):
+
+```json
+{
+  "air_handling_equipment": { "air_handling_equipment_exists": true, "air_handling_equipment_type": "exhaust_only_air_handling_unit", "air_handling_equipment_heating_type": null, "air_handling_equipment_cooling_type": null, "air_handling_equipment_supply_air_rate": null, "air_handling_equipment_average_installation_year": null },
+  "central_plant_heater": { "central_plant_heater_exists": true, "central_plant_heater_type": "hydronic_furnace", "central_plant_heater_terminal_units": null, "central_plant_heater_average_installation_year": null },
+  "central_plant_cooler": { "central_plant_cooler_exists": false },
+  "central_plant_heat_pump": { "central_plant_heat_pump_exists": false },
+  "domestic_hot_water_heater": { "domestic_hot_water_heater_exists": true, "domestic_hot_water_heater_central_distribution": false, "domestic_hot_water_heater_type": "gas_heater", "domestic_hot_water_heater_size": null, "domestic_hot_water_heater_average_installation_year": null },
+  "terminal_cooler": { "terminal_cooler_exists": true, "terminal_cooler_units": "split_air_conditioner" },
+  "terminal_heater": { "terminal_heater_exists": false },
+  "rooftop_unit": { "rooftop_unit_exists": false },
+  "heat_pump": { "heat_pump_exists": false },
+  "other_equipment": { "clothes_dryers_exists": true, "clothes_dryers_type": "electric", "clothes_washers_exists": true, "elevators_exists": false, "escalator_exists": false, "rooftop_photovoltaics_exists": false }
+}
+```
+
 ### 5b. True in-unit combi with fan-coil distribution (no forced-air furnace)
 
 ONLY when the in-unit gas water heater serves both DHW and space heat via **fan coils / hydronic

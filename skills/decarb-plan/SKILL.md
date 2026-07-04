@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Decarb-Plan Engagement
@@ -169,6 +169,15 @@ Gather every source; record everything in state as you go.
    **FIRST**, web search second. **Every claim is cited with provenance `library|web`** in
    `state.citations` as `{claim, source, provenance, url}`. No uncited claims survive to the
    report.
+7. **BPS coverage — verify at the jurisdiction's official source (DEFAULT).** Do not infer BPS
+   applicability from size/type alone. Check the jurisdiction's covered-buildings registry for the
+   asset's actual address — prefer a data export/open dataset where one exists (many run on the
+   SEED Platform, e.g. Colorado's `co.beam-portal.org` "Covered Buildings List"), else navigate the
+   specific portal/map with the **Web Browser MCP** (`browser_navigate` + `browser_snapshot`; plain
+   web_fetch can't render these JS maps). Record whether the address is covered, its covered-building
+   ID/baseline/targets if found, and tag `verified-at-source` vs `threshold-inferred` in
+   `state.targets`. Full jurisdiction source registry + procedure live in the bps-analysis skill
+   (Step 1.5).
 
 ### P1.5 — Building-model validation (HARD GATE before any upload/calibration)
 

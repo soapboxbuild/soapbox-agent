@@ -558,6 +558,17 @@ gate (resume may have skipped P4's check).
    fresh on every `fill_report` (so a re-fill also picks up any template fixes; a baked artifact
    does not). Hand-rebuilding mangles charts, drops blocks, reintroduces overflow, and bypasses the
    gate. You only ever touch the data payload.
+
+   **Small presentation-layer tweaks → `patch_report`, not a full re-render.** For a minor edit
+   after the report exists — reword a sentence, adjust a `data_quality`/`methodology` note, fix a
+   non-cascading value (address, year built, a citation), or hide a section (set its key to
+   `null`) — call **`patch_report(artifact_id, patch)`** with ONLY the changed fields (a JSON
+   Merge Patch). It loads the persisted data object, merges your delta, and re-renders in place —
+   no recomputation of the whole data object, far cheaper, and it re-runs the same verifier gate.
+   `patch_report` rejects analytical fields (`economics`, `targets`, `dashboard`, …): any change
+   to a headline number — or renaming a plan / reordering sections — still goes through a full
+   `fill_report(same artifact_id, updated_data)` so the figures re-derive from state and re-pass
+   the gate.
 4. **Register the deliverable in Files.** `fill_report` already persists the fully-rendered HTML
    report to `Reports/` for you (server-side) — do **NOT** `save_file` the report HTML yourself
    (you don't hold the rendered ~80KB string, so a manual save would only write a broken stub).

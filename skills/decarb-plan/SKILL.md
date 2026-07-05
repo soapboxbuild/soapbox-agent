@@ -523,9 +523,14 @@ gate (resume may have skipped P4's check).
    render is verifier-gated server-side; if blocked, fix findings and retry. Record
    `state.report.render_iterations` starting at 0.
 
-3. **Revision loop:** on user revisions, recompute the data object and call `fill_report` again
-   with the updated `data` (increment `state.report.render_iterations`); on approval export
-   **PDF and/or PPTX**.
+3. **Revision loop — DATA-ONLY.** On user revisions, recompute the data object and call
+   `fill_report(same artifact_id, template, updated_data)` — and NOTHING else (increment
+   `state.report.render_iterations`); on approval export **PDF and/or PPTX**. NEVER `save_file` a
+   hand-built report and NEVER hand-edit or reproduce the template's inlined HTML / chart /
+   waterfall renderers to "apply" a revision — the template owns all rendering and is re-fetched
+   fresh on every `fill_report` (so a re-fill also picks up any template fixes; a baked artifact
+   does not). Hand-rebuilding mangles charts, drops blocks, reintroduces overflow, and bypasses the
+   gate. You only ever touch the data payload.
 4. **Register the deliverable in Files** and write all export paths to
    `state.report.exports`.
 5. **Retain lessons:** call `verifier__retain_shared_expertise` with the generalizable,

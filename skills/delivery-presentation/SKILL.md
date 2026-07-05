@@ -27,6 +27,15 @@ Same client-render path as all named reports:
 fill_report(artifact_id, template: 'delivery-presentation', data: { deck: {...}, slides: [...] })
 ```
 
+**REVISIONS ARE DATA-ONLY — this is a hard rule.** To change a rendered deck, call
+`fill_report(same artifact_id, template, updated_data)` with the new JSON payload and NOTHING
+else. NEVER `save_file` a hand-built deck, and NEVER hand-edit the inlined template HTML or
+reproduce its markup / chart / waterfall renderers — the template (fetched fresh from GitHub on
+every `fill_report`) owns all layout and rendering. Hand-rebuilding is what mangles charts, drops
+blocks like the value bridge, and reintroduces overflow; it also bypasses template fixes (a baked
+artifact does NOT pick up template updates — only a re-`fill_report` does). You only ever touch the
+data payload. Same discipline as the decarb render gate — see [[decarb-plan-workflow]].
+
 Title and Agenda slides are AUTO-GENERATED — never author them. Fixed section order (the
 template groups slides regardless of array order):
 

@@ -207,23 +207,50 @@
       "section": "results",
       "eyebrow": "emissions & compliance",
       "heading": "Carbon intensity drops ahead of both curves",
-      "sub": "GHGI reduction vs. 2021 baseline under Plan B. Figures illustrative.",
+      "sub": "Site GHGI under Plan B vs. business-as-usual, against both compliance objects. Figures illustrative.",
       "blocks": [
         {
-          "type": "bars",
-          "items": [
-            { "label": "2026 (DHW + controls)", "value": 18, "display": "-18%" },
-            { "label": "2029 (heating RUL wave 1)", "value": 34, "display": "-34%" },
-            { "label": "2031 (heating RUL wave 2)", "value": 47, "display": "-47%" },
-            { "label": "2033 exit year", "value": 52, "display": "-52%" }
-          ]
-        },
+          "type": "trajectory",
+          "title": "Carbon intensity — with-plan vs. BAU vs. targets",
+          "unit_label": "kgCO₂e/m²·yr",
+          "bps_label": "CO Reg 28 target — fines",
+          "series": [
+            { "year": 2024, "bau": 12.4, "planned": 12.4, "crrem_target": 11.6, "bps_target": 11.0 },
+            { "year": 2025, "bau": 12.2, "planned": 12.1, "crrem_target": 11.0, "bps_target": 11.0 },
+            { "year": 2026, "bau": 12.0, "planned": 10.2, "crrem_target": 10.4, "bps_target": 9.6 },
+            { "year": 2027, "bau": 11.8, "planned": 9.9,  "crrem_target": 9.7,  "bps_target": 9.6 },
+            { "year": 2028, "bau": 11.6, "planned": 9.6,  "crrem_target": 9.0,  "bps_target": 9.6 },
+            { "year": 2029, "bau": 11.4, "planned": 7.8,  "crrem_target": 8.3,  "bps_target": 9.6 },
+            { "year": 2030, "bau": 11.2, "planned": 7.5,  "crrem_target": 7.6,  "bps_target": 7.2 },
+            { "year": 2031, "bau": 11.0, "planned": 6.2,  "crrem_target": 6.8,  "bps_target": 7.2 },
+            { "year": 2032, "bau": 10.8, "planned": 6.0,  "crrem_target": 6.1,  "bps_target": 7.2 },
+            { "year": 2033, "bau": 10.6, "planned": 5.7,  "crrem_target": 5.3,  "bps_target": 7.2 }
+          ],
+          "crrem_meta": { "region": "US — Colorado", "property_type": "Multifamily" },
+          "stranding_year_bau": 2031,
+          "stranding_year_planned": null,
+          "note": "BPS target drives fines; the CRREM pathway drives stranding — two different objects, both cleared under Plan B. BAU strands in 2031, inside the hold; the with-plan trajectory stays under the CRREM 1.5°C pathway through exit."
+        }
+      ]
+    },
+    {
+      "section": "results",
+      "eyebrow": "value bridge",
+      "heading": "Where the $3.9M comes from",
+      "sub": "Incremental basis: like-for-like replacement cost is netted out before the bridge starts. Figures illustrative.",
+      "blocks": [
         {
-          "type": "bullets",
+          "type": "waterfall",
+          "title": "Plan B value creation — 7-year hold",
           "items": [
-            "BPS target drives fines; the CRREM pathway drives stranding — two different objects, both cleared under Plan B.",
-            "With-plan trajectory stays under the CRREM 1.5°C pathway through exit; BAU strands in 2031, inside the hold."
-          ]
+            { "label": "Incremental CapEx", "amount": -4200000 },
+            { "label": "Incentives", "amount": 900000 },
+            { "label": "Utility savings (landlord share, PV)", "amount": 2600000 },
+            { "label": "Avoided Reg-28 fines (PV)", "amount": 1100000 },
+            { "label": "Exit-value impact (conditional)", "amount": 3500000 }
+          ],
+          "net": { "label": "Net value creation", "amount": 3900000 },
+          "annotation": "Exit-value impact is conditional on buyer underwriting; the plan remains hurdle-positive with it fully excluded."
         }
       ]
     },

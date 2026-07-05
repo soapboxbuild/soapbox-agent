@@ -399,6 +399,47 @@
     }
     .blk-bars svg { display: block; width: 100%; height: auto; }
 
+    /* Chart card (trajectory + waterfall SVG) */
+    .blk-chart {
+      background: #fff;
+      border: 1px solid var(--hline);
+      border-radius: 14px;
+      padding: 20px 24px 16px;
+      box-shadow: 0 8px 22px -16px rgba(24,34,28,.5);
+    }
+    .blk-chart svg { display: block; width: 100%; height: auto; }
+    .chart-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 17px;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin: 0 0 12px;
+    }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 22px;
+      margin-top: 10px;
+    }
+    .chart-legend .leg {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .chart-legend .leg-line { display: inline-block; width: 22px; height: 0; }
+    .chart-note {
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
     /* Questions */
     .blk-questions { display: flex; flex-direction: column; gap: 10px; max-width: 980px; }
     .q-row {
@@ -657,6 +698,8 @@
         case 'stats':     return renderStats(blk);
         case 'table':     return renderTable(blk);
         case 'bars':      return renderBars(blk);
+        case 'trajectory': return renderTrajectory(blk);
+        case 'waterfall':  return renderWaterfall(blk);
         case 'questions': return renderQuestions(blk);
         case 'quote':     return renderQuote(blk);
         case 'two_col':   return renderTwoCol(blk);
@@ -750,6 +793,248 @@
       }
       svg += '</svg>';
       return '<div class="blk-bars">' + svg + '</div>';
+    }
+
+    /* ── Chart helpers (trajectory + waterfall) ── */
+    var TICK_FONT = 'Space Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+    function numOrNull(v) {
+      if (v === undefined || v === null || v === '') return null;
+      var n = Number(v);
+      return isFinite(n) ? n : null;
+    }
+
+    function fmtTick(v) {
+      if (!isFinite(v)) return '';
+      if (Math.abs(v) >= 100) return String(Math.round(v));
+      return String(Math.round(v * 10) / 10);
+    }
+
+    /* Signed compact currency: 1300000 -> "$1.3M", -3400000 -> "−$3.4M" */
+    function moneyCompact(v) {
+      var a = Math.abs(v), s;
+      if (a >= 1e9)      s = String(Math.round(a / 1e8) / 10) + 'B';
+      else if (a >= 1e6) s = String(Math.round(a / 1e5) / 10) + 'M';
+      else if (a >= 1e3) s = String(Math.round(a / 1e3)) + 'k';
+      else               s = String(Math.round(a));
+      return (v < 0 ? '−' : '') + '$' + s;
+    }
+
+    function chartCard(title, svg, legend, note) {
+      var html = '<div class="blk-chart">';
+      if (has(title)) html += '<div class="chart-title">' + esc(title) + '</div>';
+      html += svg;
+      if (legend) html += '<div class="chart-legend">' + legend + '</div>';
+      if (has(note)) html += '<div class="chart-note">' + esc(note) + '</div>';
+      html += '</div>';
+      return html;
+    }
+
+    function legendItem(color, dash, label) {
+      return '<span class="leg"><span class="leg-line" style="border-top:3px ' + (dash ? 'dashed ' : 'solid ') + color + '"></span>' + esc(label) + '</span>';
+    }
+
+    /* ── Trajectory: carbon-intensity time series (BAU / planned / CRREM / BPS) ── */
+    function renderTrajectory(blk) {
+      var raw = Array.isArray(blk.series) ? blk.series : [];
+      var pts = [];
+      for (var k = 0; k < raw.length; k++) {
+        var p = raw[k];
+        if (!p || typeof p !== 'object') continue;
+        var yr = numOrNull(p.year);
+        if (yr === null) continue;
+        pts.push({
+          year: yr,
+          bau: numOrNull(p.bau),
+          planned: numOrNull(p.planned),
+          crrem_target: numOrNull(p.crrem_target),
+          bps_target: numOrNull(p.bps_target)
+        });
+      }
+      pts.sort(function(a, b) { return a.year - b.year; });
+      if (pts.length < 2) return '';
+
+      var meta = (blk.crrem_meta && typeof blk.crrem_meta === 'object') ? blk.crrem_meta : {};
+      var crremLabel = 'CRREM 1.5°C — stranding';
+      var metaBits = [];
+      if (has(meta.region)) metaBits.push(String(meta.region));
+      if (has(meta.property_type)) metaBits.push(String(meta.property_type));
+      if (metaBits.length) crremLabel += ' (' + metaBits.join(' · ') + ')';
+      var bpsLabel = has(blk.bps_label) ? String(blk.bps_label) : 'BPS target — fines';
+
+      var seriesDefs = [
+        { key: 'bau',          label: 'Business-as-usual',    color: '#5c665f', width: 2,   dash: '' },
+        { key: 'planned',      label: 'With-plan trajectory', color: '#159957', width: 3.5, dash: '' },
+        { key: 'crrem_target', label: crremLabel,             color: '#fb6a28', width: 2,   dash: '7,5' },
+        { key: 'bps_target',   label: bpsLabel,               color: '#18221c', width: 2,   dash: '5,5', step: true }
+      ];
+
+      var years = [], vAll = [], sI, vv;
+      for (k = 0; k < pts.length; k++) {
+        years.push(pts[k].year);
+        for (sI = 0; sI < seriesDefs.length; sI++) {
+          vv = pts[k][seriesDefs[sI].key];
+          if (vv !== null) vAll.push(vv);
+        }
+      }
+      if (!vAll.length) return '';
+      var xMin = Math.min.apply(null, years), xMax = Math.max.apply(null, years);
+      if (xMax === xMin) return '';
+      var vMax = Math.max.apply(null, vAll) * 1.12;
+      if (!(vMax > 0)) vMax = 1;
+      var vMin = 0;
+
+      var X1 = 64, X2 = 1056, Y1 = 18, Y2 = 316, W = X2 - X1, H = Y2 - Y1;
+      function px(yr2) { return X1 + (yr2 - xMin) / (xMax - xMin) * W; }
+      function py(v)   { return Y2 - (v - vMin) / (vMax - vMin) * H; }
+
+      /* Grid + y tick labels */
+      var grid = '', yLabs = '', gv, i2;
+      for (i2 = 0; i2 <= 4; i2++) {
+        gv = vMin + (vMax - vMin) * i2 / 4;
+        grid  += '<line x1="' + X1 + '" y1="' + py(gv).toFixed(1) + '" x2="' + X2 + '" y2="' + py(gv).toFixed(1) + '" stroke="#e9e4d8" stroke-width="1"/>';
+        yLabs += '<text x="' + (X1 - 10) + '" y="' + (py(gv) + 4).toFixed(1) + '" font-size="12" fill="#9aa39b" text-anchor="end" font-family="' + TICK_FONT + '">' + fmtTick(gv) + '</text>';
+      }
+      /* X year labels — thin when crowded */
+      var xLabs = '', span = xMax - xMin, skip = span > 12 ? 2 : 1, ly;
+      for (ly = Math.ceil(xMin); ly <= xMax; ly++) {
+        if ((ly - Math.ceil(xMin)) % skip !== 0 && ly !== xMax) continue;
+        xLabs += '<text x="' + px(ly).toFixed(1) + '" y="' + (Y2 + 22) + '" font-size="12" fill="#9aa39b" text-anchor="middle" font-family="' + TICK_FONT + '">' + esc(String(ly)) + '</text>';
+      }
+
+      /* Lines (stepped for BPS: hold prior level to the new year, then drop) */
+      var lines = '', legend = '', sd, sp, poly, m;
+      for (sI = 0; sI < seriesDefs.length; sI++) {
+        sd = seriesDefs[sI];
+        sp = [];
+        for (m = 0; m < pts.length; m++) if (pts[m][sd.key] !== null) sp.push(pts[m]);
+        if (sp.length < 2) continue;
+        poly = [];
+        for (m = 0; m < sp.length; m++) {
+          if (sd.step && m > 0) poly.push(px(sp[m].year).toFixed(1) + ',' + py(sp[m - 1][sd.key]).toFixed(1));
+          poly.push(px(sp[m].year).toFixed(1) + ',' + py(sp[m][sd.key]).toFixed(1));
+        }
+        lines += '<polyline points="' + poly.join(' ') + '" fill="none" stroke="' + sd.color + '" stroke-width="' + sd.width + '"'
+               + (sd.dash ? ' stroke-dasharray="' + sd.dash + '"' : '')
+               + ' stroke-linejoin="round" stroke-linecap="round"/>';
+        legend += legendItem(sd.color, sd.dash, sd.label);
+      }
+      if (!lines) return '';
+
+      /* Stranding annotation dots */
+      function strandDot(yearVal, key, text, below) {
+        var yv = numOrNull(yearVal);
+        if (yv === null) return '';
+        var pt = null;
+        for (var d = 0; d < pts.length; d++) if (pts[d].year === yv && pts[d][key] !== null) pt = pts[d];
+        if (!pt) return '';
+        var cx = px(yv), cy = py(pt[key]);
+        return '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="5" fill="#fb6a28" stroke="#fff" stroke-width="1.5"/>'
+             + '<text x="' + cx.toFixed(1) + '" y="' + (below ? cy + 22 : cy - 12).toFixed(1) + '" font-size="12" font-weight="700" fill="#c14a12" text-anchor="middle" font-family="' + TICK_FONT + '">' + esc(text) + '</text>';
+      }
+      var dots = '';
+      if (numOrNull(blk.stranding_year_bau) !== null)     dots += strandDot(blk.stranding_year_bau, 'bau', 'BAU strands ' + String(numOrNull(blk.stranding_year_bau)), false);
+      if (numOrNull(blk.stranding_year_planned) !== null) dots += strandDot(blk.stranding_year_planned, 'planned', 'Plan strands ' + String(numOrNull(blk.stranding_year_planned)), true);
+
+      var unitLab = '';
+      if (has(blk.unit_label)) {
+        unitLab = '<text x="18" y="' + ((Y1 + Y2) / 2).toFixed(0) + '" font-size="12" fill="#5c665f" text-anchor="middle" font-family="' + TICK_FONT + '" transform="rotate(-90,18,' + ((Y1 + Y2) / 2).toFixed(0) + ')">' + esc(blk.unit_label) + '</text>';
+      }
+
+      var svg = '<svg viewBox="0 0 1090 348" role="img" aria-label="Carbon intensity trajectory chart">'
+              + grid + yLabs + xLabs + unitLab + lines + dots
+              + '<line x1="' + X1 + '" y1="' + Y2 + '" x2="' + X2 + '" y2="' + Y2 + '" stroke="#e9e4d8" stroke-width="1"/>'
+              + '</svg>';
+      return chartCard(blk.title, svg, legend, blk.note);
+    }
+
+    /* ── Waterfall: value bridge (floating bars from 0 to net) ── */
+    function renderWaterfall(blk) {
+      var raw = Array.isArray(blk.items) ? blk.items : [];
+      var items = [];
+      for (var k = 0; k < raw.length; k++) {
+        var it = raw[k];
+        if (!it || typeof it !== 'object') continue;
+        var amt = numOrNull(it.amount);
+        if (amt === null) continue;
+        items.push({ label: has(it.label) ? String(it.label) : '', amount: amt });
+      }
+      if (!items.length) return '';
+
+      var cum = 0, bars = [], b;
+      for (k = 0; k < items.length; k++) {
+        var start = cum;
+        cum += items[k].amount;
+        bars.push({ label: items[k].label, amount: items[k].amount, isNet: false,
+                    lo: Math.min(start, cum), hi: Math.max(start, cum), level: cum });
+      }
+      var netObj = (blk.net && typeof blk.net === 'object') ? blk.net : {};
+      var net = numOrNull(netObj.amount);
+      if (net === null) net = cum;
+      var netLabel = has(netObj.label) ? String(netObj.label) : 'Net';
+      bars.push({ label: netLabel, amount: net, isNet: true,
+                  lo: Math.min(0, net), hi: Math.max(0, net), level: net });
+
+      /* Domain — always includes 0 */
+      var dMin = 0, dMax = 0;
+      for (k = 0; k < bars.length; k++) {
+        if (bars[k].lo < dMin) dMin = bars[k].lo;
+        if (bars[k].hi > dMax) dMax = bars[k].hi;
+      }
+      if (dMin === dMax) dMax = dMin + 1;
+      var pad = (dMax - dMin) * 0.16;
+      dMin -= pad; dMax += pad;
+
+      var n = bars.length;
+      var X1 = 84, X2 = 1062, Y1 = 20, Y2 = 322, W = X2 - X1, H = Y2 - Y1;
+      function Y(v) { return Y2 - (v - dMin) / (dMax - dMin) * H; }
+      var band = W / n, barW = Math.min(band * 0.58, 120);
+      function barX(i3) { return X1 + band * i3 + (band - barW) / 2; }
+
+      /* Grid + y tick labels (compact currency) */
+      var grid = '', yLabs = '', gv, i2;
+      for (i2 = 0; i2 <= 4; i2++) {
+        gv = dMin + (dMax - dMin) * i2 / 4;
+        grid  += '<line x1="' + X1 + '" y1="' + Y(gv).toFixed(1) + '" x2="' + X2 + '" y2="' + Y(gv).toFixed(1) + '" stroke="#e9e4d8" stroke-width="1"/>';
+        yLabs += '<text x="' + (X1 - 10) + '" y="' + (Y(gv) + 4).toFixed(1) + '" font-size="12" fill="#9aa39b" text-anchor="end" font-family="' + TICK_FONT + '">' + esc(moneyCompact(gv)) + '</text>';
+      }
+      /* Zero baseline */
+      var zero = (dMin < 0 && dMax > 0)
+        ? '<line x1="' + X1 + '" y1="' + Y(0).toFixed(1) + '" x2="' + X2 + '" y2="' + Y(0).toFixed(1) + '" stroke="#bcc4bd" stroke-width="1"/>'
+        : '';
+
+      /* Bars + value labels + x labels */
+      var barSvg = '', labSvg = '', xLabs = '';
+      for (k = 0; k < bars.length; k++) {
+        b = bars[k];
+        var color = b.isNet ? '#18221c' : (b.amount < 0 ? '#fb6a28' : '#159957');
+        var x = barX(k), yTop = Y(b.hi), hgt = Math.max(2, Y(b.lo) - Y(b.hi));
+        barSvg += '<rect x="' + x.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + hgt.toFixed(1) + '" rx="3" fill="' + color + '"/>';
+        /* Signed compact label: above upward bars, below downward ones */
+        var below = !b.isNet && b.amount < 0;
+        if (b.isNet && b.amount < 0) below = true;
+        var labY = below ? (Y(b.lo) + 20) : (yTop - 9);
+        labSvg += '<text x="' + (x + barW / 2).toFixed(1) + '" y="' + labY.toFixed(1) + '" font-size="13" font-weight="700" fill="' + (b.isNet ? '#18221c' : (b.amount < 0 ? '#c14a12' : '#0c5733')) + '" text-anchor="middle" font-family="' + TICK_FONT + '">' + esc(moneyCompact(b.amount)) + '</text>';
+        /* X label, wrapped to up to 2 lines */
+        var words = String(b.label).split(' ');
+        var l1 = words.slice(0, Math.ceil(words.length / 2)).join(' ');
+        var l2 = words.slice(Math.ceil(words.length / 2)).join(' ');
+        if (words.length < 3) { l1 = String(b.label); l2 = ''; }
+        xLabs += '<text x="' + (x + barW / 2).toFixed(1) + '" y="' + (Y2 + 20) + '" font-size="11.5" fill="#5c665f" text-anchor="middle" font-family="' + TICK_FONT + '">' + esc(l1)
+              +  (l2 ? '<tspan x="' + (x + barW / 2).toFixed(1) + '" dy="14">' + esc(l2) + '</tspan>' : '') + '</text>';
+      }
+
+      /* Dashed connectors at each running level */
+      var conn = '';
+      for (var j2 = 0; j2 < bars.length - 1; j2++) {
+        var yl = Y(bars[j2].level);
+        conn += '<line x1="' + (barX(j2) + barW).toFixed(1) + '" y1="' + yl.toFixed(1) + '" x2="' + barX(j2 + 1).toFixed(1) + '" y2="' + yl.toFixed(1) + '" stroke="#9aa39b" stroke-width="1" stroke-dasharray="3,3"/>';
+      }
+
+      var svg = '<svg viewBox="0 0 1090 366" role="img" aria-label="Value bridge waterfall chart">'
+              + grid + zero + conn + barSvg + labSvg + xLabs
+              + '</svg>';
+      return chartCard(blk.title, svg, '', blk.annotation);
     }
 
     function renderQuestions(blk) {

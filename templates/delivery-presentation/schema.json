@@ -53,11 +53,11 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["bullets", "stats", "table", "bars", "questions", "quote", "two_col"]
+          "enum": ["bullets", "stats", "table", "bars", "trajectory", "waterfall", "questions", "quote", "two_col"]
         },
         "items": {
           "type": ["array", "null"],
-          "description": "For bullets: array of strings. For stats: array of stat items. For bars: array of bar items. For questions: array of question items."
+          "description": "For bullets: array of strings. For stats: array of stat items. For bars: array of bar items. For waterfall: array of bridge components. For questions: array of question items."
         },
         "headers": {
           "type": ["array", "null"],
@@ -69,6 +69,46 @@
           "items": { "type": "array", "items": { "type": ["string", "null"] } },
           "description": "table only: rows of cell strings"
         },
+        "title":      { "type": ["string", "null"], "description": "trajectory / waterfall only: chart title rendered inside the chart card" },
+        "unit_label": { "type": ["string", "null"], "description": "trajectory only: y-axis unit label, e.g. 'kgCO₂e/m²·yr'" },
+        "bps_label":  { "type": ["string", "null"], "description": "trajectory only: legend label for the stepped BPS target line, e.g. 'CO Reg 28 target — fines'. Defaults to 'BPS target — fines'" },
+        "series": {
+          "type": ["array", "null"],
+          "description": "trajectory only: time series of carbon-intensity values. Every value nullable — a series with <2 points is simply not drawn; block hidden if series absent/empty. All values in the same unit (unit_label).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "year":         { "type": ["number", "null"] },
+              "bau":          { "type": ["number", "null"], "description": "business-as-usual intensity" },
+              "planned":      { "type": ["number", "null"], "description": "with-plan intensity (emphasized green line)" },
+              "crrem_target": { "type": ["number", "null"], "description": "CRREM 1.5°C pathway value (dashed orange — drives stranding)" },
+              "bps_target":   { "type": ["number", "null"], "description": "BPS compliance target (stepped dashed ink — drives fines)" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "crrem_meta": {
+          "type": ["object", "null"],
+          "description": "trajectory only: appended to the CRREM legend label",
+          "properties": {
+            "region":        { "type": ["string", "null"] },
+            "property_type": { "type": ["string", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "stranding_year_bau":     { "type": ["number", "null"], "description": "trajectory only: year the BAU line crosses the CRREM pathway — draws an annotation dot on the BAU line" },
+        "stranding_year_planned": { "type": ["number", "null"], "description": "trajectory only: year the planned line strands (omit/null if beyond the modeled horizon)" },
+        "note": { "type": ["string", "null"], "description": "trajectory only: caption line under the chart" },
+        "net": {
+          "type": ["object", "null"],
+          "description": "waterfall only: the net bar, anchored to zero (ink). If amount omitted it is computed as the sum of items.",
+          "properties": {
+            "label":  { "type": ["string", "null"] },
+            "amount": { "type": ["number", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "annotation": { "type": ["string", "null"], "description": "waterfall only: caption line under the chart" },
         "text":        { "type": ["string", "null"], "description": "quote only: quote text" },
         "attribution": { "type": ["string", "null"], "description": "quote only: attribution line" },
         "left":  { "type": ["array", "null"], "items": { "$ref": "#/definitions/block" }, "description": "two_col only: blocks in the left column" },
@@ -127,6 +167,25 @@
                     "q":      { "type": ["string", "null"], "description": "The assumption or question" },
                     "status": { "type": ["string", "null"], "enum": ["open", "resolved", "adjudicated", null] },
                     "note":   { "type": ["string", "null"], "description": "Resolution / context note" }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "waterfall" } } },
+          "then": {
+            "properties": {
+              "items": {
+                "type": ["array", "null"],
+                "description": "waterfall only: sequential bridge components from 0. Negative amounts render orange (decrement), positive green.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label":  { "type": ["string", "null"] },
+                    "amount": { "type": ["number", "null"], "description": "signed dollar amount (e.g. -4200000); labels render compact ($1.3M / −$3.4M)" }
                   },
                   "additionalProperties": false
                 }

@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.6.1
+version: 1.6.2
 ---
 
 # Decarb-Plan Engagement
@@ -62,6 +62,10 @@ org memory, the reference library, and the `decarb` report template.
      fabricating a curve. A directional/reference curve (e.g. LBNL/ULI Appendix G) may only appear if
      explicitly labeled "directional — pending asset-specific CRREM tool run"; never present a
      directional stranding year as a firm result.
+     **On a RE-RENDER you MUST re-call get_pathway and repopulate targets.crrem_pathway — never
+     rebuild the CRREM curve from saved state.** Stored state may predate the curve fix; the render
+     gate now BLOCKS a decarb report whose crrem_meta is set but crrem_pathway is empty (it would
+     otherwise silently drop the curve), so a from-state rebuild without a fresh fetch will fail.
 5. **Pre-render sanity checks (the gate/verifier MUST reject these — they are self-evidently wrong):**
    - **Emissions trajectory must be non-increasing.** A with-plan (or BAU) carbon curve that *rises*
      over time is a sign/axis bug — decarb emissions decline. Reject and fix the payload.

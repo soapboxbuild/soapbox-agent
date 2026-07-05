@@ -56,7 +56,17 @@ org memory, the reference library, and the `decarb` report template.
      actual region (US NA regional pathways are live — [[crrem-plugin]]). A directional/reference
      curve (e.g. LBNL/ULI Appendix G) may only appear if explicitly labeled "directional — pending
      asset-specific CRREM tool run"; never present a directional stranding year as a firm result.
-5. **Never fail silently.** Outages halt the phase with the standing reconnect message.
+5. **Pre-render sanity checks (the gate/verifier MUST reject these — they are self-evidently wrong):**
+   - **Emissions trajectory must be non-increasing.** A with-plan (or BAU) carbon curve that *rises*
+     over time is a sign/axis bug — decarb emissions decline. Reject and fix the payload.
+   - **At-RUL / bundled-capital-event incremental cost is POSITIVE.** The like-for-like replacement
+     that must happen anyway is the baseline; only the *upgrade spec above it* is incremental. A
+     re-roof is the baseline — only the **added insulation** is incremental (positive). A negative
+     incremental ("insulation saves money vs the mandatory re-roof") is the cost model backwards.
+   - **Tenant vs landlord savings are SEPARATE explicit columns** in the cashflow — never merged.
+     Only landlord/owner-share savings capitalize into the value-creation bridge; tenant-side
+     savings do not accrue to the owner (see owner-share discipline in recipe 8 + analytics standards).
+6. **Never fail silently.** Outages halt the phase with the standing reconnect message.
 
 **State ledger:** `projects/<asset-key>/decarb-plan.json`, conforming to
 `skills/decarb-plan/state-schema.json`. Human-readable companion:

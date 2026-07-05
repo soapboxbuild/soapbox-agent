@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.6.2
+version: 1.6.3
 ---
 
 # Decarb-Plan Engagement
@@ -103,6 +103,11 @@ org memory, the reference library, and the `decarb` report template.
      risk-adjusted DR − fee) and a one-time-RCx alternative for contrast (recipe 8).
    - **EV measures carry non-zero owner make-ready capex** (electrical/panel/trenching) — a $0-capex
      EV line under a host agreement is a red flag (host agreement zeroes hardware, not make-ready).
+   - **Plan narrative goes in per-plan bullets, not a paragraph wall.** Populate
+     `economics.plans[].summary_points[]` (3–5 short bullets each: what it deploys, headline
+     IRR/value, the key trade-off/sensitivity) so each plan renders as a scannable list under its
+     heading. Keep `executive_summary` to one short context line — do NOT cram both plans into a
+     prose block there.
    - **Utility-rate escalation is applied** to the savings cashflow over the hold (e.g. ~3% elec /
      ~4% gas, or a cited regional forecast) and the assumption is stated — flat-nominal savings
      understate later years and the capitalized exit value.

@@ -335,6 +335,8 @@
 
     /* ─── Waterfall per-plan block ─── */
     .plan-block { margin-bottom: 24px; }
+    .plan-summary { margin: 8px 0 14px 0; padding-left: 20px; }
+    .plan-summary li { font-size: 13px; line-height: 1.5; color: #334155; margin-bottom: 4px; }
     .plan-heading {
       display: flex;
       align-items: baseline;
@@ -1177,7 +1179,15 @@
                + '<span class="plan-net">Net value creation <strong>' + fmtSignedCurrency(net) + '</strong>'
                + (plan.irr_incremental != null ? ' · IRR ' + fmtPct(Number(plan.irr_incremental)) : '') + '</span>'
                + '</div>';
-      return head + svg;
+      /* Optional plain-language bullets describing the plan — keeps the narrative scannable
+         instead of a paragraph wall. Renders only when summary_points[] is supplied. */
+      var bullets = '';
+      if (Array.isArray(plan.summary_points) && plan.summary_points.length) {
+        bullets = '<ul class="plan-summary">'
+                + plan.summary_points.map(function(pt){ return '<li>' + esc(String(pt)) + '</li>'; }).join('')
+                + '</ul>';
+      }
+      return head + bullets + svg;
     }
 
     /* ════════════════════════════════

@@ -197,6 +197,7 @@
             "properties": {
               "name": { "type": "string", "description": "Short plan identifier (e.g. 'Plan 1')." },
               "label": { "type": "string", "description": "Human-readable descriptor (e.g. 'Near-term positive-IRR')." },
+              "summary_points": { "type": "array", "items": { "type": "string" }, "description": "3-5 short plain-language bullets describing this plan for readability — what it deploys, the headline IRR/value, the key sensitivity or trade-off. Rendered as a bulleted list under the plan heading. PREFER this over cramming the plan narrative into executive_summary as a paragraph wall." },
               "irr_incremental": { "type": "number", "description": "IRR on incremental spend as a decimal (e.g. 0.25 for 25%)." },
               "ghgi_reduction_pct": { "type": "number", "description": "Plan's GHGI reduction by the target year as a positive decimal (e.g. 0.58 for a 58% reduction). Nullable; shown in the Scenario Comparison strip.", "minimum": 0, "maximum": 1 },
               "compliant": { "type": "boolean", "description": "Whether this plan achieves BPS compliance. Nullable; shown as ✓ Compliant / At risk in the Scenario Comparison strip." },

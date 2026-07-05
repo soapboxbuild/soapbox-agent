@@ -78,7 +78,29 @@ org memory, the reference library, and the `decarb` report template.
      DHW measure that assumes electric resistance when the PCA specifies gas boilers. Cross-check
      the Audette equipment survey against the PCA before screening; a mismatch is a
      `verifier__record_finding` conflict, not a silent screen-in.
-6. **Never fail silently.** Outages halt the phase with the standing reconnect message.
+   - **Plans are genuinely differentiated paths, not hold sensitivities.** Reject a two-plan report
+     whose plans share identical capex, GHGI-reduction %, and ancillary revenue (that's one plan at
+     two exit assumptions). Real plans differ on capex, carbon %, IRR, AND CRREM/stranding status
+     (see recipe 8 "Plans"). The hold period maps to the path; it is not the differentiator.
+   - **Both plan trajectories on the chart.** A two-path report must populate `targets.trajectory`
+     with `planned_1` AND `planned_2` (+ `plan1_label`/`plan2_label`), not a single `planned` series.
+   - **Soft ancillary/DR revenue is NOT capitalized as a perpetuity.** Reject `capitalized_ancillary_
+     revenue = annual_DR ÷ exit_cap` on program-dependent PJM-DR/EV revenue; require risk-adjustment
+     (haircut/PV over term) + a with/without-ancillary sensitivity. Flag any plan whose net value
+     depends mostly on capitalized DR (fragile).
+   - **Subscription measures judged on annual net, not capitalized-fee-vs-savings.** Capitalizing a
+     cancellable subscription at the exit cap overstates the drag; require the annual net (savings +
+     risk-adjusted DR − fee) and a one-time-RCx alternative for contrast (recipe 8).
+   - **EV measures carry non-zero owner make-ready capex** (electrical/panel/trenching) — a $0-capex
+     EV line under a host agreement is a red flag (host agreement zeroes hardware, not make-ready).
+   - **Utility-rate escalation is applied** to the savings cashflow over the hold (e.g. ~3% elec /
+     ~4% gas, or a cited regional forecast) and the assumption is stated — flat-nominal savings
+     understate later years and the capitalized exit value.
+   - **Regulatory/CRREM data comes from the tool, freshly.** Never carry a stale "tool unavailable"
+     note from a prior session's saved state into a new report — re-attempt `crrem__get_pathway`
+     (and record a finding if it genuinely errors); never ship "tool unavailable" prose as a result.
+6. **Never fail silently.** Outages halt the phase with the standing reconnect message. And never
+   fall back to hand-built report HTML when a tool/gate blocks — surface the blocker and stop.
 
 **State ledger:** `projects/<asset-key>/decarb-plan.json`, conforming to
 `skills/decarb-plan/state-schema.json`. Human-readable companion:

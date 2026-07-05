@@ -219,6 +219,12 @@ Columns: `Year | Revenue | Utility Savings | Like-for-like CapEx | Incremental C
 - **Asset Value Impact** is booked in the **exit year** = capitalized NOI uplift at exit
 - **IRR on Incremental Spend** = `irr(annual incremental cashflows + terminal Asset Value Impact)`.
   The waterfall and the IRR are the SAME model viewed two ways.
+- **Apply utility-rate escalation** to the Utility Savings stream year-over-year — savings are NOT
+  flat-nominal over the hold. Use ~3%/yr electricity and ~4%/yr gas (or a cited regional/EIA
+  forecast) and **state the assumption** in the report. Flat-nominal savings understate later-year
+  cashflow AND the capitalized exit value (the terminal Asset Value Impact caps the escalated
+  stabilized savings). Escalation compounds over a 10-yr hold — it materially favors the
+  longer-hold / deep-decarb path, so it must be explicit, not omitted.
 
 ### Measure-type treatment (universal: incremental cost over like-for-like)
 Each measure carries Total cost, Like-for-like cost, Incremental cost (= Total − LfL). Only the

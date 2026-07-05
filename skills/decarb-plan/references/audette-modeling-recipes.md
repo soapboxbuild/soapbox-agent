@@ -239,15 +239,47 @@ Each measure carries Total cost, Like-for-like cost, Incremental cost (= Total �
   recurring **subscription fee**. Do NOT show zero economic impact. Gross owner-share savings →
   Capitalized Utility Savings; the capitalized subscription fee → **Capitalized Subscription**
   (negative); any PJM/grid demand-response revenue → Capitalized Ancillary Revenue.
+  **Judge a subscription on the ANNUAL NET, not the capitalized fee vs. savings-alone.** Capitalizing
+  a *cancellable* subscription at the exit cap (fee ÷ cap) treats it as a perpetual liability and will
+  routinely make the fee "exceed" the capitalized utility savings — an artifact, not a verdict. Show
+  the annual net cashflow (gross owner savings + risk-adjusted DR − fee) and note the fee is
+  cancellable. A subscription is justified by **DR monetization + $0 capex + savings persistence
+  (continuous commissioning stops drift)**, NOT by first-order utility savings. When the subscription
+  is net-marginal without DR, present a **one-time retro-commissioning alternative** (a capex project,
+  no perpetual fee) alongside it so the reader sees the structuring choice.
+- **Ancillary / demand-response revenue is SOFT — risk-adjust it; do not capitalize as a perpetuity.**
+  PJM/grid DR and EV-charging revenue depend on enrollment, clearing prices, and utilization — not
+  contractual perpetual NOI. Do NOT run `annual ÷ exit cap` on them the way you would utility savings.
+  Take a haircut or PV over a defined/contract term, **break out the sources** (DR vs EV) in the
+  report, and show a **sensitivity WITH and WITHOUT ancillary revenue** so the reader sees how much of
+  net value hinges on it. A plan whose net value creation depends mostly on capitalized DR is fragile —
+  say so.
 - **Emissions measures under a binding BPS** → reduce the penalty → BPS Fine Avoidance stream → PV.
 
 Every $ savings/revenue stream is taken at the **locked Gate-1 owner-share split** before
 capitalizing — tenant-paid savings never enter the owner's waterfall.
 
 ### Plans (scenarios) + exit
-Carry **Plan 1 / Plan 2 / Plan 3** as measure-bundle scenarios (e.g. near-term positive-IRR set vs
-deep electrification), each with its own waterfall + cashflow + summary, plus a comparison. Exit
-Cap and Exit Year from kickoff/Inputs; capitalization uses the exit cap.
+Carry **Plan 1 / Plan 2** as **genuinely different STRATEGIC PATHS, not hold-period sensitivities.**
+The same measure bundle shown at a 5-yr vs 10-yr hold is NOT two plans — it's one plan with two exit
+assumptions (identical capex, carbon, and ancillary revenue = a tell you got this wrong). Two plans
+must drive **materially different outcomes** and differ in the comparison table on **capex, GHGI
+reduction %, incremental IRR, AND CRREM/stranding status**. The canonical fork for a decarb asset:
+- **Plan 1 — Operational / Capital-Light:** controls/RCx (+DR), revenue add-ons (EV), elevator/lighting.
+  Near-zero net capex, HIGH IRR, immediate GRESB — but modest carbon, so **CRREM stranding is deferred**
+  (crosses later). Fits a shorter value-add hold.
+- **Plan 2 — Deep Decarbonization / CRREM-Aligned:** Plan 1 PLUS committed electrification (DHW→HPWH,
+  heating) timed to RUL/pulled forward. LARGE capex, LOWER near-term IRR, but MAJOR carbon cut,
+  **CRREM-aligned / non-stranded**, stronger green-financing/ESG-buyer exit. Fits a longer core hold.
+The hold period **maps to** the path; it is not itself the differentiator. Each plan gets its own
+waterfall + cashflow + summary. Exit Cap and Exit Year from kickoff/Inputs; capitalization uses the
+exit cap.
+
+**Show BOTH paths on the emissions-trajectory chart.** Populate `targets.trajectory` points with
+`planned_1` (Plan 1) and `planned_2` (Plan 2) — not a single `planned` — plus `bau` and the CRREM
+pathway, and set `targets.plan1_label`/`plan2_label`. The contrast is the point: Plan 1 flattens
+modestly and crosses (strands against) the CRREM curve; Plan 2 bends down and stays under it. The
+template renders both curves automatically when planned_1/planned_2 are present.
 
 ### Render (mirror RSRA's process exactly)
 Do NOT hand-draw the chart. The economics data object is passed to `fill_report` and the

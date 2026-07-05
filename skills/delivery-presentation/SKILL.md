@@ -35,8 +35,8 @@ template groups slides regardless of array order):
 Contract: `templates/delivery-presentation/schema.json`; worked example: `example-data.json`.
 Block types: `bullets`, `stats` (tiles; `accent: true` = dark-gradient money tile, max ONE per
 slide), `table`, `bars`, `questions` (chips: open / resolved / adjudicated), `quote`, `two_col`,
-`waterfall` (value-bridge SVG), `trajectory` (time-series SVG — available, but see slide plan:
-the initial deck does NOT include a carbon-trajectory slide by default).
+`waterfall` (value-bridge SVG), `trajectory` (time-series carbon SVG — BAU vs planned vs CRREM 1.5°C
+vs BPS target line).
 
 ## Slide plan (client-locked, learned from the Westminster pilot)
 | Section | Slides |
@@ -44,8 +44,12 @@ the initial deck does NOT include a carbon-trajectory slide by default).
 | Background | Asset profile ONLY (stat tiles + key facts). NO "why now"/motivation slide. |
 | Methodology | One slide: the process actually run, "expert-in-the-loop" voice (never "human-in-the-loop"). |
 | Assumptions & Questions | Adjudicated assumptions (chips) + open unknowns (chips) — this drives the meeting discussion. |
-| Results | 1) Measure/finding list (table) → 2) Stacking logic / why this order → 3) **Value bridge** (`waterfall` block) → 4) **The Decision, combined with results tradeoffs** (scenario stat tiles ≥2 plans side-by-side + what each choice trades away). NO capital-stack slide. NO carbon-trajectory slide. Scope-boundary slide ("what this doesn't do") may follow. |
+| Results | 1) Measure/finding list (table) → 2) Stacking logic / why this order → 3) **Carbon trajectory** (`trajectory` block: BAU vs planned vs CRREM 1.5°C vs BPS/Reg-28 line — the emissions outcome over the hold) → 4) **Value bridge** (`waterfall`) → 5) **Incentives — the actual programs** (`table`: real program names, per-unit/per-ton rate, $ to this asset, status; e.g. Xcel ASHP rebate, DRCOG Power Ahead, §48E ITC) → 6) **The Decision, combined with results tradeoffs** (scenario stat tiles ≥2 plans side-by-side + what each choice trades away). NO capital-stack slide. Scope-boundary slide ("what this doesn't do") may follow. |
 | Revisions & Next Steps | LAST slide = Action items: **no dates/urgency columns**; each item exists to clear an open question from the Assumptions slide; the final item is always **"Collect desired revisions to this plan and report."** |
+
+## Layout rules (template enforces, but author to fit)
+- Stat tiles lay out on a balanced grid (3-up for 5–6 tiles). Keep bullet blocks to **≤5 items** — the most important ones; the template auto-shrinks to fit but overflow-by-density is an authoring failure.
+- No orange text on green surfaces (the accent money tile number is white). Orange stays on paper surfaces.
 
 ## Density & voice rules
 - Limited verbosity, high impact: ≤6 bullets/slide, ≤12 words/bullet; split rather than cram.

@@ -105,7 +105,7 @@ run slow):**
 1. **Audette WRITES: batch ≤6 per turn, checkpoint state after each batch, NEVER fire a large
    parallel write burst.** The Audette OAuth token has no persisted refresh and dies mid-burst on
    ~10+ parallel calls — which kills the turn and loses any uncheckpointed progress, forcing a
-   reconnect + resume. **Parallelize READS freely; serialize/batch WRITES** (`create_building`,
+   reconnect + resume. **Batch READS ≤6 per turn too (a large read burst stalls the session — see item 6); serialize/batch WRITES** (`create_building`,
    `edit_building_attributes`, `add_building_utility_data`, `submit_equipment_survey`,
    `create_custom_plan`). After each batch, write the done/pending building UIDs to state.
 2. **Read the authoritative schema/reference BEFORE any structured write — never guess arg keys.**
@@ -120,15 +120,19 @@ run slow):**
 5. **At each phase start, confirm the required tools/connectors are attached; STOP if missing**
    (don't fabricate — the ESPM tripwire). Checkpoint before every expensive/irreversible action so
    a dropped connection or deploy costs one batch, not the whole run.
-6. **Parallelize independent READS in one turn** (documents, ESPM pulls, reference-library, memory
-   recall) — the slow pattern is calling reads one at a time.
+6. **Parallelize independent READS, but cap each turn at ~6 calls** (documents, ESPM pulls,
+   reference-library, memory recall, per-building plan/measure reads). One-at-a-time is too slow,
+   but a large parallel burst (~10+ calls in a single turn — e.g. CRREM pathway + all 25 custom
+   plans + state + template at once) stalls the managed-agent session's tool-result handshake and
+   hangs the turn (this is what repeatedly stalled P5 at "fetch CRREM + plan data simultaneously").
+   Fire ~6, wait, fire the next ~6.
 7. **Kickoff in ONE consolidated pass.** When an engagement reference doc exists (it usually does —
    P0 step 1), pre-fill every kickoff answer from it + any needed research and present them **all at
    once for confirmation**; ask only the genuinely-open items. Do NOT walk 8 questions one-at-a-time
    across many turns (the first Westminster run burned ~30 min doing this).
 8. **Resume cheaply. `switch_customer_account` ONCE per session, then cache it.** On resume, do the
-   whole re-orientation in a SINGLE parallel turn — state file + account switch + required-tool
-   presence check + the reconciled-model doc — then continue. Don't spend multiple turns re-loading
+   re-orientation in one or two small batches (≤6 calls each) — state file + account switch +
+   required-tool presence check + the reconciled-model doc — then continue. Don't spend multiple turns re-loading
    context after every interruption (the original run re-oriented ~7 times).
 
 ---

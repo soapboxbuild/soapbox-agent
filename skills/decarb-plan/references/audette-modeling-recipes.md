@@ -187,21 +187,30 @@ The economics deliverable is a **value-creation bridge** (waterfall chart) backe
 cashflow, mirroring the Audette per-asset investment models ("Plan N Waterfall Chart Data" +
 "Plan N Cashflow" + "Plan N Summary"). Reverse-engineered from 40 live models 2026-07-04.
 
-### Waterfall = 5 components → Impact on Asset Value at Exit
+### Waterfall components → Impact on Asset Value at Exit
 Start at the incremental capex and bridge to net value creation:
 
 | Bar | Sign | Computation |
 |---|---|---|
 | Incremental Capital Expenses | − | Σ **incremental cost over like-for-like** across the plan's measures |
+| Capitalized Subscription | − | Subscription-model measures (e.g. Parity RCx): stabilized annual **subscription fee ÷ exit cap**. Separate, transparent cost drag — the savings it enables stay GROSS in Capitalized Utility Savings. Omit / 0 if no subscription measures. |
 | Incentives | + | rebates/incentives offsetting capex |
-| Capitalized Utility Savings | + | stabilized annual **owner-share** utility $ savings **÷ exit cap** |
+| Capitalized Utility Savings | + | stabilized annual **owner-share** utility $ savings **÷ exit cap** (GROSS of any subscription fee) |
 | Capitalized Ancillary Revenue | + | stabilized annual solar/EV revenue **÷ exit cap** |
 | PV of BPS Fine Avoidance | + | **discounted present value** of the avoided-fine stream |
 
+**Also populate `baseline_capex`** = Σ **like-for-like** replacement cost across the plan's measures
+(POSITIVE) — the spend that happens anyway, that the incremental sits on top of. It is
+**context/disclosure only**: the scenario comparison table must show BOTH baseline and incremental
+capex, but `baseline_capex` is **NOT** a bridge bar and is **NOT** summed into net value creation.
+
+`net_value_creation` = incremental_capex + capitalized_subscription + incentives +
+capitalized_utility_savings + capitalized_ancillary_revenue + pv_bps_fine_avoidance.
+
 **Capitalize vs PV — the rule the skill kept getting wrong:** recurring/perpetual NOI changes
-(utility savings, ancillary revenue) are **capitalized** (÷ exit cap → perpetuity value at exit);
-the BPS fine-avoidance stream is a **present value** (discounted, finite) because fines are a
-*scheduled* penalty, not a perpetual NOI change. Never capitalize fine avoidance.
+(utility savings, ancillary revenue, and a subscription fee) are **capitalized** (÷ exit cap →
+perpetuity value at exit); the BPS fine-avoidance stream is a **present value** (discounted, finite)
+because fines are a *scheduled* penalty, not a perpetual NOI change. Never capitalize fine avoidance.
 
 ### Cashflow (annual) — the model underneath the waterfall
 Columns: `Year | Revenue | Utility Savings | Like-for-like CapEx | Incremental CapEx | Incentives | BPS Fine Avoidance | NOI Impact | Unlevered Incremental Cashflow | Cumulative | Asset Value Impact`.
@@ -221,6 +230,15 @@ Each measure carries Total cost, Like-for-like cost, Incremental cost (= Total �
 - **Electrification / fuel-switching** (ASHP heating & DHW): electricity reduction is **negative**
   (elec rises), gas reduction large positive; value the net at owner-share prices; carbon from gas.
 - **Solar PV / EV charging** → a **Revenue** stream → Capitalized Ancillary Revenue (not "savings").
+  **EV charging ALWAYS carries owner-side CapEx — never show $0 total capex.** Even under a
+  third-party host agreement (Blink/ChargePoint fund + own the hardware), the owner pays
+  **make-ready**: electrical service/panel upgrades, conduit, trenching, transformer, striping.
+  Model that make-ready as the measure's capex (it's an add-on → largely incremental); the operator
+  host agreement zeroes *hardware*, not make-ready. A $0-capex EV line is a red flag.
+- **Subscription-model measures** (Parity RCx, monitoring-based commissioning): $0 owner CapEx but a
+  recurring **subscription fee**. Do NOT show zero economic impact. Gross owner-share savings →
+  Capitalized Utility Savings; the capitalized subscription fee → **Capitalized Subscription**
+  (negative); any PJM/grid demand-response revenue → Capitalized Ancillary Revenue.
 - **Emissions measures under a binding BPS** → reduce the penalty → BPS Fine Avoidance stream → PV.
 
 Every $ savings/revenue stream is taken at the **locked Gate-1 owner-share split** before

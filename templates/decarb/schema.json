@@ -199,16 +199,18 @@
               "compliant": { "type": "boolean", "description": "Whether this plan achieves BPS compliance. Nullable; shown as ✓ Compliant / At risk in the Scenario Comparison strip." },
               "waterfall": {
                 "type": "object",
-                "description": "The 5 value-creation-bridge components plus the net total. incremental_capex is stored NEGATIVE (it pulls the bridge down); all additive components are positive. net_value_creation should equal the sum of the five components.",
+                "description": "The value-creation-bridge components plus the net total. incremental_capex and capitalized_subscription are stored NEGATIVE (they pull the bridge down); all additive components are positive. net_value_creation should equal the sum of the components (incremental_capex + capitalized_subscription + incentives + capitalized_utility_savings + capitalized_ancillary_revenue + pv_bps_fine_avoidance). baseline_capex is context-only (NOT summed into the bridge).",
                 "required": ["incremental_capex", "incentives", "capitalized_utility_savings", "capitalized_ancillary_revenue", "pv_bps_fine_avoidance", "net_value_creation"],
                 "additionalProperties": false,
                 "properties": {
                   "incremental_capex": { "type": "number", "description": "Σ incremental cost over like-for-like across the plan's measures. NEGATIVE (decrement)." },
+                  "baseline_capex": { "type": "number", "description": "Σ like-for-like (baseline) replacement cost that would be spent anyway across the plan's measures — the spend the incremental sits on top of. POSITIVE. Context/disclosure only: shown in the scenario comparison table, NOT summed into net_value_creation." },
+                  "capitalized_subscription": { "type": "number", "description": "Capitalized impact of any subscription-model measure's recurring FEE (e.g. Parity RCx) = stabilized annual subscription cost ÷ exit cap. NEGATIVE (a value drag). The savings the subscription enables flow through capitalized_utility_savings (gross); this is the separate, transparent cost line. 0 if no subscription measures." },
                   "incentives": { "type": "number", "description": "Rebates/incentives offsetting capex. Positive." },
-                  "capitalized_utility_savings": { "type": "number", "description": "Stabilized annual owner-share utility $ savings ÷ exit cap. Positive." },
+                  "capitalized_utility_savings": { "type": "number", "description": "Stabilized annual owner-share utility $ savings ÷ exit cap. Positive. For subscription measures this is the GROSS savings (before the subscription fee, which is captured separately in capitalized_subscription)." },
                   "capitalized_ancillary_revenue": { "type": "number", "description": "Stabilized annual solar/EV ancillary revenue ÷ exit cap. Positive." },
                   "pv_bps_fine_avoidance": { "type": "number", "description": "Discounted present value of the avoided-fine stream (a finite, scheduled penalty — PV, never capitalized). Positive." },
-                  "net_value_creation": { "type": "number", "description": "Impact on asset value at exit = sum of the five components." }
+                  "net_value_creation": { "type": "number", "description": "Impact on asset value at exit = incremental_capex + capitalized_subscription + incentives + capitalized_utility_savings + capitalized_ancillary_revenue + pv_bps_fine_avoidance." }
                 }
               },
               "cashflow": {

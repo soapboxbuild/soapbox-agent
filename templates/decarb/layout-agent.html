@@ -918,9 +918,13 @@
       var meta  = tgt.crrem_meta || {};
       var crremLabel = 'CRREM 1.5°C pathway' + (meta.region ? ' (' + meta.region + ')' : '') + ' — stranding risk';
 
+      /* X-axis domain is the PLAN HORIZON (trajectory years) only. get_pathway returns the
+         full CRREM curve (typically 2020–2050); if we let those years widen the domain the
+         x-axis blows out to 2050 and squishes the plan trajectory into the middle of the chart.
+         Clip the CRREM pathway to the trajectory window so both share the same focused axis. */
       var yrs = pts.map(function(p){ return Number(p.year); });
-      crrem.forEach(function(p){ yrs.push(Number(p.year)); });
       var yMin = Math.min.apply(null, yrs), yMax = Math.max.apply(null, yrs);
+      crrem = crrem.filter(function(p){ var y = Number(p.year); return y >= yMin && y <= yMax; });
       var series = [
         { key: 'bau',          label: 'Business-as-Usual', color: '#94A3B8', dash: '' },
         { key: 'planned',      label: 'With-Plan Trajectory', color: '#1F6B45', dash: '' },

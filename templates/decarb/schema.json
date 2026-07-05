@@ -127,13 +127,13 @@
         },
         "crrem_meta": {
           "type": "object",
-          "description": "Provenance of the CRREM pathway — rendered as a chart footnote so the curve is auditable.",
+          "description": "Provenance of the CRREM pathway — rendered as a chart footnote AND used by the server gate to re-fetch and verify the curve. CRITICAL: set these to the EXACT values the get_pathway RESPONSE echoes back (it returns the canonical propertyType/region it resolved to), NOT a hand-written display label. If you store a loose label the gate's re-fetch can't resolve, the render is BLOCKED as unverifiable.",
           "additionalProperties": false,
           "properties": {
-            "country": { "type": "string", "description": "Country code/name (e.g. 'US')." },
-            "region": { "type": "string", "description": "CRREM region/climate slice (e.g. 'RMPAc_Cool_5A/5B'). From crrem get_climate_zone(zip) → crrem_region_hint." },
-            "property_type": { "type": "string", "description": "CRREM property type (e.g. 'Large Multi-Family - Low Rise')." },
-            "scenario": { "type": "string", "description": "Pathway scenario (e.g. '1.5C')." }
+            "country": { "type": "string", "description": "Country code exactly as passed to get_pathway (e.g. 'US')." },
+            "region": { "type": "string", "description": "Canonical CRREM region as echoed by the get_pathway response (e.g. 'RMPAc_Cool_5A/5B') — not a paraphrase." },
+            "property_type": { "type": "string", "description": "Canonical CRREM property type as echoed by the get_pathway response (e.g. 'large_multi-family_-_high_rise_(>20_units)') — not a display label." },
+            "scenario": { "type": "string", "description": "Pathway scenario exactly as passed (e.g. '1.5C')." }
           }
         },
         "trajectory": {

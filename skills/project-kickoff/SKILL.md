@@ -34,6 +34,14 @@ Extract from the invocation text:
 | portfolio analysis, run portfolio analysis, analyze portfolio, analyze the portfolio, portfolio decarbonization | Portfolio Analysis | portfolio-analysis | portfolio |
 | decarbonization plan, decarbonization report, decarbonization roadmap, net zero plan, BPS compliance plan | Decarb Plan | decarb-plan | asset |
 
+### PRESENTATION FORMAT — MANDATORY (mobile-first)
+Ask **ONE question per message** — never a numbered wall of questions. Each question:
+- states the single question,
+- offers **2–5 short lettered options (A, B, C…)** the user can answer by replying with just the letter,
+- always ends with **"— or type your own answer"** (free-text override),
+- then **STOPS and waits** for the reply before asking the next.
+Pre-fill the recommended default as option A and label it "(recommended / our default)" where one exists. Keep each message short — the user is often on mobile. (The Soapbox managed-agent has **no** interactive `AskUserQuestion` widget — render the options as plain text in the message; "ask via AskUserQuestion" below means this one-at-a-time lettered-multiple-choice chat format.)
+
 If the project type does not match any entry: ask via AskUserQuestion:
 > "What type of project are we kicking off?"
 > Options: Retrofit Analysis | Portfolio Analysis | Decarb Plan | Other (describe)

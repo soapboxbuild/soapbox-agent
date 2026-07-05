@@ -226,6 +226,7 @@ cat projects/<asset-key>/decarb-plan.json 2>/dev/null
    | `existing_docs` | `kickoff.existing_docs` (also seeds `documents` in P1) |
    | `documents_expected` | `kickoff.documents_expected` |
    | `cap_rate` `{value, source}` | `kickoff.cap_rate` — source string **verbatim, never paraphrased** |
+   | `utility_escalation` `{elec_pct, gas_pct, source}` | `kickoff.utility_escalation` — **pre-fill OUR DEFAULTS (3%/yr electricity, 4%/yr gas) and present for confirmation/override**; these feed the recipe-8 savings cashflow. If the user gives a figure or a doc cites one, use it (source verbatim); otherwise carry the defaults, labeled "Soapbox default". |
    | `stakeholders` | `kickoff.stakeholders` |
    | `review_cadence` | `kickoff.review_cadence` |
    | `deadline` | `kickoff.deadline` |

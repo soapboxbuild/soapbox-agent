@@ -220,8 +220,9 @@ Columns: `Year | Revenue | Utility Savings | Like-for-like CapEx | Incremental C
 - **IRR on Incremental Spend** = `irr(annual incremental cashflows + terminal Asset Value Impact)`.
   The waterfall and the IRR are the SAME model viewed two ways.
 - **Apply utility-rate escalation** to the Utility Savings stream year-over-year — savings are NOT
-  flat-nominal over the hold. Use ~3%/yr electricity and ~4%/yr gas (or a cited regional/EIA
-  forecast) and **state the assumption** in the report. Flat-nominal savings understate later-year
+  flat-nominal over the hold. Use the **confirmed `kickoff.utility_escalation`** (Soapbox defaults
+  3%/yr electricity, 4%/yr gas, confirmed/overridden at kickoff — never silently chosen) and
+  **state the assumption + its source** in the report. Flat-nominal savings understate later-year
   cashflow AND the capitalized exit value (the terminal Asset Value Impact caps the escalated
   stabilized savings). Escalation compounds over a 10-yr hold — it materially favors the
   longer-hold / deep-decarb path, so it must be explicit, not omitted.

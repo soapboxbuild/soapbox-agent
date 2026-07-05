@@ -181,6 +181,25 @@ Store as: `cap_rate` — `{value, source}` (source recorded exactly as given).
 
 ---
 
+## Q7b — Utility Rate Escalation
+
+**Why it matters:** retrofit savings are valued over the hold and capitalized at exit — flat-nominal
+savings understate later years and the exit value. Escalation must be an explicit, confirmed
+assumption, never a silent default.
+
+**Present OUR DEFAULTS for confirmation (don't ask open-ended):**
+> "For energy-price escalation I'll use our standard assumption — **3%/yr electricity, 4%/yr gas** —
+> unless you'd prefer a different figure or have a house/fund forecast. Confirm or override?"
+> Options: Use Soapbox defaults (3% / 4%) | I have different figures | Use a specific forecast (cite source)
+
+If a cashflow model or engagement doc already specifies escalation, surface it and confirm instead.
+
+Store as: `utility_escalation` — `{elec_pct, gas_pct, source}`. Default to
+`{elec_pct: 3, gas_pct: 4, source: "Soapbox default"}` when the client confirms the default or
+doesn't specify — never null, never silently omitted.
+
+---
+
 ## Q8 — Stakeholders, Review Cadence & Deadline
 
 **Question:** Ask each item individually:

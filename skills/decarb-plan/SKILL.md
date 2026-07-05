@@ -419,6 +419,8 @@ locked.** Set `phase: "GATE1"` and save.
 Gate 1 opens **only on a locked Model Foundation (P2)**. Present these blocks, then **stop and wait
 for the user**:
 
+Present each adjudication/decision to the user via `ask_user_question` (one call per decision — options = the candidate values, recommended/suggested first, allow_other:true, context = the one-line why-it-matters), not as one markdown table wall. Fall back to one-decision-per-message lettered multiple-choice if the tool is unavailable.
+
 **(a) Verified foundation** — the validated building model (count/GFA/types), calibrated baseline
 (with the measured source + residual calibration gap), and every agreed field with value, unit, source.
 
@@ -510,6 +512,8 @@ Set `phase: "GATE2"` and save.
 ## GATE 2 — Roster, Roadmap, Gap (user)
 
 Present, then **stop and wait for the user**:
+
+Present each adjudication/decision to the user via `ask_user_question` (one call per decision — options = the candidate values, recommended/suggested first, allow_other:true, context = the one-line why-it-matters), not as one markdown table wall. Fall back to one-decision-per-message lettered multiple-choice if the tool is unavailable.
 
 1. **Roster** — every measure under all four screening labels
    (recommended / defensive / screened-out / needs-data), each with its reason, including the

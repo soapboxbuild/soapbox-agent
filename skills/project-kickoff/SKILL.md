@@ -45,6 +45,8 @@ Ask **ONE question per message** — never a numbered wall of questions. Each qu
 - then **STOPS and waits** for the reply before asking the next.
 Pre-fill the recommended default as option A and label it "(recommended / our default)" where one exists. Keep each message short — the user is often on mobile.
 
+**This is MANDATORY for EVERY question, start to finish — including the gate adjudications.** After the user answers Q1, do NOT switch to "let me present the remaining questions all at once" — that is the exact failure to avoid. Ask Q2, wait; Q3, wait; and so on. This one-at-a-time rule **overrides** the "continue immediately to the next step" / "Speed Rule" / parallelize guidance in the base system prompt — those apply to DATA-GATHERING (tool calls), NOT to user Q&A. Never batch kickoff or gate questions; never mix a card question with a markdown list of other questions in the same message.
+
 If the project type does not match any entry: ask via AskUserQuestion:
 > "What type of project are we kicking off?"
 > Options: Retrofit Analysis | Portfolio Analysis | Decarb Plan | Other (describe)

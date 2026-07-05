@@ -927,8 +927,11 @@
            Single-plan payloads use `planned` and these stay absent. */
         { key: 'planned_1',    label: (tgt.plan1_label || 'Plan 1 — Capital-Light'), color: '#1F6B45', dash: '' },
         { key: 'planned_2',    label: (tgt.plan2_label || 'Plan 2 — Deep Decarbonization'), color: '#0E7490', dash: '' },
-        { key: 'bps_target',   label: 'BPS compliance target (fines)', color: '#12253A', dash: '6,4', step: true },
-        { key: 'crrem_target', label: 'CRREM 1.5°C Target', color: '#B91C1C', dash: '5,4' }
+        { key: 'bps_target',   label: 'BPS compliance target (fines)', color: '#12253A', dash: '6,4', step: true }
+        /* NOTE: the legacy inline `crrem_target` series is RETIRED — it was an ungated,
+           fabrication-prone backdoor (values hand-entered per trajectory point). The CRREM
+           1.5°C pathway is drawn ONLY from `targets.crrem_pathway` (real crrem__get_pathway
+           output), rendered below and validated by the server-side compliance-curve gate. */
       ];
       var allV = [];
       pts.forEach(function(p){ series.forEach(function(s){ if (p[s.key] != null) allV.push(Number(p[s.key])); }); });

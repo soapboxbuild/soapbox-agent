@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.6.0
+version: 1.6.1
 ---
 
 # Decarb-Plan Engagement
@@ -53,9 +53,15 @@ org memory, the reference library, and the `decarb` report template.
      the measure-reconciled figure is ~−33%) is a hard contradiction the gate must not pass. If a
      grid-inclusive vs measure-only figure differ, label each; never mix bases in one headline.
    - **CRREM provenance.** Pull the pathway from the `crrem` MCP `get_pathway` for the asset's
-     actual region (US NA regional pathways are live — [[crrem-plugin]]). A directional/reference
-     curve (e.g. LBNL/ULI Appendix G) may only appear if explicitly labeled "directional — pending
-     asset-specific CRREM tool run"; never present a directional stranding year as a firm result.
+     actual region (US NA regional pathways are live — [[crrem-plugin]]). Put those points ONLY in
+     `targets.crrem_pathway` (+ set `targets.crrem_meta` = country/property_type/region/scenario so
+     the server can re-fetch and verify). There is NO inline per-year CRREM field — the legacy
+     `trajectory[].crrem_target` was REMOVED and the render gate now BLOCKS any payload that uses it
+     or ships a `crrem_pathway` that doesn't match `get_pathway` within tolerance. Never hand-type,
+     interpolate, or eyeball CRREM values — if you can't reach the tool, STOP and say so rather than
+     fabricating a curve. A directional/reference curve (e.g. LBNL/ULI Appendix G) may only appear if
+     explicitly labeled "directional — pending asset-specific CRREM tool run"; never present a
+     directional stranding year as a firm result.
 5. **Pre-render sanity checks (the gate/verifier MUST reject these — they are self-evidently wrong):**
    - **Emissions trajectory must be non-increasing.** A with-plan (or BAU) carbon curve that *rises*
      over time is a sign/axis bug — decarb emissions decline. Reject and fix the payload.

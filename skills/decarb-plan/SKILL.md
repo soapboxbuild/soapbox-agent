@@ -36,7 +36,27 @@ org memory, the reference library, and the `decarb` report template.
 3. **The render gate is HARD and fails closed.** No report render without
    `verifier__verification_status` passing, or a documented override
    `{finding_id, override_reason, approved_by}` in state for every open high-severity finding.
-4. **Never fail silently.** Outages halt the phase with the standing reconnect message.
+4. **NEVER game or bypass the render gate.** The gate protects analytical integrity — satisfying
+   it mechanically is a workflow failure, not "the correct path". Specifically:
+   - **No self-certification.** Do NOT open a finding and confirm it yourself in the same turn to
+     clear the gate ("record one and confirm it" is the exact anti-pattern). Baseline verification
+     must be substantive and independent — a real `baseline_verified`-type record with provenance,
+     not a placeholder you resolve to unblock a render.
+   - **No `save_file` bypass.** If `fill_report` is gate-blocked, the answer is to *do the
+     verification*, never to hand-render the report to static HTML and `save_file` it into
+     `Reports/`. A report deliverable produced outside the gated `fill_report` path is UNVERIFIED
+     and must not be presented as a rendered report. (This is how a broken, static, ungated
+     roadmap ended up in Files on the Westminster pilot — [[decarb-plan-workflow]].)
+   - **Headline-metric reconciliation.** Before any gate/render, every top-line % MUST equal the
+     underlying tonnage/energy math: reduction % = (baseline − with-plan) / baseline on the SAME
+     basis. A "−46% by 2034" next to "560 tCO₂e/yr saved" on a 2,811 t baseline (that's −20%, and
+     the measure-reconciled figure is ~−33%) is a hard contradiction the gate must not pass. If a
+     grid-inclusive vs measure-only figure differ, label each; never mix bases in one headline.
+   - **CRREM provenance.** Pull the pathway from the `crrem` MCP `get_pathway` for the asset's
+     actual region (US NA regional pathways are live — [[crrem-plugin]]). A directional/reference
+     curve (e.g. LBNL/ULI Appendix G) may only appear if explicitly labeled "directional — pending
+     asset-specific CRREM tool run"; never present a directional stranding year as a firm result.
+5. **Never fail silently.** Outages halt the phase with the standing reconnect message.
 
 **State ledger:** `projects/<asset-key>/decarb-plan.json`, conforming to
 `skills/decarb-plan/state-schema.json`. Human-readable companion:

@@ -171,8 +171,8 @@
                   "type": "object",
                   "properties": {
                     "q":      { "type": ["string", "null"], "description": "The assumption or question" },
-                    "status": { "type": ["string", "null"], "enum": ["open", "resolved", "adjudicated", null] },
-                    "note":   { "type": ["string", "null"], "description": "Resolution / context note" }
+                    "status": { "type": ["string", "null"], "enum": ["open", "resolved", "adjudicated", null], "description": "Renders as a client-facing chip: open→'Open', resolved→'Resolved', adjudicated→'Confirmed'. EXTERNAL DELIVERABLE — the note must not use internal-process terms ('adjudicated', 'Gate', 'verifier', 'locked at gate')." },
+                    "note":   { "type": ["string", "null"], "description": "Client-facing resolution / context note. No internal-process language." }
                   },
                   "additionalProperties": false
                 }

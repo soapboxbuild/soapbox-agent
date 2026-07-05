@@ -708,7 +708,7 @@
       var aHtml = '';
       assets.forEach(function(a) {
         aHtml += '<tr>';
-        aHtml += '<td><strong>' + esc(a.asset) + '</strong>' + (a.flagged ? ' <span title="Open high-severity data-quality finding">⚠</span>' : '') + '</td>';
+        aHtml += '<td><strong>' + esc(a.asset) + '</strong>' + (a.flagged ? ' <span title="Data point flagged for follow-up">⚠</span>' : '') + '</td>';
         aHtml += '<td>' + esc(a.fund) + '</td>';
         aHtml += '<td class="num">' + esc(a.exit_year != null ? String(a.exit_year) : '—') + '</td>';
         aHtml += '<td class="num">' + (a.capex_net != null ? fmtCurrency(Number(a.capex_net)) : '—') + '</td>';
@@ -773,12 +773,11 @@
     }
 
     /* ════════════════════════════════
-       14. DATA QUALITY & VERIFICATION
+       14. DATA QUALITY
     ════════════════════════════════ */
     var dqSection = document.getElementById('dataquality-section');
     var dqItems = dq.items || [];
-    var dqFindings = dq.findings || [];
-    if (dqSection && (dq.summary || dqItems.length > 0 || dqFindings.length > 0)) {
+    if (dqSection && (dq.summary || dqItems.length > 0)) {
       if (dq.summary) { setHtml('dq-summary', esc(dq.summary)); showEl('dq-summary'); }
       if (dqItems.length > 0) {
         var itemsHtml = '';
@@ -788,20 +787,6 @@
         });
         setHtml('dq-items', itemsHtml);
         showEl('dq-items');
-      }
-      if (dqFindings.length > 0) {
-        var fHtml2 = '';
-        dqFindings.forEach(function(f) {
-          fHtml2 += '<tr>';
-          fHtml2 += '<td><strong>' + esc(f.asset) + '</strong></td>';
-          fHtml2 += '<td>' + esc(f.field) + '</td>';
-          fHtml2 += '<td>' + esc(f.values) + '</td>';
-          fHtml2 += '<td>' + esc(f.working_value) + '</td>';
-          fHtml2 += '<td>' + esc(f.finding_id) + '</td>';
-          fHtml2 += '</tr>';
-        });
-        setHtml('dq-findings-tbody', fHtml2);
-        showEl('dq-findings-wrap');
       }
       dqSection.style.display = '';
     }
@@ -1081,25 +1066,13 @@
     </div>
   </div>
 
-  <!-- 14. DATA QUALITY & VERIFICATION -->
+  <!-- 14. DATA QUALITY -->
   <div id="dataquality-section" class="section" style="display:none">
     <div class="section-label">Methodology</div>
-    <h2 class="section-title">Data Quality &amp; Verification</h2>
+    <h2 class="section-title">Data Quality</h2>
     <p class="section-intro" id="dq-summary" style="display:none"></p>
     <div class="dq-grid" id="dq-items" style="display:none"><!-- JS --></div>
-    <div style="overflow-x:auto;display:none" id="dq-findings-wrap">
-      <table class="profile-table" style="margin-top:12px">
-        <thead><tr>
-          <th>Asset</th>
-          <th>Conflicting Field</th>
-          <th>Candidates (value · source)</th>
-          <th>Working Value (hierarchy)</th>
-          <th>Finding ID</th>
-        </tr></thead>
-        <tbody id="dq-findings-tbody"><!-- JS --></tbody>
-      </table>
-    </div>
-    <p style="margin-top:12px;font-size:12px;font-style:italic;color:#94A3B8">All values labeled (est.) are based on BPD MCP peer-group median EUI and carry ±40% uncertainty. Where sources conflicted by &gt;25%, the reconciliation hierarchy (measured/ESPM &gt; audit &gt; Audette model &gt; estimate) selected the working value; each conflict is logged as a verifier finding.</p>
+    <p style="margin-top:12px;font-size:12px;font-style:italic;color:#94A3B8">All values labeled (est.) are based on BPD MCP peer-group median EUI and carry ±40% uncertainty. Where sources conflicted by &gt;25%, the most authoritative source was used (measured/ESPM &gt; audit &gt; Audette model &gt; estimate).</p>
   </div>
 
   <!-- 15. METHODOLOGY & SOURCES -->

@@ -1075,8 +1075,10 @@
         var it = items[k];
         if (!it || typeof it !== 'object' || !has(it.q)) continue;
         var st = (it.status === 'open' || it.status === 'resolved' || it.status === 'adjudicated') ? it.status : null;
+        // Client-facing chip labels — never surface internal-process jargon ("adjudicated").
+        var stLabel = { open: 'Open', resolved: 'Resolved', adjudicated: 'Confirmed' };
         rows += '<div class="q-row">';
-        if (st) rows += '<span class="q-chip ' + st + '">' + esc(st) + '</span>';
+        if (st) rows += '<span class="q-chip ' + st + '">' + esc(stLabel[st] || st) + '</span>';
         rows += '<div class="q-body"><div class="q-text">' + esc(it.q) + '</div>';
         if (has(it.note)) rows += '<div class="q-note">' + esc(it.note) + '</div>';
         rows += '</div></div>';

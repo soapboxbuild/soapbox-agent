@@ -241,37 +241,20 @@
 
     "data_quality": {
       "type": "object",
-      "description": "Data quality summary, per-input confidence dots, and the Gate-1 adjudication ledger.",
+      "description": "Client-facing data-quality summary and per-input confidence dots. EXTERNAL DELIVERABLE: no internal-process language (no 'Gate 1/2', 'adjudicated', 'verifier', 'Confirmed finding <id>', 'phase', 'workflow'). Do NOT include the internal reconciliation ledger.",
       "additionalProperties": false,
       "properties": {
-        "summary": { "type": "string", "description": "One-line confidence statement and basis. Also populates the footer confidence note." },
+        "summary": { "type": "string", "description": "One-line client-facing confidence statement and basis (e.g. 'Baseline built from 12 months of utility bills and an on-site equipment survey.'). Also populates the footer confidence note. No internal-process terms." },
         "items": {
           "type": "array",
-          "description": "Per-input data-quality flags rendered as colored-dot bullets.",
+          "description": "Per-input data-quality flags rendered as colored-dot bullets. Client-facing text only — cite the source ('AEI energy audit 475250-EA1'), never the internal step ('Locked at Gate 1').",
           "items": {
             "type": "object",
             "required": ["dot", "text"],
             "additionalProperties": false,
             "properties": {
               "dot": { "type": "string", "description": "Confidence color.", "enum": ["green", "amber", "red"] },
-              "text": { "type": "string", "description": "The data-quality note." }
-            }
-          }
-        },
-        "adjudications": {
-          "type": "array",
-          "description": "Gate-1 conflict adjudications — every baseline field with disagreeing sources that the user resolved.",
-          "items": {
-            "type": "object",
-            "required": ["field", "adjudicated_value"],
-            "additionalProperties": false,
-            "properties": {
-              "field": { "type": "string", "description": "The baseline field in conflict." },
-              "candidates": { "type": "string", "description": "Candidate values with sources; may include <br> to separate lines." },
-              "adjudicated_value": { "type": "string", "description": "The value the user selected." },
-              "adjudicated_by": { "type": "string", "description": "Who adjudicated (e.g. 'user')." },
-              "date": { "type": "string", "description": "Adjudication date." },
-              "finding": { "type": "string", "description": "Finding id/status (e.g. 'Resolved DQ-014')." }
+              "text": { "type": "string", "description": "The client-facing data-quality note. No internal-process terms." }
             }
           }
         }

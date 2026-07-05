@@ -48,16 +48,23 @@ template groups slides regardless of array order):
 
 Contract: `templates/delivery-presentation/schema.json`; worked example: `example-data.json`.
 Block types: `bullets`, `stats` (tiles; `accent: true` = dark-gradient money tile, max ONE per
-slide), `table`, `bars`, `questions` (chips: open / resolved / adjudicated), `quote`, `two_col`,
-`waterfall` (value-bridge SVG), `trajectory` (time-series carbon SVG — BAU vs planned vs CRREM 1.5°C
-vs BPS target line).
+slide), `table`, `bars`, `questions` (chips: `open`/`resolved`/`adjudicated` — rendered client-side
+as **Open / Resolved / Confirmed**), `quote`, `two_col`, `waterfall` (value-bridge SVG),
+`trajectory` (time-series carbon SVG — BAU vs planned vs CRREM 1.5°C vs BPS target line).
+
+**⚠ EXTERNAL DELIVERABLE — no internal-process language.** The deck goes to external parties
+(owners, lenders, buyers) with no context for our internal workflow. Never write "Gate 1/2",
+"adjudicated", "verifier", "Confirmed finding <id>", "P0–P5", "phase N", "locked at gate", or
+"roster" in any slide text, chip note, subtitle, or table cell. Phrase provenance in client
+terms ("confirmed with the owner", "per the AEI energy audit"). "Expert-in-the-loop" is allowed
+brand voice; the internal machinery behind it is not.
 
 ## Slide plan (client-locked, learned from the Westminster pilot)
 | Section | Slides |
 |---|---|
 | Background | Asset profile ONLY (stat tiles + key facts). NO "why now"/motivation slide. |
 | Methodology | One slide: the process actually run, "expert-in-the-loop" voice (never "human-in-the-loop"). |
-| Assumptions & Questions | Adjudicated assumptions (chips) + open unknowns (chips) — this drives the meeting discussion. |
+| Assumptions & Questions | Confirmed assumptions (chips) + open unknowns (chips) — this drives the meeting discussion. |
 | Results | 1) Measure/finding list (table) → 2) Stacking logic / why this order → 3) **Carbon trajectory** (`trajectory` block: BAU vs planned vs CRREM 1.5°C vs BPS/Reg-28 line — the emissions outcome over the hold) → 4) **Value bridge** (`waterfall`) → 5) **Incentives — the actual programs** (`table`: real program names, per-unit/per-ton rate, $ to this asset, status; e.g. Xcel ASHP rebate, DRCOG Power Ahead, §48E ITC) → 6) **The Decision, combined with results tradeoffs** (scenario stat tiles ≥2 plans side-by-side + what each choice trades away). NO capital-stack slide. Scope-boundary slide ("what this doesn't do") may follow. |
 | Revisions & Next Steps | LAST slide = Action items: **no dates/urgency columns**; each item exists to clear an open question from the Assumptions slide; the final item is always **"Collect desired revisions to this plan and report."** |
 

@@ -75,7 +75,7 @@
     "emissions_tco2e": 929,
     "fuel_profile": "Dual-fuel — gas space heat + DHW (4 central boiler plants), electric cooling.",
     "utility_structure": "Owner-paid common areas + central plants; tenant-paid in-unit electric (68% sub-metered).",
-    "calibration_basis": "24 months ESPM-linked actuals; Gate-1 adjudicated conflicts; zero-variance GFA-weighted building allocation."
+    "calibration_basis": "24 months of ESPM-linked actuals; conflicting source values resolved with the owner; zero-variance GFA-weighted building allocation."
   },
   "targets": {
     "crrem_stranding_year": 2031,
@@ -497,7 +497,7 @@
     ]
   },
   "data_quality": {
-    "summary": "Baseline energy is metered (24 months ESPM actuals); measure costs carry ±30% pre-inspection uncertainty; three Gate-1 conflicts adjudicated by the user.",
+    "summary": "Baseline energy is metered (24 months of ESPM-linked actuals); measure costs carry ±30% pre-inspection uncertainty.",
     "items": [
       {
         "dot": "green",
@@ -505,7 +505,7 @@
       },
       {
         "dot": "green",
-        "text": "Equipment inventory: on-site survey 2026-05, cross-checked against Audette equipment model."
+        "text": "Equipment inventory: on-site survey 2026-05, cross-checked against the Audette equipment model."
       },
       {
         "dot": "amber",
@@ -514,32 +514,6 @@
       {
         "dot": "red",
         "text": "Envelope R-values: no as-built documentation located; assumed from 1988 vintage code baseline pending destructive testing."
-      }
-    ],
-    "adjudications": [
-      {
-        "field": "Electricity (kWh/yr)",
-        "candidates": "1,890,000 · ESPM actuals (24mo)<br>1,742,000 · Audette modeled",
-        "adjudicated_value": "1,890,000",
-        "adjudicated_by": "user",
-        "date": "2026-06-11",
-        "finding": "Resolved DQ-014"
-      },
-      {
-        "field": "Boiler Plants 3–4 Install Year",
-        "candidates": "1999 · PCA (2021)<br>2003 · On-site equipment survey (2026-05)",
-        "adjudicated_value": "2003",
-        "adjudicated_by": "user",
-        "date": "2026-06-11",
-        "finding": "Resolved DQ-017"
-      },
-      {
-        "field": "Tenant Gas Allocation Basis",
-        "candidates": "Pro-rata by unit SF · Audette estimate<br>Sub-metered 68% coverage · utility bills",
-        "adjudicated_value": "Sub-metered (68%) + pro-rata remainder",
-        "adjudicated_by": "user",
-        "date": "2026-06-12",
-        "finding": "Resolved DQ-019"
       }
     ]
   },

@@ -1,7 +1,7 @@
 {
   "deck": {
     "title": "Westminster Decarbonization Plan",
-    "subtitle": "Value-first electrification pathway for a 7-year hold — calibrated model, expert-adjudicated assumptions, and a capital plan that beats the hurdle.",
+    "subtitle": "Value-first electrification pathway for a 7-year hold — calibrated model, expert-reviewed assumptions, and a capital plan that beats the hurdle.",
     "client": "Cortland",
     "asset": "Cortland Westminster — Westminster, CO",
     "date": "July 2026",
@@ -73,7 +73,7 @@
             "Calibrated energy model: physics-based simulation tuned to 24 months of actual utility data (kWh, calibrated to within acceptance tolerance).",
             "Measures at remaining useful life: interventions scheduled when equipment is due anyway, so only the incremental cost counts.",
             "Value-creation math: incremental cost vs. landlord-share utility savings, avoided fines, incentives, and conditional exit-value impact.",
-            "Expert-in-the-loop gates: every material assumption was surfaced, adjudicated, and locked before economics were run."
+            "Expert-in-the-loop review: every material assumption was reviewed and confirmed with the owner before economics were run."
           ]
         }
       ]
@@ -130,13 +130,13 @@
       "section": "assumptions",
       "eyebrow": "assumptions",
       "heading": "Key assumptions behind the numbers",
-      "sub": "Locked inputs used across every scenario. Figures illustrative.",
+      "sub": "Fixed inputs used across every scenario. Figures illustrative.",
       "blocks": [
         {
           "type": "table",
           "headers": ["Assumption", "Value", "Basis"],
           "rows": [
-            ["Unit count", "504", "Adjudicated — rent roll vs. assessor records"],
+            ["Unit count", "504", "Confirmed — rent roll vs. assessor records"],
             ["Exit cap rate", "5.5%", "Sponsor guidance, Denver-metro multifamily"],
             ["Hold / exit year", "7 years / 2033", "Fund business plan"],
             ["IRR hurdle", "12%", "Sponsor incremental-capital hurdle"],
@@ -150,7 +150,7 @@
       "section": "assumptions",
       "eyebrow": "open items",
       "heading": "Questions raised — and where they stand",
-      "sub": "Every consequential assumption went through an expert-in-the-loop gate before the economics were run.",
+      "sub": "Every consequential assumption was reviewed and confirmed with the owner before the economics were run.",
       "blocks": [
         {
           "type": "questions",
@@ -158,7 +158,7 @@
             {
               "q": "Unit count: 504 or 512?",
               "status": "adjudicated",
-              "note": "Rent roll (504) conflicts with assessor record (512). Adjudicated to 504 — eight units were combined during the 2014 renovation."
+              "note": "Rent roll (504) conflicts with assessor record (512). Confirmed as 504 — eight units were combined during the 2014 renovation."
             },
             {
               "q": "Owner/tenant utility split for in-unit electric",

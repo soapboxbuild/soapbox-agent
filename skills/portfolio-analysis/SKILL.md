@@ -1015,17 +1015,19 @@ scale that would let one bad asset block the entire report, which is wrong — s
    open_total}`. Record each asset's `pass` and `open_high` alongside its output.
 2. Also call `verifier__verification_status()` with **no asset_id** for any portfolio-level
    findings recorded during the run.
-3. Assets with `pass: false` (open high-severity findings) are **flagged inline** in the
-   Asset-by-Asset table (a ⚠ marker) and **their contribution to the headline KPIs is disclosed**
-   — e.g. "3 assets carry open high-severity data-quality findings; $2.1M of the $14M headline
-   CapEx derives from data still under verification." Never let the totals silently absorb
-   unverified data.
-4. The Data Quality section (Phase 5) lists every open high-severity finding via
-   `verifier__list_findings(status: "open")` — the material Audette-vs-doc conflicts recorded in
-   Step 5 — so the reader sees exactly what is unresolved and on which assets.
+3. Assets with `pass: false` are **flagged inline** in the Asset-by-Asset table (a ⚠ marker) and
+   **their contribution to the headline KPIs is disclosed in client-facing terms** — e.g.
+   "3 assets rely on data still being confirmed; $2.1M of the $14M headline CapEx derives from
+   those assets." Never let the totals silently absorb unconfirmed data. (Internal note: this
+   is driven by `verifier__verification_status`, but that machinery must NOT appear in the
+   rendered report — no "verifier", "finding", "high-severity", "Gate".)
+4. The Data Quality section (Phase 5) summarizes confidence in **client-facing** terms
+   (`data_quality.summary` + `items[]` dots) — how many assets use measured vs. estimated data
+   and what remains to be confirmed. Do NOT render an internal findings/conflict table and do
+   NOT pass `data_quality.findings` (it is no longer rendered).
 
 This is the batch analog of decarb-plan's fail-closed gate: the report always renders, but it can
-never present unverified data as verified.
+never present unconfirmed data as confirmed — and it never exposes internal QA machinery to the client.
 
 ---
 
@@ -1106,15 +1108,15 @@ The template renders these sections (reference — this is the template's contra
 [Section: Deferred Measures]
   Measures deferred due to retrofit lead time constraint — install year noted
 
-[Section: Data Quality & Verification]
-  Count of assets with Audette-verified vs. estimated EUI
-  Verification summary from Phase 4F: [N] assets passed (no open high-severity findings),
-    [M] flagged with open high-severity data-quality findings
-  Table of open high-severity findings (from verifier__list_findings): asset | conflicting field |
-    Audette value vs. doc value | working value chosen (hierarchy rule) | finding id
+[Section: Data Quality]  ← EXTERNAL DELIVERABLE — client-facing only
+  Count of assets with measured/metered EUI vs. peer-benchmark estimates
+  Confidence dots (data_quality.items[]) in client terms — cite the data SOURCE, never the
+    internal QA step. NO internal-process language: no "verifier", "finding id", "adjudicated",
+    "Gate", "phase", "high-severity finding". Use the verifier internally for QA, but do NOT
+    render a findings/conflict table and do NOT pass data_quality.findings — it is not rendered.
   "All values labeled (est.) are based on BPD MCP peer-group median EUI and carry ±40% uncertainty."
-  "Where sources conflicted by >25%, the reconciliation hierarchy (measured/ESPM > audit > Audette
-    model > estimate) selected the working value; each conflict is logged as a verifier finding."
+  "Where sources conflicted by >25%, the most authoritative source was used (measured/ESPM >
+    audit > Audette model > estimate)."
 
 [Footer]
   Data sources: Audette · Soapbox DCF Engine · CRREM 2024 · IRA §48E/§179D · BPD (LBNL)

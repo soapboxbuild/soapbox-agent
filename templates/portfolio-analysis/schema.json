@@ -200,7 +200,7 @@
 
     "assets": {
       "type": "array",
-      "description": "Asset-by-asset detail (Phase 5). Section hides if empty. CRREM Status and BPS Exposure columns auto-appear only when at least one row carries crrem_status / bps_exposure. Flag a row with flagged:true to mark an open high-severity data-quality finding (⚠).",
+      "description": "Asset-by-asset detail (Phase 5). Section hides if empty. CRREM Status and BPS Exposure columns auto-appear only when at least one row carries crrem_status / bps_exposure. Flag a row with flagged:true to mark a data point that needs follow-up (⚠).",
       "items": {
         "type": "object",
         "additionalProperties": true,
@@ -214,7 +214,7 @@
           "irr": { "type": "number", "description": "Average IRR; fraction or percent." },
           "crrem_status": { "type": "string", "description": "'aligned' | 'at risk' | 'stranded' (badged) or free text. Only if include_crrem." },
           "bps_exposure": { "description": "Annual fine (number → currency) or free text. Only if include_bps.", "type": ["number", "string"] },
-          "flagged": { "type": "boolean", "description": "Open high-severity data-quality finding → ⚠ marker." }
+          "flagged": { "type": "boolean", "description": "Data point needs follow-up → ⚠ marker (client-facing tooltip)." }
         }
       }
     },
@@ -265,34 +265,19 @@
 
     "data_quality": {
       "type": "object",
-      "description": "Data quality & verification (Phase 5). Section hides unless summary, items, or findings is present.",
+      "description": "Client-facing data-quality summary and confidence dots. EXTERNAL DELIVERABLE: no internal-process language (no 'verifier', 'finding id', 'Gate', 'adjudicated', 'phase'). Do NOT include an internal conflict/findings table. Section hides unless summary or items is present.",
       "additionalProperties": true,
       "properties": {
-        "summary": { "type": "string", "description": "Prose summary: Audette-verified vs. estimated EUI counts, verification pass/flag counts." },
+        "summary": { "type": "string", "description": "Client-facing prose summary: how many assets use metered/measured EUI vs. peer-benchmark estimates, and the basis of confidence. No internal-process terms." },
         "items": {
           "type": "array",
-          "description": "Dotted checklist items.",
+          "description": "Dotted confidence items — client-facing text only (cite the data source, not the internal QA step).",
           "items": {
             "type": "object",
             "additionalProperties": true,
             "properties": {
               "dot": { "type": "string", "enum": ["green", "amber", "red"], "description": "Defaults to green." },
-              "text": { "type": "string" }
-            }
-          }
-        },
-        "findings": {
-          "type": "array",
-          "description": "Open high-severity verifier findings (from verifier__list_findings) — the material Audette-vs-doc conflicts. Renders a table.",
-          "items": {
-            "type": "object",
-            "additionalProperties": true,
-            "properties": {
-              "asset": { "type": "string" },
-              "field": { "type": "string", "description": "Conflicting field." },
-              "values": { "type": "string", "description": "Candidate values with sources, e.g. 'Audette 85 kWh·m⁻² · audit 62 kWh·m⁻²'." },
-              "working_value": { "type": "string", "description": "Value chosen by the reconciliation hierarchy." },
-              "finding_id": { "type": "string" }
+              "text": { "type": "string", "description": "Client-facing confidence note. No internal-process terms." }
             }
           }
         }

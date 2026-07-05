@@ -1235,12 +1235,11 @@
     }
 
     /* ════════════════════════════════
-       9. DATA QUALITY & ADJUDICATIONS
+       9. DATA QUALITY
     ════════════════════════════════ */
     var dqSection = document.getElementById('dataquality-section');
     var dqItems = dq.items || [];
-    var adjud = dq.adjudications || [];
-    if (dqSection && (dq.summary || dqItems.length > 0 || adjud.length > 0)) {
+    if (dqSection && (dq.summary || dqItems.length > 0)) {
       if (dq.summary) { setHtml('dq-summary', esc(dq.summary)); showEl('dq-summary'); }
       if (dqItems.length > 0) {
         var itemsHtml = '';
@@ -1250,21 +1249,6 @@
         });
         setHtml('dq-items', itemsHtml);
         showEl('dq-items');
-      }
-      if (adjud.length > 0) {
-        var adjHtml = '';
-        adjud.forEach(function(a) {
-          adjHtml += '<tr>';
-          adjHtml += '<td><strong>' + esc(a.field) + '</strong></td>';
-          adjHtml += '<td>' + esc(a.candidates) + '</td>';
-          adjHtml += '<td>' + esc(a.adjudicated_value) + '</td>';
-          adjHtml += '<td>' + esc(a.adjudicated_by) + '</td>';
-          adjHtml += '<td>' + esc(a.date) + '</td>';
-          adjHtml += '<td>' + esc(a.finding) + '</td>';
-          adjHtml += '</tr>';
-        });
-        setHtml('adjud-tbody', adjHtml);
-        showEl('adjud-table');
       }
       dqSection.style.display = '';
     }
@@ -1447,26 +1431,13 @@
   ════════════════════════════════════ -->
 
   <!-- ══════════════════════════════════
-       9. DATA QUALITY & ADJUDICATIONS
+       9. DATA QUALITY
   ════════════════════════════════════ -->
   <div id="dataquality-section" class="section" style="display:none">
     <div class="section-label">Appendix</div>
-    <h2 class="section-title">Data Quality &amp; Adjudications</h2>
+    <h2 class="section-title">Data Quality</h2>
     <p class="section-intro" id="dq-summary" style="display:none"></p>
     <div class="dq-grid" id="dq-items" style="display:none"><!-- JS --></div>
-    <div style="overflow-x:auto;display:none" id="adjud-table">
-      <table class="profile-table" style="margin-top:12px">
-        <thead><tr>
-          <th>Field</th>
-          <th>Candidates (value · source)</th>
-          <th>Adjudicated Value</th>
-          <th>By</th>
-          <th>Date</th>
-          <th>Finding</th>
-        </tr></thead>
-        <tbody id="adjud-tbody"><!-- JS --></tbody>
-      </table>
-    </div>
   </div>
 
   <!-- ══════════════════════════════════

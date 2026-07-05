@@ -522,8 +522,21 @@ gate (resume may have skipped P4's check).
    | targets.crrem_pathway / crrem_meta | crrem MCP server `get_pathway` (region via `get_climate_zone(zip)` hint) — real curve only |
    | measures / roadmap | measure register via `state.measures.register_ids` + `state.measures.roadmap_phases` |
    | economics (waterfall + cashflow + plans, incl. per-plan `ghgi_reduction_pct`/`compliant`) | `state.economics` (recipe 8 — owner-share, incremental-over-LfL, fines as PV, capitalized savings/ancillary) |
-   | data_quality | `state.conflicts` (incl. adjudications) + verifier findings |
+   | data_quality | a **client-facing** confidence summary (`summary` + `items[]` dots) derived from `state.conflicts` / verifier findings — see the EXTERNAL-DELIVERABLE rule below. Do **NOT** pass an `adjudications[]` array (the internal reconciliation ledger is not rendered and must not be sent). |
    | sources | `state.citations` (cite the CRREM pathway export run) |
+
+   **⚠️ EXTERNAL DELIVERABLE — no internal-process language anywhere in the report data.**
+   The report is sent to external parties (owners, lenders, buyers) who have **no context**
+   for our internal workflow. Nothing you put in ANY field — exec summary, dashboard, plan
+   `label`/`name`, `data_quality.summary`/`items[]`, methodology, findings — may reference our
+   internal process. Banned terms/patterns: **"Gate 1/2" / "Gate-1"/"Gate-2" / "at Gate…" /
+   "locked at gate"**, **"adjudicated" / "adjudication" / "adjudicated_by"**, **"verifier" /
+   "verification gate" / "Confirmed finding &lt;id&gt;" / raw finding IDs**, **"P0–P5" / "phase N"
+   / "workflow" / "roster"**. Rephrase in client terms: instead of *"Utility split: Locked at
+   Gate 1 — audit confirms…"* write *"Utility split confirmed by the AEI energy audit
+   (475250-EA1)."*; instead of a plan label *"Solar (No ITC) — full Gate-2 roster ✓ Selected"*
+   write *"Solar (No ITC) — Recommended"*. Confidence and provenance are welcome; the internal
+   machinery that produced them is not.
 
 2. **Render via `fill_report` — the SAME path RSRA uses (default; do not hand-write HTML or draw
    charts).** Call `fill_report(template: 'decarb', data: <the object from step 1>, title: "<Asset> — Decarbonization Roadmap")`.

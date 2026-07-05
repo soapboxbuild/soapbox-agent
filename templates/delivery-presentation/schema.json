@@ -16,7 +16,13 @@
         "date":            { "type": ["string", "null"], "description": "Presentation date as display string" },
         "presenter":       { "type": ["string", "null"], "description": "Presenter name(s)" },
         "engagement_type": { "type": ["string", "null"], "description": "Eyebrow on the title slide, e.g. 'decarbonization plan delivery'" },
-        "confidential":    { "type": ["boolean", "null"], "description": "true shows a confidentiality mark on the title slide" }
+        "confidential":    { "type": ["boolean", "null"], "description": "true shows a confidentiality mark on the title slide" },
+        "cover_logos": {
+          "type": ["array", "null"],
+          "description": "Partner logomarks on the title slide, by registry name. The Soapbox logomark ALWAYS renders and need not be listed (it is skipped if listed). Unknown names are silently ignored — only baked-in registry SVGs are ever emitted, never payload markup.",
+          "items": { "type": "string", "enum": ["soapbox", "audette"] }
+        },
+        "cover_logos_label": { "type": ["string", "null"], "description": "Mono caption before the partner marks, e.g. 'in partnership with' or 'analysis powered by'. Default: 'with'. Only shown when cover_logos yields at least one partner mark." }
       },
       "additionalProperties": false
     },

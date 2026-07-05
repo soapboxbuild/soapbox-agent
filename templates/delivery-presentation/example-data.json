@@ -7,7 +7,9 @@
     "date": "July 2026",
     "presenter": "Soapbox Builders Inc.",
     "engagement_type": "decarbonization plan delivery",
-    "confidential": true
+    "confidential": true,
+    "cover_logos": ["audette"],
+    "cover_logos_label": "analysis powered by"
   },
   "slides": [
     {

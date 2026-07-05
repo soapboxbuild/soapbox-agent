@@ -180,6 +180,22 @@
       max-width: 18ch;
     }
     .title-inner h1 .o { color: var(--orange); }
+    /* Cover logomark row: Soapbox primary, partner marks smaller behind a mono caption */
+    .title-logos {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 30px;
+    }
+    .title-logos svg { display: block; flex-shrink: 0; }
+    .logo-caption {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-left: 12px;
+    }
     .title-sub {
       font-size: 20px;
       line-height: 1.55;
@@ -222,12 +238,16 @@
       align-items: baseline;
     }
     .wordmark {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
       font-family: var(--font-display);
       font-weight: 800;
       font-size: 18px;
       letter-spacing: -0.02em;
       color: var(--ink);
     }
+    .wordmark svg { display: block; flex-shrink: 0; }
     .wordmark .o { color: var(--orange); }
     .confidential {
       font-family: var(--font-mono);
@@ -1070,10 +1090,63 @@
     }
 
     /* ══════════════════════════════════
+       COVER LOGOMARKS
+       Baked-in inline SVG registry (CSP: no external images). ONLY
+       registry SVGs are ever emitted — payload strings are used solely
+       as lookup keys; unknown names are silently skipped. Gradient ids
+       are prefixed per-emit so multiple copies never collide.
+    ══════════════════════════════════ */
+    var LOGO_REGISTRY = { soapbox: true, audette: true };
+    var logoSeq = 0;
+
+    function logoSvg(name, height) {
+      if (name === 'soapbox') {
+        logoSeq += 1;
+        var tid = 'itile-' + logoSeq, sid = 'isheen-' + logoSeq;
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' + height + '" height="' + height + '" viewBox="0 0 256 256" fill="none" role="img" aria-label="Soapbox">'
+             + '<defs><linearGradient id="' + tid + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1aa863"/><stop offset="1" stop-color="#0c6c3d"/></linearGradient>'
+             + '<linearGradient id="' + sid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.4"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/></linearGradient></defs>'
+             + '<rect x="0" y="0" width="256" height="256" rx="59" fill="url(#' + tid + ')"/>'
+             + '<rect x="0" y="0" width="256" height="256" rx="59" fill="url(#' + sid + ')"/>'
+             + '<text x="128" y="182" text-anchor="middle" font-family="&#39;Bricolage Grotesque&#39;,sans-serif" font-weight="800" font-size="156" fill="#ffffff">S</text>'
+             + '</svg>';
+      }
+      if (name === 'audette') {
+        /* Hot-pink Audette mark. Fill inlined (no <style> block) so the
+           embedded class can never leak into the host document. */
+        var w = Math.round(74 / 61 * height);
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + height + '" viewBox="0 0 74 61" role="img" aria-label="Audette">'
+             + '<rect fill="#eb02ad" x="41.18" y="0.26" width="6.56" height="19.05"/>'
+             + '<circle fill="#eb02ad" cx="62.48" cy="9.78" r="9.52"/>'
+             + '<path fill="#eb02ad" d="M19.65,9.78.12,59.94h9l4.67-12.59H35l4.74,12.59H49L29.48,9.78ZM16.74,39.49,24.38,19,32,39.49Z"/>'
+             + '</svg>';
+      }
+      return '';
+    }
+
+    /* ══════════════════════════════════
        SLIDE BUILDERS
     ══════════════════════════════════ */
     function buildTitleSlide() {
       var html = '<div class="title-inner">';
+
+      /* Logomark row: Soapbox always primary; validated partner marks
+         (deck.cover_logos) render smaller behind a mono caption. */
+      html += '<div class="title-logos">' + logoSvg('soapbox', 44);
+      var partners = Array.isArray(deck.cover_logos) ? deck.cover_logos : [];
+      var pHtml = '';
+      for (var pl = 0; pl < partners.length; pl++) {
+        var pn = partners[pl];
+        if (pn === 'soapbox') continue; /* already primary */
+        if (typeof pn !== 'string' || !LOGO_REGISTRY.hasOwnProperty(pn)) continue;
+        pHtml += logoSvg(pn, 30);
+      }
+      if (pHtml) {
+        var logosLabel = has(deck.cover_logos_label) ? deck.cover_logos_label : 'with';
+        html += '<span class="logo-caption">// ' + esc(logosLabel) + '</span>' + pHtml;
+      }
+      html += '</div>';
+
       var eyebrowText = has(deck.engagement_type) ? deck.engagement_type : 'delivery presentation';
       html += '<p class="eyebrow">// ' + esc(eyebrowText) + '</p>';
       if (has(deck.title)) html += '<h1>' + esc(deck.title) + '<span class="o">.</span></h1>';
@@ -1088,7 +1161,7 @@
       html += '</div>';
 
       html += '<div class="title-foot">';
-      html += '<span class="wordmark">soapbox<span class="o">.</span>build</span>';
+      html += '<span class="wordmark">' + logoSvg('soapbox', 24) + 'soapbox<span class="o">.</span>build</span>';
       if (deck.confidential === true) html += '<span class="confidential">confidential &mdash; prepared for ' + (has(deck.client) ? esc(deck.client) : 'client') + '</span>';
       html += '</div>';
       return { cls: 'slide-title', html: html, sectionKey: null };

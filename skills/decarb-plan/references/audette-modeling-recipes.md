@@ -123,6 +123,16 @@ guessed keys like `domestic_hot_water`). Rules:
 - **Sizes/years left blank must be `null`, NOT `0`** — a `0` size triggers a divide-by-zero in the inferrer.
 - `other_equipment` REQUIRES: `clothes_dryers_exists`, `clothes_washers_exists`, `elevators_exists`,
   `escalator_exists`, `rooftop_photovoltaics_exists` (all booleans).
+- **Cross-group validation — a ventilation path is mandatory:** at least ONE of
+  `air_handling_equipment_exists` OR `rooftop_unit_exists` must be `true`, or the survey is rejected.
+  A high-rise WSHP tower has no RTUs but does have ventilation — model its make-up-air units as
+  `air_handling_equipment` (`make_up_air_unit`, heating type per the loop, e.g. `hydronic`) to satisfy
+  this. Do NOT set `rooftop_unit_exists: true` just to pass — a false RTU pulls in a wrong "Hybrid RTU
+  ASHP" measure downstream (a real Cortland Rosslyn error).
+- **Consult THIS enum table before submitting — do not guess enum strings.** The DHW type churn in
+  the field (`electric_heater`→`gas_condensing_boiler`→`gas_boiler`→`gas_heater`) was avoidable: the
+  valid `domestic_hot_water_heater_type` values are exactly `electric_heater | gas_heater |
+  indirect_heater` (a central gas condensing boiler serving DHW is `gas_heater` + `central_distribution: true`).
 
 **Exact A4 / Type-A hydronic-furnace payload** (copy this shape for every residential building; adjust
 sizes/years per building):

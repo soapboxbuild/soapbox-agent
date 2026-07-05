@@ -307,6 +307,15 @@ measured and modeled. A residual 10–20% gap after calibration is almost always
 error (revisit 2A), not an emission-factor difference. Pull ESPM via the energy-star tools (verify
 they're attached first — the tripwire); read the energy sub-skill for the exact tool sequence.
 
+**Calibration is a HARD gate on the economics.** An uncalibrated model inflates BOTH projected
+savings and costs, so no measure IRR is trustworthy until it is calibrated. If the model's
+first-year energy is **> ~10% off** measured (ESPM/bills) after calibration, **do NOT run measure
+economics (P3)** — record a `verifier__record_finding` (kind `data-quality`, verdict `conflict`,
+severity by materiality) and return to 2A/2B to fix it. (In the Cortland Rosslyn engagement the
+raw model was **+35%** over ESPM; uploading actuals + calibrating brought it to within ~4% and
+materially changed every measure's economics.) Record the post-calibration gap in `state.baseline`
+with its source.
+
 Build the baseline table in `state.baseline`. Required fields (each stored as
 `{value, unit, source}`):
 
@@ -419,6 +428,17 @@ Set `phase: "P3"` and save.
 
 1. `retrofit__propose_candidates` with the **real, adjudicated asset attributes** from
    `state.baseline` (never pre-Gate-1 values).
+1a. **Completeness cross-check — screen DOWN from a full universe, not UP from the optimizer's
+   output.** `retrofit__propose_candidates` and Audette's optimizer return a *starting* set, not the
+   whole opportunity space. Before screening, reconcile the proposal against the standard candidate
+   library for THIS building's systems — read `references/measure-universe.md` and confirm every
+   applicable category was considered: envelope, HVAC plant + distribution, controls/retro-commissioning,
+   DHW, lighting + lighting controls, plug/appliance, **common-area/amenity loads** (elevators, garage
+   ventilation, spa/pool, common laundry), on-site generation/storage, EV, and procurement. Explicitly
+   note each category as evaluated / screened-out-with-reason / not-applicable. A GRESB or
+   portfolio deliverable that reaches the roster with only a handful of measures because the optimizer
+   returned few is a red flag — the Cortland Rosslyn roster sat at 2 measures until challenged, then
+   4+ real candidates surfaced (garage DCV, lighting controls, EV expansion, amenity HPHX).
 2. Pull all source candidates the proposal references (register, Audette available measures,
    document-recommended measures).
 3. For candidates needing modeled physics (savings/carbon), run Audette

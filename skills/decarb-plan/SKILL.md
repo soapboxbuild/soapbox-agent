@@ -545,8 +545,10 @@ gate (resume may have skipped P4's check).
    fresh on every `fill_report` (so a re-fill also picks up any template fixes; a baked artifact
    does not). Hand-rebuilding mangles charts, drops blocks, reintroduces overflow, and bypasses the
    gate. You only ever touch the data payload.
-4. **Register the deliverable in Files** and write all export paths to
-   `state.report.exports`.
+4. **Register the deliverable in Files.** `fill_report` already persists the fully-rendered HTML
+   report to `Reports/` for you (server-side) — do **NOT** `save_file` the report HTML yourself
+   (you don't hold the rendered ~80KB string, so a manual save would only write a broken stub).
+   Just write all export paths (PDF/PPTX) to `state.report.exports`.
 5. **Retain lessons:** call `verifier__retain_shared_expertise` with the generalizable,
    client-anonymous lessons from this engagement (reconciliation patterns, playbook gaps,
    jurisdiction findings). It will refuse content that identifies the client or asset —

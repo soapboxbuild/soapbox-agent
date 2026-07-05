@@ -922,6 +922,11 @@
       var series = [
         { key: 'bau',          label: 'Business-as-Usual', color: '#94A3B8', dash: '' },
         { key: 'planned',      label: 'With-Plan Trajectory', color: '#1F6B45', dash: '' },
+        /* Two-path contrast: when the payload carries planned_1 / planned_2 (the two
+           strategic plans), both curves render so the reader can compare carbon outcomes.
+           Single-plan payloads use `planned` and these stay absent. */
+        { key: 'planned_1',    label: (tgt.plan1_label || 'Plan 1 — Capital-Light'), color: '#1F6B45', dash: '' },
+        { key: 'planned_2',    label: (tgt.plan2_label || 'Plan 2 — Deep Decarbonization'), color: '#0E7490', dash: '' },
         { key: 'bps_target',   label: 'BPS compliance target (fines)', color: '#12253A', dash: '6,4', step: true },
         { key: 'crrem_target', label: 'CRREM 1.5°C Target', color: '#B91C1C', dash: '5,4' }
       ];
@@ -979,24 +984,29 @@
 
       /* Stranding marker: first year the with-plan trajectory sits ABOVE the
          CRREM pathway. Explicit crrem_stranding_year wins; otherwise computed. */
+      /* Stranding tracks the capital-light path (planned_1) when two plans are shown —
+         that's the one that strands; the deep-decarb path (planned_2) should stay under
+         the CRREM curve. Falls back to the single `planned` series. */
+      function plannedVal(p){ return p.planned_1 != null ? Number(p.planned_1) : (p.planned != null ? Number(p.planned) : null); }
+      var twoPlan = pts.some(function(p){ return p.planned_1 != null; });
       var strandYear = tgt.crrem_stranding_year != null ? Number(tgt.crrem_stranding_year) : null;
       var crremByYear = {};
       crrem.forEach(function(p){ crremByYear[Number(p.year)] = Number(p.carbon_kgco2_m2yr); });
       if (strandYear == null && crrem.length > 1) {
         pts.forEach(function(p){
           if (strandYear != null) return;
-          var cy = crremByYear[Number(p.year)];
-          if (p.planned != null && cy != null && Number(p.planned) > cy) strandYear = Number(p.year);
+          var cy = crremByYear[Number(p.year)], pv = plannedVal(p);
+          if (pv != null && cy != null && pv > cy) strandYear = Number(p.year);
         });
       }
       var strandDot = '';
       if (strandYear != null && crrem.length > 1) {
         var sp2 = null;
-        pts.forEach(function(p){ if (Number(p.year) === strandYear && p.planned != null) sp2 = p; });
+        pts.forEach(function(p){ if (Number(p.year) === strandYear && plannedVal(p) != null) sp2 = p; });
         if (sp2) {
-          var sxp = px(strandYear), syp = py(Number(sp2.planned));
+          var sxp = px(strandYear), syp = py(plannedVal(sp2));
           strandDot = '<circle cx="'+sxp.toFixed(1)+'" cy="'+syp.toFixed(1)+'" r="4" fill="#B91C1C" stroke="#fff" stroke-width="1.5"/>'
-                    + '<text x="'+sxp.toFixed(1)+'" y="'+(syp-8).toFixed(1)+'" font-size="9" font-weight="700" fill="#B91C1C" text-anchor="middle">Stranding '+esc(String(strandYear))+'</text>';
+                    + '<text x="'+sxp.toFixed(1)+'" y="'+(syp-8).toFixed(1)+'" font-size="9" font-weight="700" fill="#B91C1C" text-anchor="middle">'+(twoPlan?'Plan 1 strands ':'Stranding ')+esc(String(strandYear))+'</text>';
         }
       }
 

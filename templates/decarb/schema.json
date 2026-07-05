@@ -109,7 +109,9 @@
       "description": "Carbon pathway targets and trajectory. Feeds the Emissions Trajectory line chart.",
       "additionalProperties": false,
       "properties": {
-        "crrem_stranding_year": { "type": "integer", "description": "Year the planned trajectory crosses (strands against) the CRREM 1.5°C pathway. Optional; shown as an annotated dot + chart footnote. When omitted and crrem_pathway is present, the template computes it as the first year planned > pathway." },
+        "crrem_stranding_year": { "type": "integer", "description": "Year the planned trajectory crosses (strands against) the CRREM 1.5°C pathway. Optional; shown as an annotated dot + chart footnote. When omitted and crrem_pathway is present, the template computes it as the first year planned > pathway (tracks planned_1 in a two-path report)." },
+        "plan1_label": { "type": "string", "description": "Optional legend label for the planned_1 (capital-light) trajectory line, e.g. 'Plan 1 — Capital-Light'." },
+        "plan2_label": { "type": "string", "description": "Optional legend label for the planned_2 (deep-decarbonization) trajectory line, e.g. 'Plan 2 — Deep Decarbonization'." },
         "crrem_pathway": {
           "type": "array",
           "description": "The REAL CRREM decarbonization pathway for the asset's country/region/property type, from the crrem MCP server (get_pathway) — NEVER fabricated or interpolated by the agent. Drawn as a distinct dashed curve ALONGSIDE the stepped BPS target line: BPS drives fines, CRREM drives stranding. Units must be kgCO₂e·m⁻²·yr⁻¹ to match the trajectory series (convert if the asset's GHGI is tracked per-ft²).",
@@ -144,7 +146,9 @@
             "properties": {
               "year": { "type": "integer", "description": "Calendar year." },
               "bau": { "type": "number", "description": "Business-as-usual carbon intensity (kgCO₂e·m⁻²). Use the Audette-modeled baseline carbon curve where available (grid-factor drift included) — never a fabricated flat line." },
-              "planned": { "type": "number", "description": "Planned/selected-plan carbon intensity (kgCO₂e·m⁻²)." },
+              "planned": { "type": "number", "description": "Planned/selected-plan carbon intensity (kgCO₂e·m⁻²). Use for a SINGLE-plan report. For a two-path report use planned_1 + planned_2 instead so both curves render." },
+              "planned_1": { "type": "number", "description": "Plan 1 (capital-light) carbon intensity (kgCO₂e·m⁻²) — drawn as a green line. Use with planned_2 to contrast both strategic paths on the chart." },
+              "planned_2": { "type": "number", "description": "Plan 2 (deep-decarbonization) carbon intensity (kgCO₂e·m⁻²) — drawn as a teal line; should stay under the CRREM curve (non-stranded)." },
               "bps_target": { "type": "number", "description": "BPS / regulatory compliance target intensity for this year (kgCO₂e·m⁻²). Drawn as a STEPPED navy dashed line — the fines driver, distinct from the CRREM stranding pathway. Provide only for years where a target is defined." },
               "crrem_target": { "type": "number", "description": "LEGACY: CRREM 1.5°C target intensity inline with the trajectory (kgCO₂e·m⁻²). Prefer targets.crrem_pathway (real curve from the crrem MCP server) for new payloads; do not supply both." }
             }

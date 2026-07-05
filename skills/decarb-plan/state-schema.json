@@ -377,6 +377,20 @@
         }
       }
     },
+    "capture_map": {
+      "type": "object",
+      "description": "Per-end-use owner-capture map (P2 step 2C). Keys are end-uses (e.g. central_gas_plant, elevators, garage_ventilation, common_lighting, in_unit_electric, common_laundry, amenity_spa). Each measure's savings basis uses ITS end-use's capture, never the building's blended split — common-area/central-plant loads are 100% owner even in a tenant-metered residential building.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["payer", "owner_capture_pct"],
+        "properties": {
+          "payer": { "type": "string", "enum": ["landlord", "tenant", "mixed"] },
+          "owner_capture_pct": { "type": "number" },
+          "source": { "type": "string" },
+          "finding_id": { "type": "string" }
+        }
+      }
+    },
     "conflicts": {
       "type": "array",
       "items": {

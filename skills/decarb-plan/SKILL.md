@@ -66,6 +66,18 @@ org memory, the reference library, and the `decarb` report template.
    - **Tenant vs landlord savings are SEPARATE explicit columns** in the cashflow — never merged.
      Only landlord/owner-share savings capitalize into the value-creation bridge; tenant-side
      savings do not accrue to the owner (see owner-share discipline in recipe 8 + analytics standards).
+   - **Landlord-capture matches the end-use's payer.** Reject any measure whose owner-capture /
+     Audette landlord-share equals the account default (commonly 15%) while its end-use is
+     landlord-paid — central heating/DHW plant, elevators, garage ventilation, common lighting,
+     amenity loads = **100% owner**. A common-area measure priced at the blended in-unit split
+     understates owner IRR (the elevator-regen −6%→+12% flip). Record the correction as a
+     `verifier__record_finding` (kind `data-quality`, verdict `conflict`) tying the measure to its
+     true end-use capture from the 2C capture map.
+   - **Measure equipment type matches the documented system.** Reject a measure whose equipment
+     contradicts the PCA/as-built — e.g. an RTU/packaged-unit measure on a WSHP-loop building, or a
+     DHW measure that assumes electric resistance when the PCA specifies gas boilers. Cross-check
+     the Audette equipment survey against the PCA before screening; a mismatch is a
+     `verifier__record_finding` conflict, not a silent screen-in.
 6. **Never fail silently.** Outages halt the phase with the standing reconnect message.
 
 **State ledger:** `projects/<asset-key>/decarb-plan.json`, conforming to
@@ -328,6 +340,19 @@ number. Tenant-metered fuel = 0% owner on residential; amenity/clubhouse buildin
 foundation input, not a P3 afterthought. Record it in `state.baseline`; an unconfirmed or presumed
 split is a `verifier__record_finding` conflict adjudicated at Gate 1.
 
+**Capture is PER END-USE, not one blended number per building.** A single residential building
+has BOTH tenant-metered in-unit loads (in-unit electric HVAC/appliances ≈ the tenant %) AND
+landlord-paid loads that are **100% owner regardless of the building's headline split**: the
+central heating/DHW plant, elevators, garage ventilation, corridor/common-area lighting, and
+amenity loads (spa, pool, common laundry). Build a **capture map** in `state.capture_map`
+— every end-use a measure could touch → who pays → owner-capture % — and **never inherit Audette's
+account-default landlord share (commonly 15%) onto a measure whose end-use is landlord-paid.** This
+one gap sat behind four of the Cortland Rosslyn model errors: the central gas plant carried the 15%
+default (belongs at 100%, which undervalued every gas measure) and elevator regen showed −6% IRR at
+15% → **+12% at its true 100% common-area capture**. Where an end-use's payer is unconfirmed (in-unit
+vs common laundry, spa heat source, garage metering), record a `verifier__record_finding` conflict
+and resolve at Gate 1 — public listing sources (apartments.com, Zillow) are valid cited evidence.
+
 ### 2D — Equipment inventory (establish now — it drives P3 measure sequencing)
 
 Gather the **real** equipment set + install years / remaining useful life (RUL) from the PCA / MEP
@@ -406,11 +431,13 @@ Set `phase: "P3"` and save.
    - Every economic field must be engine- or source-provenanced; the tool refuses
      unprovenanced numbers — supply real sources, never fabricate provenance.
    - Cap rate for exit math comes from `kickoff.cap_rate` **with its verbatim source string**.
-   - **Savings basis = the LOCKED landlord share (from Gate 1).** A measure's dollar savings
-     accrue only to the party that pays the bill. Use the per-fuel/per-building split locked at
-     Gate 1 (established in P2 step 2C) as the savings basis — do NOT re-derive or re-open it here.
-     Audette's landlord-share settings must reflect that locked split or modeled owner savings are
-     mis-priced.
+   - **Savings basis = the LOCKED per-end-use capture (from the 2C capture map, Gate 1).** A
+     measure's dollar savings accrue only to the party that pays **that end-use's** bill — so a
+     common-area or central-plant measure (elevators, garage ventilation, corridor lighting,
+     central heating/DHW) uses its **100% owner capture, NOT the building's blended in-unit split**,
+     even in a tenant-metered residential building. Never inherit Audette's account-default share;
+     set Audette's landlord-share for the measure to the end-use's locked capture or modeled owner
+     savings are mis-priced. Do NOT re-derive or re-open the map here.
    - Record returned measure ids in `state.measures.register_ids`.
 5. `retrofit__screen_measures` to produce the roster labels.
 6. **Roadmap phasing — sequence by decarb logic + equipment RUL, not independent IRR.** Read

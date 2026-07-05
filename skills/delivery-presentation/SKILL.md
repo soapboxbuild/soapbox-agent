@@ -36,6 +36,11 @@ blocks like the value bridge, and reintroduces overflow; it also bypasses templa
 artifact does NOT pick up template updates — only a re-`fill_report` does). You only ever touch the
 data payload. Same discipline as the decarb render gate — see [[decarb-plan-workflow]].
 
+**Persist the payload** so revisions have a source of truth: at first render, `save_file` the deck
+JSON to `Reports/<asset-slug>-deck.data.json`. To revise, read that JSON, edit it, re-`fill_report`
+with the edits, and overwrite the `.data.json`. (This is the ONLY report-related thing `save_file`
+touches — the data payload, never rendered HTML.)
+
 Title and Agenda slides are AUTO-GENERATED — never author them. Fixed section order (the
 template groups slides regardless of array order):
 

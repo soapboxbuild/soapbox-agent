@@ -99,6 +99,14 @@ org memory, the reference library, and the `decarb` report template.
    - **Regulatory/CRREM data comes from the tool, freshly.** Never carry a stale "tool unavailable"
      note from a prior session's saved state into a new report — re-attempt `crrem__get_pathway`
      (and record a finding if it genuinely errors); never ship "tool unavailable" prose as a result.
+   - **Verify ALL math at report generation — do not trust LLM-computed figures.** Before render,
+     recompute and reconcile every derived number in the payload: waterfall components sum to
+     `net_value_creation`; each capitalization = annual ÷ exit cap; GHGI reduction % =
+     (baseline − planned) / baseline; incremental = total − like-for-like; owner-share applied per
+     the capture map; unit conversions correct (incl. the kWh→MWh/GWh scaling); every table total =
+     Σ its line items; IRR consistent with the cashflow. Route the reconciliation through the
+     verifier — any mismatch beyond rounding is a `verifier__record_finding` and **blocks the
+     render** until resolved. The template's client-side sum check is a backstop, not the gate.
 6. **Never fail silently.** Outages halt the phase with the standing reconnect message. And never
    fall back to hand-built report HTML when a tool/gate blocks — surface the blocker and stop.
 
@@ -110,9 +118,11 @@ replace spaces with hyphens.
 
 **Presentation standards** (apply to every number shown at a gate or in the report):
 
-- **Energy in kWh and kWh/m² only.** Convert all energy to kWh (and gas from native
-  units/GJ to kWh) and express intensity as kWh/m². Areas are in **m²**; carbon as **tCO₂e**
-  and intensity as **kgCO₂e/m²**. No therms, kBtu, ft², or kBtu/ft² in presented output.
+- **Energy intensity in kWh/m²; absolute energy scaled to magnitude.** Express intensity as
+  kWh/m². For ABSOLUTE energy, scale the unit to keep the number readable: kWh, but switch to
+  **MWh at ≥1,000 kWh and GWh at ≥1,000,000 kWh** (e.g. 5,929,000 kWh → **5.9 GWh** or **5,929 MWh**,
+  never "5,929,000 kWh"). Convert gas from native units/GJ to the same energy basis. Areas in **m²**;
+  carbon as **tCO₂e** and intensity as **kgCO₂e/m²**. No therms, kBtu, ft², or kBtu/ft² in output.
 - **Max 2 significant figures displayed.** Round for display (e.g. 3.0 GWh, 130 kWh/m²,
   1,200 tCO₂e). Keep full precision in state/engine inputs; only the *displayed* figure is
   rounded.

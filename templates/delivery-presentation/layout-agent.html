@@ -125,7 +125,7 @@
     .slide h2 {
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: clamp(28px, 3vw, 40px);
+      font-size: 34px;
       line-height: 1.08;
       letter-spacing: -0.03em;
       color: var(--ink);
@@ -172,7 +172,7 @@
     .title-inner h1 {
       font-family: var(--font-display);
       font-weight: 800;
-      font-size: clamp(44px, 5vw, 66px);
+      font-size: 56px;
       line-height: 1.04;
       letter-spacing: -0.03em;
       color: var(--ink);
@@ -180,22 +180,6 @@
       max-width: 18ch;
     }
     .title-inner h1 .o { color: var(--orange); }
-    /* Cover logomark row: Soapbox primary, partner marks smaller behind a mono caption */
-    .title-logos {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 30px;
-    }
-    .title-logos svg { display: block; flex-shrink: 0; }
-    .logo-caption {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-left: 12px;
-    }
     .title-sub {
       font-size: 20px;
       line-height: 1.55;
@@ -249,6 +233,17 @@
     }
     .wordmark svg { display: block; flex-shrink: 0; }
     .wordmark .o { color: var(--orange); }
+    /* Cover brand row (bottom-left): Soapbox mark + wordmark, then a mono
+       "// powered by" caption and any partner marks, inline. */
+    .foot-brand { display: inline-flex; align-items: center; gap: 14px; }
+    .foot-brand svg { display: block; flex-shrink: 0; }
+    .logo-caption {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
     .confidential {
       font-family: var(--font-mono);
       font-size: 10px;
@@ -371,9 +366,9 @@
       background: var(--grad-primary);
       border: none;
     }
-    .stat-tile.accent::before { background: var(--orange); }
+    .stat-tile.accent::before { background: rgba(255,255,255,.45); }
     .stat-tile.accent .stat-label { color: rgba(255,255,255,.75); }
-    .stat-tile.accent .stat-value { color: #ffb27d; } /* orange accent number on deep green */
+    .stat-tile.accent .stat-value { color: #ffffff; } /* white number on deep green (no orange on green) */
     .stat-tile.accent .stat-sub { color: rgba(255,255,255,.82); }
 
     /* Table */
@@ -522,6 +517,14 @@
       align-items: start;
     }
     .blk-two-col .col .blocks { gap: 18px; }
+    /* Inside a two_col column, stat tiles stack one-wide (overrides the
+       per-count inline grid-template-columns set in renderStats). */
+    .blk-two-col .blk-stats { grid-template-columns: 1fr !important; }
+
+    /* ─── PER-SLIDE SHRINK-TO-FIT (PowerPoint autofit) ─── */
+    /* Wraps a content/agenda slide's head+body; JS measures its natural
+       size and applies transform: scale(k) when it overflows the box. */
+    .fit-wrap { transform-origin: top left; }
 
     /* ─── NAV CHROME ─── */
     #navbar {
@@ -729,19 +732,20 @@
 
     function renderBullets(blk) {
       var items = Array.isArray(blk.items) ? blk.items : [];
-      var lis = '';
+      var lis = '', n = 0;
       for (var k = 0; k < items.length; k++) {
         if (!has(items[k])) continue;
         lis += '<li>' + esc(items[k]) + '</li>';
+        n += 1;
       }
       if (!lis) return '';
-      var dense = items.length > 6 ? ' dense' : '';
+      var dense = n > 5 ? ' dense' : '';
       return '<ul class="blk-bullets' + dense + '">' + lis + '</ul>';
     }
 
     function renderStats(blk) {
       var items = Array.isArray(blk.items) ? blk.items : [];
-      var tiles = '';
+      var tiles = '', n = 0;
       for (var k = 0; k < items.length; k++) {
         var it = items[k];
         if (!it || typeof it !== 'object') continue;
@@ -751,9 +755,16 @@
         if (has(it.value)) tiles += '<div class="stat-value">' + esc(it.value) + '</div>';
         if (has(it.sub))   tiles += '<div class="stat-sub">' + esc(it.sub) + '</div>';
         tiles += '</div>';
+        n += 1;
       }
       if (!tiles) return '';
-      return '<div class="blk-stats">' + tiles + '</div>';
+      /* Balanced grid keyed to the rendered tile count (top-level slide).
+         Inside a two_col column, .blk-two-col .blk-stats forces 1-wide. */
+      var cols;
+      if (n <= 3) cols = n;
+      else if (n === 4) cols = 2;
+      else cols = 3; /* 5, 6, and 7+ */
+      return '<div class="blk-stats" style="grid-template-columns:repeat(' + cols + ',1fr)">' + tiles + '</div>';
     }
 
     function renderTable(blk) {
@@ -1130,23 +1141,7 @@
     function buildTitleSlide() {
       var html = '<div class="title-inner">';
 
-      /* Logomark row: Soapbox always primary; validated partner marks
-         (deck.cover_logos) render smaller behind a mono caption. */
-      html += '<div class="title-logos">' + logoSvg('soapbox', 44);
-      var partners = Array.isArray(deck.cover_logos) ? deck.cover_logos : [];
-      var pHtml = '';
-      for (var pl = 0; pl < partners.length; pl++) {
-        var pn = partners[pl];
-        if (pn === 'soapbox') continue; /* already primary */
-        if (typeof pn !== 'string' || !LOGO_REGISTRY.hasOwnProperty(pn)) continue;
-        pHtml += logoSvg(pn, 30);
-      }
-      if (pHtml) {
-        var logosLabel = has(deck.cover_logos_label) ? deck.cover_logos_label : 'with';
-        html += '<span class="logo-caption">// ' + esc(logosLabel) + '</span>' + pHtml;
-      }
-      html += '</div>';
-
+      /* Nothing above the title — cover logos live in the bottom-left foot. */
       var eyebrowText = has(deck.engagement_type) ? deck.engagement_type : 'delivery presentation';
       html += '<p class="eyebrow">// ' + esc(eyebrowText) + '</p>';
       if (has(deck.title)) html += '<h1>' + esc(deck.title) + '<span class="o">.</span></h1>';
@@ -1160,15 +1155,31 @@
       if (chips) html += '<div class="title-meta">' + chips + '</div>';
       html += '</div>';
 
+      /* Bottom-left brand row: [Soapbox mark] soapbox.  // powered by [partner marks].
+         Only registry SVGs are emitted; payload strings are lookup keys only. */
       html += '<div class="title-foot">';
-      html += '<span class="wordmark">' + logoSvg('soapbox', 24) + 'soapbox<span class="o">.</span>build</span>';
+      html += '<span class="foot-brand">';
+      html += '<span class="wordmark">' + logoSvg('soapbox', 26) + 'soapbox<span class="o">.</span></span>';
+      var partners = Array.isArray(deck.cover_logos) ? deck.cover_logos : [];
+      var pHtml = '';
+      for (var pl = 0; pl < partners.length; pl++) {
+        var pn = partners[pl];
+        if (pn === 'soapbox') continue; /* Soapbox mark is always shown */
+        if (typeof pn !== 'string' || !LOGO_REGISTRY.hasOwnProperty(pn)) continue;
+        pHtml += logoSvg(pn, 22);
+      }
+      if (pHtml) {
+        var logosLabel = has(deck.cover_logos_label) ? deck.cover_logos_label : 'powered by';
+        html += '<span class="logo-caption">// ' + esc(logosLabel) + '</span>' + pHtml;
+      }
+      html += '</span>';
       if (deck.confidential === true) html += '<span class="confidential">confidential &mdash; prepared for ' + (has(deck.client) ? esc(deck.client) : 'client') + '</span>';
       html += '</div>';
       return { cls: 'slide-title', html: html, sectionKey: null };
     }
 
     function buildAgendaSlide(sectionsPresent) {
-      var html = '<div class="slide-head">';
+      var html = '<div class="fit-wrap"><div class="slide-head">';
       html += '<p class="eyebrow">// agenda</p>';
       html += '<h2>What we&rsquo;ll cover</h2>';
       html += '</div><div class="slide-body">';
@@ -1183,20 +1194,20 @@
               + '<span class="agenda-count">' + sec.count + (sec.count === 1 ? ' slide' : ' slides') + '</span>'
               + '</button></li>';
       }
-      html += '</ul></div>';
+      html += '</ul></div></div>';
       return { cls: 'slide-agenda', html: html, sectionKey: null };
     }
 
     function buildContentSlide(entry) {
       var def = entry.def;
       var secName = entry.sectionKey ? SECTION_NAMES[entry.sectionKey] : null;
-      var html = '<div class="slide-head">';
+      var html = '<div class="fit-wrap"><div class="slide-head">';
       var eyebrowText = has(def.eyebrow) ? def.eyebrow : (secName ? secName.toLowerCase() : null);
       if (eyebrowText) html += '<p class="eyebrow">// ' + esc(eyebrowText) + '</p>';
       if (has(def.heading)) html += '<h2>' + esc(def.heading) + '</h2>';
       if (has(def.sub)) html += '<p class="slide-sub">' + esc(def.sub) + '</p>';
       html += '</div>';
-      html += '<div class="slide-body">' + renderBlocks(def.blocks) + '</div>';
+      html += '<div class="slide-body">' + renderBlocks(def.blocks) + '</div></div>';
 
       var footL = [];
       if (has(deck.client)) footL.push(esc(deck.client));
@@ -1274,6 +1285,38 @@
     document.addEventListener('fullscreenchange', fitStage);
     document.addEventListener('webkitfullscreenchange', fitStage);
     fitStage();
+
+    /* Per-slide shrink-to-fit (PowerPoint autofit). The stage is a fixed
+       1280x720 design surface, so the available box is constant; we measure
+       each .fit-wrap's natural size and scale it down when it overflows.
+       Never scales up. Re-run after fonts load (metrics change) and on
+       resize (harmless — stage size is fixed). */
+    var FIT_AVAIL_H = 720 - 56 - 48; /* top padding + footer reserve => 616 */
+    var FIT_AVAIL_W = 1280 - 72 * 2; /* left+right padding => 1136 */
+    function fitSlideContent() {
+      for (var k = 0; k < slideEls.length; k++) {
+        var wrap = slideEls[k].querySelector('.fit-wrap');
+        if (!wrap) continue;
+        wrap.style.transform = 'none';
+        var needH = wrap.scrollHeight;
+        var needW = wrap.scrollWidth;
+        if (!(needH > 0) || !(needW > 0)) continue;
+        var kf = Math.min(FIT_AVAIL_H / needH, FIT_AVAIL_W / needW, 1);
+        if (kf < 0.62) kf = 0.62;
+        if (kf < 0.9995) {
+          wrap.style.transform = 'scale(' + kf + ')';
+          wrap.setAttribute('data-fit-scale', kf.toFixed(4));
+        } else {
+          wrap.style.transform = 'none';
+          wrap.setAttribute('data-fit-scale', '1');
+        }
+      }
+    }
+    fitSlideContent();
+    window.addEventListener('resize', fitSlideContent);
+    if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
+      document.fonts.ready.then(function() { fitSlideContent(); });
+    }
 
     /* Click navigation: right 2/3 next, left 1/3 prev. Interactive
        elements (agenda links, buttons, anchors) are exempt. */

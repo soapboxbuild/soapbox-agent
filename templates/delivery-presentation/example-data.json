@@ -24,7 +24,9 @@
             { "label": "Units", "value": "504", "sub": "garden-style, 18 buildings" },
             { "label": "Gross floor area", "value": "46,000 m²", "sub": "~500,000 sqft conditioned" },
             { "label": "Vintage", "value": "1998", "sub": "gas DHW + furnaces at mid-life" },
-            { "label": "Hold period", "value": "7 yr", "sub": "exit modeled 2033" }
+            { "label": "Hold period", "value": "7 yr", "sub": "exit modeled 2033" },
+            { "label": "Energy intensity", "value": "168 kWh/m²", "sub": "above BPD peer group" },
+            { "label": "Occupancy", "value": "94%", "sub": "trailing 12-month average" }
           ]
         },
         {
@@ -92,6 +94,14 @@
                 "PV of avoided Reg-28 penalties across both checkpoints.",
                 "Conditional exit-value impact, applied only where buyer underwriting supports it."
               ]
+            },
+            {
+              "type": "stats",
+              "items": [
+                { "label": "Counted", "value": "4", "sub": "value drivers in the base case" },
+                { "label": "Landlord share", "value": "38%", "sub": "of total site utility spend" },
+                { "label": "Discount rate", "value": "8.0%", "sub": "unlevered, for PV of savings" }
+              ]
             }
           ],
           "right": [
@@ -102,6 +112,14 @@
                 "No green premium asserted without market evidence.",
                 "No incentive counted before program eligibility is confirmed.",
                 "All displayed figures rounded to 2 significant figures; benchmarks vs. BPD peers."
+              ]
+            },
+            {
+              "type": "stats",
+              "items": [
+                { "label": "Excluded", "value": "3", "sub": "categories held out of the base case" },
+                { "label": "Sig figs", "value": "2", "sub": "on every displayed figure" },
+                { "label": "Benchmark", "value": "BPD", "sub": "peer group, not national median" }
               ]
             }
           ]
@@ -268,7 +286,8 @@
             "2. Confirm incentive eligibility (utility DSM + IRA 179D pathway) before locking the year-1 capital budget.",
             "3. Board review of Plan B capital ask at the next investment committee.",
             "4. Commission the year-1 package: DHW heat-pump design and controls scope, aligned to the 2026 checkpoint.",
-            "5. Standing revision cadence: plan re-run annually with actuals, and at any material change in tariffs or Reg-28 rulemaking."
+            "5. Align procurement with equipment RUL schedule so only incremental cost is carried on each replacement.",
+            "6. Standing revision cadence: plan re-run annually with actuals, and at any material change in tariffs or Reg-28 rulemaking."
           ]
         },
         {

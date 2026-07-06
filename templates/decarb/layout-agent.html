@@ -369,6 +369,11 @@
     .leg { display: flex; align-items: center; gap: 6px; }
     .leg-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
     .leg-line { width: 24px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+    /* Clickable legend: toggles its series on the chart. */
+    .leg-toggle { cursor: pointer; user-select: none; transition: opacity .12s; }
+    .leg-toggle:hover { color: #12253A; }
+    .leg-toggle:focus-visible { outline: 2px solid #94A3B8; outline-offset: 2px; border-radius: 3px; }
+    .leg-toggle.leg-off { opacity: .38; text-decoration: line-through; }
 
     /* ─── Waterfall per-plan block ─── */
     .plan-block { margin-bottom: 24px; }
@@ -534,16 +539,19 @@
     /* Compliance status chip — state encoded in color (dq-dot palette) */
     .dash-chip {
       display: inline-flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       padding: 8px 14px;
-      border-radius: 999px;
+      border-radius: 14px;
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.02em;
-      white-space: nowrap;
+      white-space: normal;      /* wrap long compliance messages instead of overflowing the page */
+      max-width: 360px;
+      text-align: left;
+      line-height: 1.35;
     }
-    .dash-chip .dq-dot { margin-top: 0; width: 9px; height: 9px; }
+    .dash-chip .dq-dot { margin-top: 4px; width: 9px; height: 9px; flex-shrink: 0; }
     .dash-chip.ok   { background: #EDF7F2; color: #0D5C39; border: 1px solid #A7D7BF; }
     .dash-chip.warn { background: #FFFBEB; color: #92400E; border: 1px solid #FCD34D; }
     .dash-chip.risk { background: #FEF2F2; color: #B42318; border: 1px solid #F3B4AE; }
@@ -818,15 +826,9 @@
       }
       if (tiles) { setHtml('dash-grid', tiles); showEl('dash-grid'); anything = true; }
 
-      /* Recommendation: a SHORT (≤3 sentence) recommendation only. The prior 'wall of text'
-         narrative and the cumulative-cashflow J-curve sparkline were removed for readability —
-         the recommendation must be digestible at a glance. */
-      var recText = d.recommendation || ex.headline || null;
-      if (recText) {
-        setText('dash-rec-text', recText);
-        showEl('dash-rec');
-        anything = true;
-      }
+      /* The standalone recommendation paragraph (dash-rec-text) was removed — it duplicated
+         the per-plan recommendation blocks below (which carry the recommended plan, its thesis,
+         and headline metrics). The bulleted plan blocks ARE the recommendation now. */
       /* Per-plan descriptions as a bulleted, spatially-separated list (not a run-on
          paragraph). Each plan: name + label, a one-line thesis (plan.thesis, else the
          first summary_point), and its headline metric. The recommended plan
@@ -1006,7 +1008,7 @@
           }
           poly.push(px(p.year).toFixed(1)+','+py(Number(p[s.key])).toFixed(1));
         });
-        lines += '<polyline points="'+poly.join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="2"'
+        lines += '<polyline data-si="'+legendSeries.length+'" points="'+poly.join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="2"'
                + (s.dash ? ' stroke-dasharray="'+s.dash+'"' : '') + '/>';
         legendSeries.push(s);
       });
@@ -1015,7 +1017,7 @@
       if (crrem.length > 1) {
         var cpts = crrem.slice().sort(function(a,b){ return Number(a.year) - Number(b.year); });
         var cpoly = cpts.map(function(p){ return px(Number(p.year)).toFixed(1)+','+py(Number(p.carbon_kgco2_m2yr)).toFixed(1); });
-        lines += '<polyline class="crrem-pathway" points="'+cpoly.join(' ')+'" fill="none" stroke="#B91C1C" stroke-width="2" stroke-dasharray="5,4"/>';
+        lines += '<polyline class="crrem-pathway" data-si="'+legendSeries.length+'" points="'+cpoly.join(' ')+'" fill="none" stroke="#B91C1C" stroke-width="2" stroke-dasharray="5,4"/>';
         legendSeries.push({ label: crremLabel, color: '#B91C1C', dash: '5,4' });
       }
 
@@ -1053,8 +1055,14 @@
               + '<text x="12" y="'+((Y1+Y2)/2).toFixed(0)+'" font-size="9" fill="#64748B" text-anchor="middle" transform="rotate(-90,12,'+((Y1+Y2)/2).toFixed(0)+')">kgCO₂e·m⁻²·yr⁻¹</text>'
               + '</svg>';
       var leg = '';
-      legendSeries.forEach(function(s){
-        leg += '<div class="leg"><div class="leg-line" style="background:'+s.color+(s.dash?';border-top:1px dashed '+s.color+';height:0;background:none':'')+'"></div>'+esc(s.label)+'</div>';
+      legendSeries.forEach(function(s, si){
+        /* Dashed series (BPS target, CRREM pathway) must read as dashed in the legend too —
+           a repeating gradient mirrors the SVG stroke-dasharray at the same 2px weight. */
+        var swatch = s.dash
+          ? 'background:repeating-linear-gradient(90deg,'+s.color+' 0 5px,transparent 5px 9px)'
+          : 'background:'+s.color;
+        leg += '<div class="leg leg-toggle" data-si="'+si+'" role="button" tabindex="0" aria-pressed="true" title="Click to show/hide this line">'
+             + '<div class="leg-line" style="'+swatch+'"></div>'+esc(s.label)+'</div>';
       });
       var notes = '';
       if (strandYear != null || tgt.crrem_stranding_year) {
@@ -1068,7 +1076,32 @@
         if (meta.scenario) metaBits.push(meta.scenario + ' scenario');
         notes += '<div class="chart-source">CRREM pathway: ' + esc(metaBits.join(' · ')) + '. All series in kgCO₂e·m⁻²·yr⁻¹ (site GHGI converted where sourced per-ft²). BPS target drives fines; the CRREM pathway drives stranding — they are different objects.</div>';
       }
-      setHtml('trajectory-chart', '<div class="chart-title">Carbon Intensity — with-plan vs. BAU vs. targets (kgCO₂e·m⁻²·yr⁻¹)</div>' + svg + '<div class="chart-legend">'+leg+'</div>' + notes);
+      setHtml('trajectory-chart', '<div class="chart-title">Carbon Intensity — with-plan vs. BAU vs. targets (kgCO₂e·m⁻²·yr⁻¹)</div>' + svg + '<div class="chart-legend" id="trajectory-legend">'+leg+'</div>' + notes);
+
+      /* Legend line-toggle: click (or Enter/Space) a legend item to show/hide its
+         series on the chart. Keeps the chart legible when many lines overlap. */
+      var chartEl = document.getElementById('trajectory-chart');
+      var legEl = document.getElementById('trajectory-legend');
+      if (chartEl && legEl) {
+        var toggleSeries = function(item){
+          var si = item.getAttribute('data-si');
+          if (si == null) return;
+          var poly = chartEl.querySelector('polyline[data-si="'+si+'"]');
+          if (!poly) return;
+          var hidden = item.classList.toggle('leg-off');
+          poly.style.display = hidden ? 'none' : '';
+          item.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+        };
+        legEl.addEventListener('click', function(e){
+          var item = e.target.closest ? e.target.closest('.leg-toggle') : null;
+          if (item) toggleSeries(item);
+        });
+        legEl.addEventListener('keydown', function(e){
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          var item = e.target.closest ? e.target.closest('.leg-toggle') : null;
+          if (item) { e.preventDefault(); toggleSeries(item); }
+        });
+      }
     }
 
     /* ════════════════════════════════
@@ -1098,9 +1131,10 @@
       function y1roc(net, ll, anc) { return (net != null && net > 0) ? fmtPct(((ll || 0) + (anc || 0)) / net) : '—'; }
       var costRows = '', impRows = '';
       var TLfL = 0, TInc = 0, TIncent = 0, TNet = 0, TCO2 = 0, TLL = 0, TTen = 0, TAnc = 0;
+      // Section group-title rows and per-group subtotal rows were removed — they added
+      // too much vertical space. Measures still render grouped by type (order preserved),
+      // just without the header/subtotal rows; only the grand Total row remains.
       order.forEach(function(t) {
-        costRows += '<tr class="group-row"><td colspan="7">' + esc(t) + '</td></tr>';
-        impRows  += '<tr class="group-row"><td colspan="6">' + esc(t) + '</td></tr>';
         var sLfL = 0, sInc = 0, sIncent = 0, sNet = 0, sCO2 = 0, sLL = 0, sTen = 0, sAnc = 0;
         groups[t].forEach(function(m) {
           var lfl = num(m.like_for_like_cost), inc = num(m.incremental_cost), incent = num(m.incentives), net = netCost(m);
@@ -1126,15 +1160,6 @@
             + '</tr>';
         });
         TLfL += sLfL; TInc += sInc; TIncent += sIncent; TNet += sNet; TCO2 += sCO2; TLL += sLL; TTen += sTen; TAnc += sAnc;
-        if (groups[t].length > 1) {
-          costRows += '<tr class="subtotal-row"><td>Subtotal — ' + esc(t) + '</td><td></td><td></td>'
-            + '<td class="num">' + fmtCurrency(sLfL) + '</td><td class="num">' + fmtCurrency(sInc) + '</td>'
-            + '<td class="num">' + fmtCurrency(sIncent) + '</td><td class="num">' + fmtCurrency(sNet) + '</td></tr>';
-          impRows += '<tr class="subtotal-row"><td>Subtotal — ' + esc(t) + '</td>'
-            + '<td class="num">' + fmt2sig(sCO2) + '</td><td class="num">' + fmtCurrency(sLL) + '</td>'
-            + '<td class="num">' + fmtCurrency(sTen) + '</td><td class="num">' + fmtCurrency(sAnc) + '</td>'
-            + '<td class="num">' + y1roc(sNet, sLL, sAnc) + '</td></tr>';
-        }
       });
       costRows += '<tr class="totals-row"><td>Total</td><td></td><td></td>'
         + '<td class="num">' + fmtCurrency(TLfL) + '</td><td class="num">' + fmtCurrency(TInc) + '</td>'
@@ -1458,7 +1483,6 @@
     <div class="dash-rec" id="dash-rec" style="display:none">
       <div class="dash-rec-body">
         <div class="dash-rec-label">Recommendation</div>
-        <div class="dash-rec-text" id="dash-rec-text">—</div>
         <ul class="dash-rec-plans" id="dash-rec-plans"><!-- JS: one bulleted, spaced item per plan --></ul>
       </div>
     </div>
@@ -1502,12 +1526,24 @@
   </div>
 
   <!-- ══════════════════════════════════
-       4. MEASURE ROADMAP (moved above Value Creation — the measures drive the economics)
+       4. VALUE-CREATION WATERFALL (+ per-plan cashflow underneath each)
+  ════════════════════════════════════ -->
+  <div id="waterfall-section" class="section" style="display:none">
+    <div class="section-label">Value Creation</div>
+    <h2 class="section-title">Impact on Asset Value at Exit — Value-Creation Waterfall</h2>
+    <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the present value of BPS fine avoidance. Recurring NOI changes are capitalized (÷ exit cap); fine avoidance is a discounted present value.</p>
+    <div id="waterfall-plans"><!-- JS: one waterfall per plan --></div>
+    <div class="chart-legend" id="waterfall-legend"><!-- JS --></div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       5. MEASURE ROADMAP (presented AFTER Value Creation — the economics lead, the
+          capital plan follows)
   ════════════════════════════════════ -->
   <div id="roadmap-section" class="section" style="display:none">
     <div class="section-label">Capital Planning</div>
     <h2 class="section-title">Phased Measure Roadmap</h2>
-    <p class="section-intro">Modeled measures with install-year staging, grouped by type. Split into a cost view and an impact/return view (same measures, keyed by name). Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives value. Net Total Cost = incremental − incentives. Y1 Return on Cost = (landlord utility savings + ancillary revenue) ÷ net total cost.</p>
+    <p class="section-intro">Modeled measures with install-year staging. Split into a cost view and an impact/return view (same measures, keyed by name). Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives value. Net Total Cost = incremental − incentives. Y1 Return on Cost = (landlord utility savings + ancillary revenue) ÷ net total cost.</p>
     <div class="sub-heading">Cost &amp; Capital</div>
     <div style="overflow-x:auto">
       <table class="profile-table roadmap-table">
@@ -1545,17 +1581,6 @@
         <tbody id="roadmap-tbody-impact"><!-- JS --></tbody>
       </table>
     </div>
-  </div>
-
-  <!-- ══════════════════════════════════
-       5. VALUE-CREATION WATERFALL (+ per-plan cashflow underneath each)
-  ════════════════════════════════════ -->
-  <div id="waterfall-section" class="section" style="display:none">
-    <div class="section-label">Value Creation</div>
-    <h2 class="section-title">Impact on Asset Value at Exit — Value-Creation Waterfall</h2>
-    <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the present value of BPS fine avoidance. Recurring NOI changes are capitalized (÷ exit cap); fine avoidance is a discounted present value.</p>
-    <div id="waterfall-plans"><!-- JS: one waterfall per plan --></div>
-    <div class="chart-legend" id="waterfall-legend"><!-- JS --></div>
   </div>
 
   <!-- ══════════════════════════════════

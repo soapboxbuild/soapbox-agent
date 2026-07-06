@@ -361,6 +361,24 @@ Gather every source; record everything in state as you go.
    `state.targets`. Full jurisdiction source registry + procedure live in the bps-analysis skill
    (Step 1.5).
 
+   **7a. Compliance metric & pathway — a fine requires failing the GOVERNING pathway, not the hardest one.**
+   Many BPS are **dual-pathway**: the owner elects the metric they comply on.
+   - **Colorado Reg 28** (statewide, covered buildings ≥50k sqft): comply via **EITHER** the property-type
+     **site-EUI** target (or the alternative % EUI reduction from the 2021 baseline) **OR** the **GHG-intensity**
+     target. A building is compliant if it clears **either** pathway. Do **NOT** manufacture a penalty by
+     assessing only the site-EUI pathway (the one a gas-retaining plan fails) when the plan clears the GHG
+     pathway — the owner would simply elect the pathway they pass. If a plan clears any pathway, set that plan
+     `compliant: true`, `waterfall.pv_bps_fine_avoidance: 0`, and no `cashflow[].bps_fine_avoidance`.
+   - **Energize Denver** (Denver city only): **site-EUI** based, single metric — use EUI targets there.
+   - **Metric consistency (gated).** The plotted `targets.trajectory[].bps_target` line and the plan
+     trajectories (`planned`/`planned_1`/`planned_2`) MUST be on the **same metric that governs the fine**. If
+     you claim a penalty (`compliant:false` or `pv_bps_fine_avoidance>0`), some series (BAU or the non-compliant
+     plan) MUST visibly **exceed** `bps_target` in the penalty years — otherwise there is no fine on the plotted
+     metric and the render is **blocked** (`validateFineConsistency`). If the fine is genuinely EUI-driven,
+     plot the EUI trajectory vs the EUI target so the crossing shows; don't plot a carbon target and book an
+     EUI fine against it. Grid decarbonization credits the GHG pathway but **not** the site-EUI pathway — keep
+     that straight when deciding which pathway a plan actually elects.
+
 Set `phase: "P2"` and save.
 
 ---

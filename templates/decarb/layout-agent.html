@@ -1014,10 +1014,12 @@
       });
 
       /* CRREM 1.5°C pathway — smooth convex decarbonization curve, its own series. */
+      var crremSi = -1;
       if (crrem.length > 1) {
+        crremSi = legendSeries.length; /* its series index — shared by the stranding marker below so both toggle together */
         var cpts = crrem.slice().sort(function(a,b){ return Number(a.year) - Number(b.year); });
         var cpoly = cpts.map(function(p){ return px(Number(p.year)).toFixed(1)+','+py(Number(p.carbon_kgco2_m2yr)).toFixed(1); });
-        lines += '<polyline class="crrem-pathway" data-si="'+legendSeries.length+'" points="'+cpoly.join(' ')+'" fill="none" stroke="#B91C1C" stroke-width="2" stroke-dasharray="5,4"/>';
+        lines += '<polyline class="crrem-pathway" data-si="'+crremSi+'" points="'+cpoly.join(' ')+'" fill="none" stroke="#B91C1C" stroke-width="2" stroke-dasharray="5,4"/>';
         legendSeries.push({ label: crremLabel, color: '#B91C1C', dash: '5,4' });
       }
 
@@ -1044,8 +1046,13 @@
         pts.forEach(function(p){ if (Number(p.year) === strandYear && plannedVal(p) != null) sp2 = p; });
         if (sp2) {
           var sxp = px(strandYear), syp = py(plannedVal(sp2));
-          strandDot = '<circle cx="'+sxp.toFixed(1)+'" cy="'+syp.toFixed(1)+'" r="4" fill="#B91C1C" stroke="#fff" stroke-width="1.5"/>'
-                    + '<text x="'+sxp.toFixed(1)+'" y="'+(syp-8).toFixed(1)+'" font-size="9" font-weight="700" fill="#B91C1C" text-anchor="middle">'+(twoPlan?'Plan 1 strands ':'Stranding ')+esc(String(strandYear))+'</text>';
+          /* Wrap in a group keyed to the CRREM series index so toggling the CRREM legend
+             item hides/shows the stranding marker together with the CRREM line (the
+             stranding year is a CRREM-pathway concept — it shouldn't float alone). */
+          strandDot = '<g data-si="'+crremSi+'">'
+                    + '<circle cx="'+sxp.toFixed(1)+'" cy="'+syp.toFixed(1)+'" r="4" fill="#B91C1C" stroke="#fff" stroke-width="1.5"/>'
+                    + '<text x="'+sxp.toFixed(1)+'" y="'+(syp-8).toFixed(1)+'" font-size="9" font-weight="700" fill="#B91C1C" text-anchor="middle">'+(twoPlan?'Plan 1 strands ':'Stranding ')+esc(String(strandYear))+'</text>'
+                    + '</g>';
         }
       }
 
@@ -1086,10 +1093,12 @@
         var toggleSeries = function(item){
           var si = item.getAttribute('data-si');
           if (si == null) return;
-          var poly = chartEl.querySelector('polyline[data-si="'+si+'"]');
-          if (!poly) return;
+          /* Toggle EVERY chart element tagged with this series index — the polyline plus,
+             for CRREM, its stranding-year marker group — so they hide/show together. */
+          var els = chartEl.querySelectorAll('[data-si="'+si+'"]');
+          if (!els.length) return;
           var hidden = item.classList.toggle('leg-off');
-          poly.style.display = hidden ? 'none' : '';
+          els.forEach(function(el){ el.style.display = hidden ? 'none' : ''; });
           item.setAttribute('aria-pressed', hidden ? 'false' : 'true');
         };
         legEl.addEventListener('click', function(e){

@@ -682,6 +682,20 @@ gate (resume may have skipped P4's check).
    "it depends on hold period" the headline. Give each plan a one-line `plans[].thesis` (the recommendation
    renders these as separated bulleted blocks); keep `plans[].summary_points[]` for the detailed bullets.
 
+   **Value bridge & incremental IRR come from the INCREMENTAL cashflow stream — never a base asset DCF.**
+   `net_value_creation` and each plan's incremental IRR are built per recipe 8 from the *incremental*
+   cashflows only: incremental capex out; owner-share utility savings + ancillary capitalized ÷ exit cap;
+   incentives; PV of BPS fine avoidance. The decarb engagement does **not** carry the asset's going-in NOI
+   or purchase price, and the bridge does not need them. **Do NOT call the cashflow `run_dcf` tool** (it
+   requires `going_in_noi`/exit-cap for a full asset DCF) and do **not** stall on "I need a base DCF first."
+   Use `cashflow get_ll_capture` for the owner/tenant split; compute each plan's incremental IRR from its
+   incremental stream (`run_intervention_irr` only if you already have a `base_model` — otherwise compute
+   directly). A plan whose owner-share savings never cover its incremental capex has a **negative or
+   undefined IRR — that is a real, reportable outcome** (report it as such), not a tool failure. If any
+   cashflow tool returns an input/validation error, FIX the inputs — the cashflow engine is available; do
+   NOT tell the user "cashflow engine unavailable." (Verified live: the server is up and responds; a
+   validation error means wrong/missing arguments, not an outage.)
+
    **⚠️ EXTERNAL DELIVERABLE — no internal-process language anywhere in the report data.**
    The report is sent to external parties (owners, lenders, buyers) who have **no context**
    for our internal workflow. Nothing you put in ANY field — exec summary, dashboard, plan

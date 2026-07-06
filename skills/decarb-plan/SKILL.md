@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.7.1
+version: 1.7.2
 ---
 
 # Decarb-Plan Engagement
@@ -66,6 +66,15 @@ org memory, the reference library, and the `decarb` report template.
      rebuild the CRREM curve from saved state.** Stored state may predate the curve fix; the render
      gate now BLOCKS a decarb report whose crrem_meta is set but crrem_pathway is empty (it would
      otherwise silently drop the curve), so a from-state rebuild without a fresh fetch will fail.
+   - **RE-RENDER = REGENERATE, never re-render a stored data object verbatim.** A stored/previously-
+     rendered `data` object (e.g. embedded in a prior report HTML or a saved "vN" state) may PREDATE
+     template/schema/content changes. On any revision or re-render you MUST rebuild the full `data`
+     object and re-apply EVERY pre-render rule below — do not assume the saved object "already has all
+     changes." Concretely, re-running an old object silently drops: new fields (`annual_owner_savings`
+     → blank RoC%/Landlord Savings columns), the null-vs-0 fine-avoidance rule (renders a misleading
+     `$0` instead of `—`), and prose fixes (a stale editorial `dashboard.title`). If you only need a
+     small presentation tweak use `patch_report`; otherwise regenerate from `state`, not from the old
+     rendered payload. This is the general form of the CRREM-from-state rule above.
 5. **Pre-render sanity checks (the gate/verifier MUST reject these — they are self-evidently wrong):**
    - **Emissions trajectory must be non-increasing.** A with-plan (or BAU) carbon curve that *rises*
      over time is a sign/axis bug — decarb emissions decline. Reject and fix the payload.
@@ -116,9 +125,10 @@ org memory, the reference library, and the `decarb` report template.
    - **No editorializing in report prose.** The deliverable states facts plainly — NO hype or
      rhetorical framing. Do not write lines like "two genuinely different strategies — same asset,
      different theses." The "genuinely differentiated plans" rule governs the MODELING (make the plans
-     actually differ on capex/carbon/IRR/stranding), NOT the copy. recommendation, summary_points,
-     section intros, and executive_summary must be plain and specific — name the plan, the number, the
-     driver; skip the adjectives and the meta-commentary.
+     actually differ on capex/carbon/IRR/stranding), NOT the copy. **`dashboard.title`**, recommendation,
+     summary_points, section intros, and executive_summary must be plain and specific — name the plan,
+     the number, the driver; skip the adjectives and the meta-commentary. (`dashboard.title` should be
+     a neutral label like "Decision summary", never a rhetorical headline.)
    - **Plan narrative goes in per-plan bullets, not a paragraph wall.** Populate
      `economics.plans[].summary_points[]` (3–5 short bullets each: what it deploys, headline
      IRR/value, the key trade-off/sensitivity) so each plan renders as a scannable list under its

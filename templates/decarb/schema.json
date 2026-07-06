@@ -150,6 +150,7 @@
       "additionalProperties": false,
       "properties": {
         "exit_cap": { "type": "number", "description": "Exit cap rate as a decimal (e.g. 0.0575 for 5.75%). Used to capitalize recurring NOI changes." },
+        "bps_note": { "type": "string", "description": "Optional override for the note explaining a '—' BPS fine-avoidance column (shown when no plan models a fine regime). Defaults to a generic 'no mandatory BPS penalty regime in this jurisdiction' explanation." },
         "exit_year": { "type": "integer", "description": "Modeled exit / disposition year." },
         "selected_plan": { "type": "string", "description": "The `name` of the recommended plan. Visually emphasized in the waterfall; drives which plan's cashflow is shown." },
 
@@ -167,6 +168,7 @@
               "total_cost": { "type": "number", "description": "Total installed cost in USD.", "minimum": 0 },
               "like_for_like_cost": { "type": "number", "description": "Like-for-like replacement cost in USD (0 for pure add-ons).", "minimum": 0 },
               "incremental_cost": { "type": "number", "description": "Incremental cost over like-for-like (= total − like_for_like). The IRR/capex basis.", "minimum": 0 },
+              "annual_owner_savings": { "type": "number", "description": "Stabilized annual OWNER-SHARE (landlord) $ savings from this measure (utility savings the owner actually captures, per the end-use payer — NOT tenant savings). Renders the 'Landlord Savings/yr' column and drives RoC% = annual_owner_savings ÷ incremental_cost. From the cashflow/DCF engine, never LLM-computed." },
               "elec_reduction_kwh": { "type": "number", "description": "Annual electricity reduction in kWh. NEGATIVE for electrification measures (electricity rises)." },
               "gas_reduction_kwh": { "type": "number", "description": "Annual gas reduction in kWh-equivalent." }
             }
@@ -191,7 +193,7 @@
               "waterfall": {
                 "type": "object",
                 "description": "The value-creation-bridge components plus the net total. incremental_capex and capitalized_subscription are stored NEGATIVE (they pull the bridge down); all additive components are positive. net_value_creation should equal the sum of the components (incremental_capex + capitalized_subscription + incentives + capitalized_utility_savings + capitalized_ancillary_revenue + pv_bps_fine_avoidance). baseline_capex is context-only (NOT summed into the bridge).",
-                "required": ["incremental_capex", "incentives", "capitalized_utility_savings", "capitalized_ancillary_revenue", "pv_bps_fine_avoidance", "net_value_creation"],
+                "required": ["incremental_capex", "incentives", "capitalized_utility_savings", "capitalized_ancillary_revenue", "net_value_creation"],
                 "additionalProperties": false,
                 "properties": {
                   "incremental_capex": { "type": "number", "description": "Σ incremental cost over like-for-like across the plan's measures. NEGATIVE (decrement)." },
@@ -200,8 +202,8 @@
                   "incentives": { "type": "number", "description": "Rebates/incentives offsetting capex. Positive." },
                   "capitalized_utility_savings": { "type": "number", "description": "Stabilized annual owner-share utility $ savings ÷ exit cap. Positive. For subscription measures this is the GROSS savings (before the subscription fee, which is captured separately in capitalized_subscription)." },
                   "capitalized_ancillary_revenue": { "type": "number", "description": "Stabilized annual solar/EV ancillary revenue ÷ exit cap. Positive." },
-                  "pv_bps_fine_avoidance": { "type": "number", "description": "Discounted present value of the avoided-fine stream (a finite, scheduled penalty — PV, never capitalized). Positive." },
-                  "net_value_creation": { "type": "number", "description": "Impact on asset value at exit = incremental_capex + capitalized_subscription + incentives + capitalized_utility_savings + capitalized_ancillary_revenue + pv_bps_fine_avoidance." }
+                  "pv_bps_fine_avoidance": { "type": ["number", "null"], "description": "Discounted present value of the avoided-fine stream (a finite, scheduled penalty — PV, never capitalized). Positive. Set to NULL (omit — do NOT use 0) when the jurisdiction has no mandatory BPS penalty regime: there is no downside to avoid, and the report then shows '—' with an explanatory note rather than a misleading $0 'avoided' line." },
+                  "net_value_creation": { "type": "number", "description": "Impact on asset value at exit = incremental_capex + capitalized_subscription + incentives + capitalized_utility_savings + capitalized_ancillary_revenue + pv_bps_fine_avoidance (treat null fine-avoidance as 0 in this sum)." }
                 }
               },
               "cashflow": {

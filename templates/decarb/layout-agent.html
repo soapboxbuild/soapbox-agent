@@ -307,8 +307,34 @@
       color: #12253A;
       border-top: 1.5px solid #12253A;
     }
+    .profile-table tr.group-row td {
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748B;
+      background: #F8FAFC;
+      padding-top: 12px;
+    }
+    .profile-table tr.subtotal-row td {
+      font-weight: 600;
+      color: #475569;
+      background: #FBFCFE;
+      border-top: 1px solid #E2E8F0;
+    }
     .neg { color: #B45309; font-weight: 600; }
     .pos { color: #1F6B45; font-weight: 600; }
+    /* Collapsible per-plan cashflow (mirrors the Sources section) */
+    .cashflow-collapse { margin: 12px 0 18px; border: 1px solid var(--border, #E2E8F0); background: var(--card, #fff); overflow: hidden; }
+    .cashflow-collapse summary {
+      padding: 10px 14px; font-size: 12px; font-weight: 600; color: #12253A; cursor: pointer;
+      list-style: none; display: flex; align-items: center; gap: 6px; letter-spacing: 0.03em;
+    }
+    .cashflow-collapse summary::-webkit-details-marker { display: none; }
+    .cashflow-collapse summary::before { content: '▶'; font-size: 9px; transition: transform 0.15s; }
+    .cashflow-collapse details[open] > summary::before,
+    .cashflow-collapse[open] > summary::before { transform: rotate(90deg); }
+    .cashflow-inner { padding: 0 14px 12px; }
 
     /* ─── Chart wrap (mirrors decarb chart-wrap + RSRA chart chrome) ─── */
     .chart-block { margin: 12px 0 4px; }
@@ -667,6 +693,17 @@
       return (neg ? '−' : '') + out;
     }
 
+    /* Energy in kWh → auto-scaled to MWh/GWh for readability. Returns {value, unit}.
+       6,300,000 kWh → {value:'6.3', unit:'GWh/yr'}; 4,200 → MWh; small stays kWh. */
+    function formatEnergyKwh(kwh, perYear) {
+      var suffix = perYear === false ? '' : '/yr';
+      if (typeof kwh !== 'number' || !isFinite(kwh)) return { value: '—', unit: 'kWh' + suffix };
+      var a = Math.abs(kwh);
+      if (a >= 1e6) return { value: fmt2sig(kwh / 1e6), unit: 'GWh' + suffix };
+      if (a >= 1e3) return { value: fmt2sig(kwh / 1e3), unit: 'MWh' + suffix };
+      return { value: fmt2sig(kwh), unit: 'kWh' + suffix };
+    }
+
     /* Percent from decimal fraction, e.g. 0.25 → "25%". */
     function fmtPct(dec) {
       if (typeof dec !== 'number' || !isFinite(dec)) return '—';
@@ -807,7 +844,8 @@
       /* Metrics bar */
       var mHtml = '';
       if (baseline.calibrated_kwh != null) {
-        mHtml += metricCell('Calibrated Baseline', fmt2sig(baseline.calibrated_kwh), 'kWh/yr', false);
+        var calEn = formatEnergyKwh(Number(baseline.calibrated_kwh));
+        mHtml += metricCell('Calibrated Baseline', calEn.value, calEn.unit, false);
       }
       if (baseline.eui_kwh_m2 != null) {
         mHtml += metricCell('Energy Intensity', fmt2sig(baseline.eui_kwh_m2), 'kWh·m⁻²·yr⁻¹', false);
@@ -997,23 +1035,44 @@
     ════════════════════════════════ */
     var roadmapSection = document.getElementById('roadmap-section');
     if (roadmapSection && measures.length > 0) {
-      var rHtml = '';
+      /* Group by measure type for readability; Type becomes the group header (not a column).
+         RoC% = annual owner-share savings ÷ incremental cost (a per-measure return-on-cost). */
+      var groups = {}, order = [];
       measures.forEach(function(m) {
-        var savings = [];
-        if (m.elec_reduction_kwh != null) savings.push('Elec ' + fmt2sig(m.elec_reduction_kwh) + ' kWh');
-        if (m.gas_reduction_kwh  != null) savings.push('Gas ' + fmt2sig(m.gas_reduction_kwh) + ' kWh');
-        rHtml += '<tr>';
-        rHtml += '<td><strong>' + esc(m.name) + '</strong></td>';
-        rHtml += '<td>' + esc(m.type) + '</td>';
-        rHtml += '<td class="ctr">' + esc(m.install_year != null ? String(m.install_year) : '—') + '</td>';
-        rHtml += '<td class="num">' + (m.incremental_cost != null ? fmtCurrency(Number(m.incremental_cost)) : '—') + '</td>';
-        rHtml += '<td>' + (savings.length ? esc(savings.join(' · ')) : '—') + '</td>';
-        rHtml += '</tr>';
+        var t = m.type || 'Other';
+        if (!groups[t]) { groups[t] = []; order.push(t); }
+        groups[t].push(m);
       });
-      /* Totals */
-      var totIncr = measures.reduce(function(s,m){ return s + (Number(m.incremental_cost)||0); }, 0);
-      rHtml += '<tr class="totals-row"><td colspan="3">Total incremental cost</td>' +
-               '<td class="num">' + fmtCurrency(totIncr) + '</td><td></td></tr>';
+      function rocPct(inc, sav) { return (isFinite(inc) && inc > 0 && isFinite(sav)) ? fmtPct(sav / inc) : '—'; }
+      var rHtml = '';
+      var gLfL = 0, gInc = 0, gSav = 0;
+      order.forEach(function(t) {
+        rHtml += '<tr class="group-row"><td colspan="6">' + esc(t) + '</td></tr>';
+        var sLfL = 0, sInc = 0, sSav = 0;
+        groups[t].forEach(function(m) {
+          var lfl = Number(m.like_for_like_cost), inc = Number(m.incremental_cost), sav = Number(m.annual_owner_savings);
+          if (isFinite(lfl)) sLfL += lfl;
+          if (isFinite(inc)) sInc += inc;
+          if (isFinite(sav)) sSav += sav;
+          rHtml += '<tr>'
+            + '<td><strong>' + esc(m.name) + '</strong></td>'
+            + '<td class="ctr">' + esc(m.install_year != null ? String(m.install_year) : '—') + '</td>'
+            + '<td class="num">' + (m.like_for_like_cost != null ? fmtCurrency(lfl) : '—') + '</td>'
+            + '<td class="num">' + (m.incremental_cost != null ? fmtCurrency(inc) : '—') + '</td>'
+            + '<td class="num">' + (m.annual_owner_savings != null ? fmtCurrency(sav) : '—') + '</td>'
+            + '<td class="num">' + rocPct(inc, sav) + '</td>'
+            + '</tr>';
+        });
+        gLfL += sLfL; gInc += sInc; gSav += sSav;
+        if (groups[t].length > 1) {
+          rHtml += '<tr class="subtotal-row"><td>Subtotal — ' + esc(t) + '</td><td></td>'
+            + '<td class="num">' + fmtCurrency(sLfL) + '</td><td class="num">' + fmtCurrency(sInc) + '</td>'
+            + '<td class="num">' + fmtCurrency(sSav) + '</td><td class="num">' + rocPct(sInc, sSav) + '</td></tr>';
+        }
+      });
+      rHtml += '<tr class="totals-row"><td>Total</td><td></td>'
+        + '<td class="num">' + fmtCurrency(gLfL) + '</td><td class="num">' + fmtCurrency(gInc) + '</td>'
+        + '<td class="num">' + fmtCurrency(gSav) + '</td><td class="num">' + rocPct(gInc, gSav) + '</td></tr>';
       setHtml('roadmap-tbody', rHtml);
       roadmapSection.style.display = '';
     }
@@ -1053,9 +1112,14 @@
       comps.push(
         { name: 'Incentives',                   short: 'Incentives',       amount: Number(w.incentives)||0,                    type: 'add' },
         { name: 'Capitalized Utility Savings',  short: 'Util. Savings',    amount: Number(w.capitalized_utility_savings)||0,   type: 'add' },
-        { name: 'Capitalized Ancillary Revenue',short: 'Ancillary Rev.',   amount: Number(w.capitalized_ancillary_revenue)||0, type: 'add' },
-        { name: 'PV of BPS Fine Avoidance',     short: 'PV Fine Avoid.',   amount: Number(w.pv_bps_fine_avoidance)||0,          type: 'add' }
+        { name: 'Capitalized Ancillary Revenue',short: 'Ancillary Rev.',   amount: Number(w.capitalized_ancillary_revenue)||0, type: 'add' }
       );
+      /* BPS fine avoidance: only a bar when a fine regime actually exists. null = no mandatory
+         BPS penalty in this jurisdiction → there is NO downside to avoid, so it is shown as '—'
+         (with a note), never a $0 'avoided' bar that reads as if fines were modeled. */
+      if (w.pv_bps_fine_avoidance != null) {
+        comps.push({ name: 'PV of BPS Fine Avoidance', short: 'PV Fine Avoid.', amount: Number(w.pv_bps_fine_avoidance)||0, type: 'add' });
+      }
       var sum5 = comps.reduce(function(s,c){ return s + c.amount; }, 0);
       var net = (w.net_value_creation != null) ? Number(w.net_value_creation) : sum5;
       if (Math.abs(sum5 - net) > 1) {
@@ -1166,16 +1230,16 @@
         cHtml += cfCell(r.asset_value_impact);
         cHtml += '</tr>';
       });
-      return '<div class="cashflow-block">' +
-        '<div style="font-weight:600;font-size:12px;margin:14px 0 4px;color:var(--muted-foreground,#64748B)">Annual Cashflow — ' +
-          esc((plan.name || 'Plan') + (plan.label ? ' — ' + plan.label : '')) + '</div>' +
-        '<div style="overflow-x:auto"><table class="profile-table"><thead><tr>' +
+      return '<details class="cashflow-collapse">' +
+        '<summary>Annual Cashflow — ' +
+          esc((plan.name || 'Plan') + (plan.label ? ' — ' + plan.label : '')) + '</summary>' +
+        '<div class="cashflow-inner"><div style="overflow-x:auto"><table class="profile-table"><thead><tr>' +
           '<th class="ctr">Year</th><th class="num">Revenue</th><th class="num">Utility<br>Savings</th>' +
           '<th class="num">Like-for-<br>Like CapEx</th><th class="num">Incremental<br>CapEx</th>' +
           '<th class="num">Incentives</th><th class="num">BPS Fine<br>Avoidance</th>' +
           '<th class="num">NOI<br>Impact</th><th class="num">Unlevered<br>Incr. CF</th>' +
           '<th class="num">Cumulative</th><th class="num">Asset Value<br>Impact</th>' +
-        '</tr></thead><tbody>' + cHtml + '</tbody></table></div></div>';
+        '</tr></thead><tbody>' + cHtml + '</tbody></table></div></div></details>';
     }
     function cfCell(v) {
       if (v == null || v === '') return '<td class="num">—</td>';
@@ -1203,7 +1267,7 @@
         cmpHtml += '<td class="num">' + fmtCurrency(Number(w.incentives)||0) + '</td>';
         cmpHtml += '<td class="num">' + fmtCurrency(Number(w.capitalized_utility_savings)||0) + '</td>';
         cmpHtml += '<td class="num">' + fmtCurrency(Number(w.capitalized_ancillary_revenue)||0) + '</td>';
-        cmpHtml += '<td class="num">' + fmtCurrency(Number(w.pv_bps_fine_avoidance)||0) + '</td>';
+        cmpHtml += '<td class="num">' + (w.pv_bps_fine_avoidance != null ? fmtCurrency(Number(w.pv_bps_fine_avoidance)) : '—') + '</td>';
         cmpHtml += '<td class="num pos">' + fmtSignedCurrency(w.net_value_creation != null ? Number(w.net_value_creation) : 0) + '</td>';
         cmpHtml += '<td class="num">' + (p.irr_incremental != null ? fmtPct(Number(p.irr_incremental)) : '—') + '</td>';
         cmpHtml += '<td class="num">' + (p.ghgi_reduction_pct != null ? '−' + fmtPct(Math.abs(Number(p.ghgi_reduction_pct))) : '—') + '</td>';
@@ -1215,6 +1279,12 @@
       var exitBits = [];
       if (econ.exit_cap != null)  exitBits.push('Exit cap ' + fmtPct(Number(econ.exit_cap)));
       if (econ.exit_year != null) exitBits.push('Exit year ' + esc(String(econ.exit_year)));
+      /* Explain a '—' fine-avoidance column: when no plan models a fine regime there is no
+         downside to avoid, so it is shown as '—' rather than a misleading $0. */
+      var anyFine = plans.some(function(p){ return p.waterfall && p.waterfall.pv_bps_fine_avoidance != null; });
+      if (!anyFine) {
+        exitBits.push(econ.bps_note || 'BPS fine avoidance shown as “—”: no mandatory BPS penalty regime applies in this jurisdiction, so there is no fine exposure to avoid');
+      }
       if (exitBits.length) setText('comparison-exit-note', exitBits.join(' · '));
       cmpSection.style.display = '';
     }
@@ -1360,7 +1430,29 @@
   </div>
 
   <!-- ══════════════════════════════════
-       4. VALUE-CREATION WATERFALL (+ per-plan cashflow underneath each)
+       4. MEASURE ROADMAP (moved above Value Creation — the measures drive the economics)
+  ════════════════════════════════════ -->
+  <div id="roadmap-section" class="section" style="display:none">
+    <div class="section-label">Capital Planning</div>
+    <h2 class="section-title">Phased Measure Roadmap</h2>
+    <p class="section-intro">Modeled measures with install-year staging, grouped by type. Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives the IRR. RoC% is annual owner-share (landlord) savings ÷ incremental cost.</p>
+    <div style="overflow-x:auto">
+      <table class="profile-table">
+        <thead><tr>
+          <th>Measure</th>
+          <th class="ctr">Install Year</th>
+          <th class="num">Like-for-Like Cost</th>
+          <th class="num">Incremental Cost</th>
+          <th class="num">Landlord Savings/yr</th>
+          <th class="num">RoC%</th>
+        </tr></thead>
+        <tbody id="roadmap-tbody"><!-- JS --></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       5. VALUE-CREATION WATERFALL (+ per-plan cashflow underneath each)
   ════════════════════════════════════ -->
   <div id="waterfall-section" class="section" style="display:none">
     <div class="section-label">Value Creation</div>
@@ -1368,27 +1460,6 @@
     <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the present value of BPS fine avoidance. Recurring NOI changes are capitalized (÷ exit cap); fine avoidance is a discounted present value.</p>
     <div id="waterfall-plans"><!-- JS: one waterfall per plan --></div>
     <div class="chart-legend" id="waterfall-legend"><!-- JS --></div>
-  </div>
-
-  <!-- ══════════════════════════════════
-       5. MEASURE ROADMAP
-  ════════════════════════════════════ -->
-  <div id="roadmap-section" class="section" style="display:none">
-    <div class="section-label">Capital Planning</div>
-    <h2 class="section-title">Phased Measure Roadmap</h2>
-    <p class="section-intro">Modeled measures with install-year staging. Only the incremental cost over like-for-like replacement is shown — the basis the IRR is computed against.</p>
-    <div style="overflow-x:auto">
-      <table class="profile-table">
-        <thead><tr>
-          <th>Measure</th>
-          <th>Type</th>
-          <th class="ctr">Install Year</th>
-          <th class="num">Incremental Cost</th>
-          <th>Modeled Savings</th>
-        </tr></thead>
-        <tbody id="roadmap-tbody"><!-- JS --></tbody>
-      </table>
-    </div>
   </div>
 
   <!-- ══════════════════════════════════

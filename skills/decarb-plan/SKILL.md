@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.6.3
+version: 1.7.0
 ---
 
 # Decarb-Plan Engagement
@@ -103,6 +103,22 @@ org memory, the reference library, and the `decarb` report template.
      risk-adjusted DR − fee) and a one-time-RCx alternative for contrast (recipe 8).
    - **EV measures carry non-zero owner make-ready capex** (electrical/panel/trenching) — a $0-capex
      EV line under a host agreement is a red flag (host agreement zeroes hardware, not make-ready).
+   - **Trajectory ↔ measure consistency (HARD — the verifier MUST check this).** Every measure with a
+     material modeled energy/fuel reduction must show up as a corresponding bend in the plan curve it
+     belongs to. A fuel-switch / electrification measure (e.g. gas WSHP boiler → air-source heat pump,
+     gas DHW → HPWH) eliminates a large gas load and MUST visibly pull that plan's `planned_*` carbon
+     line down in and after its install year. If a big electrification measure is in the measure list
+     but the plan's trajectory doesn't reflect it (the curve is flat/unchanged through the install
+     year), the trajectory and the measure model are inconsistent — that is a hard data error: record a
+     `verifier__record_finding` (kind `data-quality`, verdict `conflict`) and fix the trajectory before
+     render. Cross-check each plan's GHGI-reduction % against the sum of its measures' modeled
+     reductions on the same basis; they must agree.
+   - **No editorializing in report prose.** The deliverable states facts plainly — NO hype or
+     rhetorical framing. Do not write lines like "two genuinely different strategies — same asset,
+     different theses." The "genuinely differentiated plans" rule governs the MODELING (make the plans
+     actually differ on capex/carbon/IRR/stranding), NOT the copy. recommendation, summary_points,
+     section intros, and executive_summary must be plain and specific — name the plan, the number, the
+     driver; skip the adjectives and the meta-commentary.
    - **Plan narrative goes in per-plan bullets, not a paragraph wall.** Populate
      `economics.plans[].summary_points[]` (3–5 short bullets each: what it deploys, headline
      IRR/value, the key trade-off/sensitivity) so each plan renders as a scannable list under its

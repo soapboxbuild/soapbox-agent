@@ -75,6 +75,12 @@ org memory, the reference library, and the `decarb` report template.
      `$0` instead of `—`), and prose fixes (a stale editorial `dashboard.title`). If you only need a
      small presentation tweak use `patch_report`; otherwise regenerate from `state`, not from the old
      rendered payload. This is the general form of the CRREM-from-state rule above.
+     **Do NOT `read_file` the prior rendered report HTML to "get the structure."** That file is a large
+     (~50KB) HTML view; pulling it into context bloats the model's working set and, stacked on the
+     Audette plan data, has stalled the final synthesis turn (the render hangs before it can emit
+     `fill_report`). You already have the authoritative structure from the template **schema**
+     (`get_report_resources` / `gather_report_data`); rebuild the `data` object from the `state` files
+     (measures, findings, helper) + the live tool outputs (Audette plans, `crrem get_pathway`) only.
 5. **Pre-render sanity checks (the gate/verifier MUST reject these — they are self-evidently wrong):**
    - **Emissions trajectory must be non-increasing.** A with-plan (or BAU) carbon curve that *rises*
      over time is a sign/axis bug — decarb emissions decline. Reject and fix the payload.

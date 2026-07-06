@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.7.2
+version: 1.8.1
 ---
 
 # Decarb-Plan Engagement
@@ -122,6 +122,14 @@ org memory, the reference library, and the `decarb` report template.
      `verifier__record_finding` (kind `data-quality`, verdict `conflict`) and fix the trajectory before
      render. Cross-check each plan's GHGI-reduction % against the sum of its measures' modeled
      reductions on the same basis; they must agree.
+   - **Per-measure savings must reconcile with the measure's energy delta.** Every measure that
+     removes a material energy/gas load MUST carry a proportional `emissions_savings_tco2e` AND owner
+     `landlord_utility_savings` — a blank or near-zero attribution on a big fuel-switch (e.g. a gas
+     boiler → ASHP eliminating ~1+ GWh) is a hard error, not an omission. If the modeled savings come
+     out implausibly small, suspect an UNDER-CAPTURED BASELINE (an atypically low gas figure / GHGI for
+     the building type — the classic tell) rather than a genuinely tiny measure: re-derive against the
+     ESPM/utility actuals, or record a `verifier__record_finding` (data-quality) that the measure's
+     impact is understated pending a meter-coverage fix — never silently ship the tiny number.
    - **No editorializing in report prose.** The deliverable states facts plainly — NO hype or
      rhetorical framing. Do not write lines like "two genuinely different strategies — same asset,
      different theses." The "genuinely differentiated plans" rule governs the MODELING (make the plans

@@ -163,12 +163,18 @@
             "additionalProperties": false,
             "properties": {
               "name": { "type": "string", "description": "Measure name (e.g. 'Air-source heat pump conversion — 2 of 4 plants')." },
-              "type": { "type": "string", "description": "Measure family (e.g. 'Electrification', 'Add-on', 'Replacement-at-RUL', 'Solar PV')." },
-              "install_year": { "type": "integer", "description": "Staged install year (to equipment RUL / capital event)." },
+              "type": { "type": "string", "description": "Measure family (e.g. 'Electrification', 'Add-on', 'Replacement-at-RUL', 'Solar PV'). Used as the roadmap group header." },
+              "plan": { "type": "string", "description": "Which plan this measure belongs to — renders the 'Plan' tag. Use 'Both plans', 'Plan 1 only', or 'Plan 2 only' (the template shortens to Both / Plan 1 / Plan 2)." },
+              "install_year": { "type": "integer", "description": "Staged install year (to equipment RUL / capital event). Renders the 'Year' column." },
               "total_cost": { "type": "number", "description": "Total installed cost in USD.", "minimum": 0 },
-              "like_for_like_cost": { "type": "number", "description": "Like-for-like replacement cost in USD (0 for pure add-ons).", "minimum": 0 },
-              "incremental_cost": { "type": "number", "description": "Incremental cost over like-for-like (= total − like_for_like). The IRR/capex basis.", "minimum": 0 },
-              "annual_owner_savings": { "type": "number", "description": "Stabilized annual OWNER-SHARE (landlord) $ savings from this measure (utility savings the owner actually captures, per the end-use payer — NOT tenant savings). Renders the 'Landlord Savings/yr' column and drives RoC% = annual_owner_savings ÷ incremental_cost. From the cashflow/DCF engine, never LLM-computed." },
+              "like_for_like_cost": { "type": "number", "description": "Like-for-like replacement cost in USD (0 for pure add-ons). Renders 'Like-for-Like Cost'.", "minimum": 0 },
+              "incremental_cost": { "type": "number", "description": "Incremental cost over like-for-like (= total − like_for_like). Renders 'Incremental Cost'; drives Net Total Cost and Y1 RoC.", "minimum": 0 },
+              "incentives": { "type": "number", "description": "Rebates/incentives applied to THIS measure in USD (positive). Renders 'Incentives'; Net Total Cost = incremental_cost − incentives.", "minimum": 0 },
+              "emissions_savings_tco2e": { "type": "number", "description": "Annual emissions reduction from this measure in tCO₂e/yr (engine-computed from gas/elec deltas × emission factors — never LLM-computed). Renders 'Emissions Savings (tCO₂e)'." },
+              "landlord_utility_savings": { "type": "number", "description": "Stabilized annual OWNER/LANDLORD-SHARE utility $ savings the owner actually captures (per the end-use payer). Renders 'Landlord Utility Savings' and drives Y1 RoC. (Alias: annual_owner_savings — landlord_utility_savings wins if both present.) From the engine, never LLM-computed." },
+              "tenant_utility_savings": { "type": "number", "description": "Stabilized annual TENANT-SHARE utility $ savings (does NOT accrue to the owner; shown separately, never merged with landlord savings and never capitalized into the owner value bridge). Renders 'Tenant Utility Savings'." },
+              "ancillary_revenue": { "type": "number", "description": "Stabilized annual ancillary revenue from this measure (EV charging, PJM DR, solar export) in USD/yr, risk-adjusted. Renders 'Ancillary Revenue' and is included in the Y1 RoC numerator." },
+              "annual_owner_savings": { "type": "number", "description": "DEPRECATED alias for landlord_utility_savings (kept for back-compat). Prefer landlord_utility_savings." },
               "elec_reduction_kwh": { "type": "number", "description": "Annual electricity reduction in kWh. NEGATIVE for electrification measures (electricity rises)." },
               "gas_reduction_kwh": { "type": "number", "description": "Annual gas reduction in kWh-equivalent." }
             }

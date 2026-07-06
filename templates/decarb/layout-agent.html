@@ -1035,45 +1035,75 @@
     ════════════════════════════════ */
     var roadmapSection = document.getElementById('roadmap-section');
     if (roadmapSection && measures.length > 0) {
-      /* Group by measure type for readability; Type becomes the group header (not a column).
-         RoC% = annual owner-share savings ÷ incremental cost (a per-measure return-on-cost). */
+      /* Two tables, both keyed by Measure and grouped by type: (A) Cost & Capital, (B) Impact &
+         Return. Split because 11+ columns don't fit the 780px report width / PDF. Net Total Cost =
+         incremental − incentives; Y1 RoC = (landlord utility savings + ancillary revenue) ÷ net cost. */
       var groups = {}, order = [];
       measures.forEach(function(m) {
         var t = m.type || 'Other';
         if (!groups[t]) { groups[t] = []; order.push(t); }
         groups[t].push(m);
       });
-      function rocPct(inc, sav) { return (isFinite(inc) && inc > 0 && isFinite(sav)) ? fmtPct(sav / inc) : '—'; }
-      var rHtml = '';
-      var gLfL = 0, gInc = 0, gSav = 0;
+      function num(v) { return isFinite(Number(v)) ? Number(v) : null; }
+      function planTag(p) {
+        if (!p) return '—';
+        var s = String(p);
+        if (/both/i.test(s)) return 'Both';
+        var mm = s.match(/plan\s*\d+/i);
+        return mm ? mm[0].replace(/plan/i, 'Plan').replace(/\s+/, ' ') : s;
+      }
+      function landlordSav(m) { return m.landlord_utility_savings != null ? num(m.landlord_utility_savings) : num(m.annual_owner_savings); }
+      function netCost(m) { var inc = num(m.incremental_cost); return inc != null ? inc - (num(m.incentives) || 0) : null; }
+      function y1roc(net, ll, anc) { return (net != null && net > 0) ? fmtPct(((ll || 0) + (anc || 0)) / net) : '—'; }
+      var costRows = '', impRows = '';
+      var TLfL = 0, TInc = 0, TIncent = 0, TNet = 0, TCO2 = 0, TLL = 0, TTen = 0, TAnc = 0;
       order.forEach(function(t) {
-        rHtml += '<tr class="group-row"><td colspan="6">' + esc(t) + '</td></tr>';
-        var sLfL = 0, sInc = 0, sSav = 0;
+        costRows += '<tr class="group-row"><td colspan="7">' + esc(t) + '</td></tr>';
+        impRows  += '<tr class="group-row"><td colspan="6">' + esc(t) + '</td></tr>';
+        var sLfL = 0, sInc = 0, sIncent = 0, sNet = 0, sCO2 = 0, sLL = 0, sTen = 0, sAnc = 0;
         groups[t].forEach(function(m) {
-          var lfl = Number(m.like_for_like_cost), inc = Number(m.incremental_cost), sav = Number(m.annual_owner_savings);
-          if (isFinite(lfl)) sLfL += lfl;
-          if (isFinite(inc)) sInc += inc;
-          if (isFinite(sav)) sSav += sav;
-          rHtml += '<tr>'
+          var lfl = num(m.like_for_like_cost), inc = num(m.incremental_cost), incent = num(m.incentives), net = netCost(m);
+          var co2 = num(m.emissions_savings_tco2e), ll = landlordSav(m), ten = num(m.tenant_utility_savings), anc = num(m.ancillary_revenue);
+          if (lfl != null) sLfL += lfl; if (inc != null) sInc += inc; if (incent != null) sIncent += incent; if (net != null) sNet += net;
+          if (co2 != null) sCO2 += co2; if (ll != null) sLL += ll; if (ten != null) sTen += ten; if (anc != null) sAnc += anc;
+          costRows += '<tr>'
             + '<td><strong>' + esc(m.name) + '</strong></td>'
+            + '<td class="ctr">' + esc(planTag(m.plan)) + '</td>'
             + '<td class="ctr">' + esc(m.install_year != null ? String(m.install_year) : '—') + '</td>'
-            + '<td class="num">' + (m.like_for_like_cost != null ? fmtCurrency(lfl) : '—') + '</td>'
-            + '<td class="num">' + (m.incremental_cost != null ? fmtCurrency(inc) : '—') + '</td>'
-            + '<td class="num">' + (m.annual_owner_savings != null ? fmtCurrency(sav) : '—') + '</td>'
-            + '<td class="num">' + rocPct(inc, sav) + '</td>'
+            + '<td class="num">' + (lfl != null ? fmtCurrency(lfl) : '—') + '</td>'
+            + '<td class="num">' + (inc != null ? fmtCurrency(inc) : '—') + '</td>'
+            + '<td class="num">' + (incent != null ? fmtCurrency(incent) : '—') + '</td>'
+            + '<td class="num">' + (net != null ? fmtCurrency(net) : '—') + '</td>'
+            + '</tr>';
+          impRows += '<tr>'
+            + '<td><strong>' + esc(m.name) + '</strong></td>'
+            + '<td class="num">' + (co2 != null ? fmt2sig(co2) : '—') + '</td>'
+            + '<td class="num">' + (ll != null ? fmtCurrency(ll) : '—') + '</td>'
+            + '<td class="num">' + (ten != null ? fmtCurrency(ten) : '—') + '</td>'
+            + '<td class="num">' + (anc != null ? fmtCurrency(anc) : '—') + '</td>'
+            + '<td class="num">' + y1roc(net, ll, anc) + '</td>'
             + '</tr>';
         });
-        gLfL += sLfL; gInc += sInc; gSav += sSav;
+        TLfL += sLfL; TInc += sInc; TIncent += sIncent; TNet += sNet; TCO2 += sCO2; TLL += sLL; TTen += sTen; TAnc += sAnc;
         if (groups[t].length > 1) {
-          rHtml += '<tr class="subtotal-row"><td>Subtotal — ' + esc(t) + '</td><td></td>'
+          costRows += '<tr class="subtotal-row"><td>Subtotal — ' + esc(t) + '</td><td></td><td></td>'
             + '<td class="num">' + fmtCurrency(sLfL) + '</td><td class="num">' + fmtCurrency(sInc) + '</td>'
-            + '<td class="num">' + fmtCurrency(sSav) + '</td><td class="num">' + rocPct(sInc, sSav) + '</td></tr>';
+            + '<td class="num">' + fmtCurrency(sIncent) + '</td><td class="num">' + fmtCurrency(sNet) + '</td></tr>';
+          impRows += '<tr class="subtotal-row"><td>Subtotal — ' + esc(t) + '</td>'
+            + '<td class="num">' + fmt2sig(sCO2) + '</td><td class="num">' + fmtCurrency(sLL) + '</td>'
+            + '<td class="num">' + fmtCurrency(sTen) + '</td><td class="num">' + fmtCurrency(sAnc) + '</td>'
+            + '<td class="num">' + y1roc(sNet, sLL, sAnc) + '</td></tr>';
         }
       });
-      rHtml += '<tr class="totals-row"><td>Total</td><td></td>'
-        + '<td class="num">' + fmtCurrency(gLfL) + '</td><td class="num">' + fmtCurrency(gInc) + '</td>'
-        + '<td class="num">' + fmtCurrency(gSav) + '</td><td class="num">' + rocPct(gInc, gSav) + '</td></tr>';
-      setHtml('roadmap-tbody', rHtml);
+      costRows += '<tr class="totals-row"><td>Total</td><td></td><td></td>'
+        + '<td class="num">' + fmtCurrency(TLfL) + '</td><td class="num">' + fmtCurrency(TInc) + '</td>'
+        + '<td class="num">' + fmtCurrency(TIncent) + '</td><td class="num">' + fmtCurrency(TNet) + '</td></tr>';
+      impRows += '<tr class="totals-row"><td>Total</td>'
+        + '<td class="num">' + fmt2sig(TCO2) + '</td><td class="num">' + fmtCurrency(TLL) + '</td>'
+        + '<td class="num">' + fmtCurrency(TTen) + '</td><td class="num">' + fmtCurrency(TAnc) + '</td>'
+        + '<td class="num">' + y1roc(TNet, TLL, TAnc) + '</td></tr>';
+      setHtml('roadmap-tbody-cost', costRows);
+      setHtml('roadmap-tbody-impact', impRows);
       roadmapSection.style.display = '';
     }
 
@@ -1435,18 +1465,34 @@
   <div id="roadmap-section" class="section" style="display:none">
     <div class="section-label">Capital Planning</div>
     <h2 class="section-title">Phased Measure Roadmap</h2>
-    <p class="section-intro">Modeled measures with install-year staging, grouped by type. Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives the IRR. RoC% is annual owner-share (landlord) savings ÷ incremental cost.</p>
+    <p class="section-intro">Modeled measures with install-year staging, grouped by type. Split into a cost view and an impact/return view (same measures, keyed by name). Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives value. Net Total Cost = incremental − incentives. Y1 Return on Cost = (landlord utility savings + ancillary revenue) ÷ net total cost.</p>
+    <div class="sub-heading">Cost &amp; Capital</div>
     <div style="overflow-x:auto">
       <table class="profile-table">
         <thead><tr>
           <th>Measure</th>
-          <th class="ctr">Install Year</th>
+          <th class="ctr">Plan</th>
+          <th class="ctr">Year</th>
           <th class="num">Like-for-Like Cost</th>
           <th class="num">Incremental Cost</th>
-          <th class="num">Landlord Savings/yr</th>
-          <th class="num">RoC%</th>
+          <th class="num">Incentives</th>
+          <th class="num">Net Total Cost</th>
         </tr></thead>
-        <tbody id="roadmap-tbody"><!-- JS --></tbody>
+        <tbody id="roadmap-tbody-cost"><!-- JS --></tbody>
+      </table>
+    </div>
+    <div class="sub-heading">Impact &amp; Return</div>
+    <div style="overflow-x:auto">
+      <table class="profile-table">
+        <thead><tr>
+          <th>Measure</th>
+          <th class="num">Emissions Savings (tCO₂e)</th>
+          <th class="num">Landlord Utility Savings</th>
+          <th class="num">Tenant Utility Savings</th>
+          <th class="num">Ancillary Revenue</th>
+          <th class="num">Y1 Return on Cost</th>
+        </tr></thead>
+        <tbody id="roadmap-tbody-impact"><!-- JS --></tbody>
       </table>
     </div>
   </div>

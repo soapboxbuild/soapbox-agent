@@ -708,23 +708,26 @@ gate (resume may have skipped P4's check).
    "it depends on hold period" the headline. Give each plan a one-line `plans[].thesis` (the recommendation
    renders these as separated bulleted blocks); keep `plans[].summary_points[]` for the detailed bullets.
 
-   **Value bridge & incremental IRR — compute ARITHMETICALLY from Audette + recipe 8. Do NOT use the cashflow MCP tools.**
-   `net_value_creation` and each plan's incremental IRR are built per recipe 8 from the *incremental*
-   cashflows only: incremental capex out; owner-share utility savings + ancillary capitalized ÷ exit cap;
-   incentives; PV of BPS fine avoidance. The decarb engagement does **not** carry the asset's going-in NOI
-   or purchase price, and the bridge does not need them.
-   **⚠️ The `cashflow` MCP tools (`run_dcf`, `run_intervention_irr`, `get_ll_capture`, `screen_measure_portfolio`)
-   are NOT available in this environment — the server errors `spawnSync python3 ENOENT` (its compute runtime
-   is not deployed). Do NOT call them; do NOT report "cashflow engine unavailable" as a blocker.** You do not
-   need them: the **owner/tenant utility-savings split is already on every Audette measure** from
-   `audette__get_custom_plan` (`annual_mean_landlord_utility_cost_savings` / `annual_mean_tenant_utility_cost_savings`
-   — only the landlord share capitalizes into the bridge), and the incremental IRR is the IRR of each plan's
-   incremental cashflow stream (incremental capex out, capitalized owner savings/ancillary + fine-avoidance PV in),
-   which you compute directly. A plan whose owner-share savings never cover its incremental capex has a
-   **negative or undefined IRR — that is a real, reportable outcome** (report it plainly), not a tool failure. If any
-   cashflow tool returns an input/validation error, FIX the inputs — the cashflow engine is available; do
-   NOT tell the user "cashflow engine unavailable." (Verified live: the server is up and responds; a
-   validation error means wrong/missing arguments, not an outage.)
+   **Value bridge & incremental IRR — CALL the cashflow engine `compute_plan_economics`. NEVER hand-compute IRR, capitalization, or PV (upholds "No LLM arithmetic", principle 1).**
+   For EACH plan, call the `cashflow` MCP tool **`compute_plan_economics`** with the plan's per-year OWNER-SHARE
+   line items and the exit terms; put the returned `cashflow`, `waterfall`, and `irr_incremental` into
+   `economics.plans[]` **verbatim** — do not adjust or recompute them.
+   - Inputs: `flows: [{year, incremental_capex, owner_utility_savings, ancillary_revenue, incentives, bps_fine_avoidance}]`
+     (one row per hold year), `exit_cap_rate`, `exit_year`, optional `discount_rate` (default 0.08 for the fine PV).
+   - `owner_utility_savings` is the **landlord share only** — from each Audette measure's
+     `annual_mean_landlord_utility_cost_savings` (tenant share never capitalizes into the bridge). Apply the
+     utility-rate escalation (recipe-8 defaults 3%/yr elec, 4%/yr gas) when building the per-year `flows`.
+   - `bps_fine_avoidance` is nonzero ONLY when the plan is non-compliant on the **governing** pathway (see 7a).
+   - The engine returns the derived money-math (noi/unlevered/cumulative, terminal exit-value delta =
+     exit-year NOI uplift ÷ cap, capitalized owner savings & ancillary, PV of the fine schedule, net value
+     creation, and IRR). A plan whose owner-share savings never cover its incremental capex comes back with a
+     **null or negative IRR — that is a real, reportable outcome** (report it plainly), not a tool failure.
+   - The decarb engagement does **not** carry the asset's going-in NOI/purchase price — so do **NOT** use
+     `run_dcf` / `run_intervention_irr` (those model a base-DCF + single measure and need going-in NOI);
+     `compute_plan_economics` is the plan-level incremental engine for decarb.
+   - If the tool returns a validation error, FIX the inputs and re-call — never fall back to hand-computing the
+     bridge, and never report "cashflow engine unavailable." The server-side render gate independently
+     recomputes IRR/net-value via this same engine and BLOCKS on divergence, so a hand-entered figure will fail.
 
    **⚠️ EXTERNAL DELIVERABLE — no internal-process language anywhere in the report data.**
    The report is sent to external parties (owners, lenders, buyers) who have **no context**

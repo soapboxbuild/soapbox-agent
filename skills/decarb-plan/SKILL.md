@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.7.0
+version: 1.7.1
 ---
 
 # Decarb-Plan Engagement
@@ -192,6 +192,14 @@ run slow):**
    hand-carry them across threads (clubhouse UIDs went stale this way).
 4. **Validate the building model (count / GFA / UID set) in P2 step 2A BEFORE any upload or
    calibration.** Discovering a model error after uploads means redoing every upload.
+   **Utility-data writes are CHECK-FIRST and idempotent.** Before `add_building_utility_data`, READ
+   the building's existing utility data and compare — if the meters/periods are already present and
+   match the source, SKIP the upload (or upload only the missing/changed periods). Never blind-upload
+   data that may already be there — it double-counts consumption and corrupts the calibrated baseline.
+   And if an upload call TIMES OUT or errors, do NOT blindly retry: **re-read the building first to
+   see whether the write actually landed** — a timeout is frequently a false failure (the write
+   succeeded server-side but the client gave up waiting), and a reflexive retry writes a duplicate.
+   Only re-upload the periods that a re-read shows are genuinely missing.
 5. **At each phase start, confirm the required tools/connectors are attached; STOP if missing**
    (don't fabricate — the ESPM tripwire). Checkpoint before every expensive/irreversible action so
    a dropped connection or deploy costs one batch, not the whole run.

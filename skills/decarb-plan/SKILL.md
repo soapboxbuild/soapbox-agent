@@ -33,9 +33,17 @@ org memory, the reference library, and the `decarb` report template.
    utility/ESPM actuals > audit-reported 12-mo > Audette modeled > estimates** — produces the
    *suggested* resolution for each conflict. The human adjudicates ALL conflicts at Gate 1.
    Nothing is auto-resolved.
-3. **The render gate is HARD and fails closed.** No report render without
-   `verifier__verification_status` passing, or a documented override
-   `{finding_id, override_reason, approved_by}` in state for every open high-severity finding.
+3. **The render gate is HARD and fails closed.** No report render without asset-scoped
+   verification passing, or a documented override `{finding_id, override_reason, approved_by}`
+   in state for every open high-severity finding **on THIS asset**.
+   **⚠️ Check verification ASSET-SCOPED — always pass `asset_id`.** The render gate itself is
+   asset-scoped (`verifier__list_findings({asset_id})`). But `verifier__verification_status` with
+   NO `asset_id` is **portfolio-wide** and will surface high-severity findings from *other* assets
+   (e.g. a different building's ESPM id) that do NOT block your render — do not chase or resolve
+   them, and do not let them make you think you're blocked. Call `verifier__list_findings` /
+   `verification_status` **with `asset_id` = this asset**; only open-high findings on THIS asset gate
+   your render. (Chasing another asset's findings wastes the render's time budget and can cause the
+   run to be cut off before it renders.)
 4. **NEVER game or bypass the render gate.** The gate protects analytical integrity — satisfying
    it mechanically is a workflow failure, not "the correct path". Specifically:
    - **No self-certification.** Do NOT open a finding and confirm it yourself in the same turn to

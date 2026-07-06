@@ -323,6 +323,17 @@
       border-top: 1px solid #E2E8F0;
     }
     .neg { color: #B45309; font-weight: 600; }
+
+    /* ─── Roadmap tables: give the Measure column ~2x width and compress the rest ───
+       Fixed layout + colgroup so long measure titles ("Gas WSHP boiler → air-source
+       heat pump — full central plant (734-ton, 2034)") stop wrapping to 4-5 lines,
+       while the short numeric values ($0 / $45K / $3.1M) sit in narrow columns.
+       Headers wrap (override the global th nowrap) so the compressed columns fit. */
+    .roadmap-table { table-layout: fixed; }
+    .roadmap-table th, .roadmap-table td { padding: 8px 7px; }
+    .roadmap-table th { white-space: normal; line-height: 1.25; vertical-align: bottom; overflow-wrap: normal; }
+    .roadmap-table td { overflow-wrap: break-word; }
+    .roadmap-table td:first-child, .roadmap-table th:first-child { line-height: 1.35; overflow-wrap: break-word; }
     .pos { color: #1F6B45; font-weight: 600; }
     /* Collapsible per-plan cashflow (mirrors the Sources section) */
     .cashflow-collapse { margin: 12px 0 18px; border: 1px solid var(--border, #E2E8F0); background: var(--card, #fff); overflow: hidden; }
@@ -583,6 +594,15 @@
       color: #0D5C39;
       line-height: 1.25;
     }
+    /* Per-plan descriptions: spatially-separated blocks, one per plan, recommended one accented */
+    .dash-rec-plans { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .dash-rec-plan { padding: 10px 12px; background: #fff; border: 1px solid #D6E6DD; border-radius: 6px; }
+    .dash-rec-plan.sel { border-color: #1F6B45; background: #F3FBF7; box-shadow: inset 3px 0 0 #1F6B45; }
+    .drp-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+    .drp-name { font-size: 13px; font-weight: 700; color: #12253A; }
+    .drp-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0D5C39; background: #D6F0E2; padding: 2px 7px; border-radius: 10px; }
+    .drp-metric { font-size: 11px; font-weight: 600; color: #475569; margin-left: auto; font-variant-numeric: tabular-nums; }
+    .drp-thesis { font-size: 12px; font-weight: 400; color: #2C3E50; line-height: 1.5; margin-top: 4px; }
     .dash-rec-narrative {
       font-size: 12px;
       font-weight: 400;
@@ -806,6 +826,27 @@
         setText('dash-rec-text', recText);
         showEl('dash-rec');
         anything = true;
+      }
+      /* Per-plan descriptions as a bulleted, spatially-separated list (not a run-on
+         paragraph). Each plan: name + label, a one-line thesis (plan.thesis, else the
+         first summary_point), and its headline metric. The recommended plan
+         (economics.selected_plan) is badged. */
+      if (Array.isArray(pl) && pl.length) {
+        var selName = ec && ec.selected_plan;
+        var lis = pl.map(function(p) {
+          var isSel = selName && p.name === selName;
+          var thesis = p.thesis || (Array.isArray(p.summary_points) && p.summary_points.length ? p.summary_points[0] : '');
+          var met = [];
+          if (p.net_value_creation != null) met.push('Net value ' + fmtSignedCurrency(Number(p.net_value_creation)));
+          if (p.irr_incremental != null) met.push('IRR ' + fmtPct(Number(p.irr_incremental)));
+          return '<li class="dash-rec-plan' + (isSel ? ' sel' : '') + '">'
+               + '<div class="drp-head"><span class="drp-name">' + esc(p.name || 'Plan') + (p.label ? ' — ' + esc(p.label) : '') + '</span>'
+               + (isSel ? '<span class="drp-badge">✓ Recommended</span>' : '')
+               + (met.length ? '<span class="drp-metric">' + met.join(' · ') + '</span>' : '') + '</div>'
+               + (thesis ? '<div class="drp-thesis">' + esc(String(thesis)) + '</div>' : '')
+               + '</li>';
+        }).join('');
+        if (lis) { setHtml('dash-rec-plans', lis); showEl('dash-rec'); anything = true; }
       }
       return anything;
     }
@@ -1418,6 +1459,7 @@
       <div class="dash-rec-body">
         <div class="dash-rec-label">Recommendation</div>
         <div class="dash-rec-text" id="dash-rec-text">—</div>
+        <ul class="dash-rec-plans" id="dash-rec-plans"><!-- JS: one bulleted, spaced item per plan --></ul>
       </div>
     </div>
   </div>
@@ -1468,7 +1510,11 @@
     <p class="section-intro">Modeled measures with install-year staging, grouped by type. Split into a cost view and an impact/return view (same measures, keyed by name). Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives value. Net Total Cost = incremental − incentives. Y1 Return on Cost = (landlord utility savings + ancillary revenue) ÷ net total cost.</p>
     <div class="sub-heading">Cost &amp; Capital</div>
     <div style="overflow-x:auto">
-      <table class="profile-table">
+      <table class="profile-table roadmap-table">
+        <colgroup>
+          <col style="width:36%"><col style="width:8%"><col style="width:8%">
+          <col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:12%">
+        </colgroup>
         <thead><tr>
           <th>Measure</th>
           <th class="ctr">Plan</th>
@@ -1483,7 +1529,11 @@
     </div>
     <div class="sub-heading">Impact &amp; Return</div>
     <div style="overflow-x:auto">
-      <table class="profile-table">
+      <table class="profile-table roadmap-table">
+        <colgroup>
+          <col style="width:38%"><col style="width:12.4%"><col style="width:12.4%">
+          <col style="width:12.4%"><col style="width:12.4%"><col style="width:12.4%">
+        </colgroup>
         <thead><tr>
           <th>Measure</th>
           <th class="num">Emissions Savings (tCO₂e)</th>

@@ -672,6 +672,16 @@ gate (resume may have skipped P4's check).
    | data_quality | a **client-facing** confidence summary (`summary` + `items[]` dots) derived from `state.conflicts` / verifier findings — see the EXTERNAL-DELIVERABLE rule below. Do **NOT** pass an `adjudications[]` array (the internal reconciliation ledger is not rendered and must not be sent). |
    | sources | `state.citations` (cite the CRREM pathway export run) |
 
+   **Choosing the recommended plan (`economics.selected_plan`) — by financial outcome, not decarb depth.**
+   Set `selected_plan` to the plan with the better value-creation-bridge outcome — **net value creation at
+   exit first, then incremental IRR** — NOT automatically the deepest-decarbonization plan. A capital-light
+   plan that strands against CRREM but delivers materially higher net value / IRR (e.g. Plan 1 at +$351K /
+   ~55% IRR vs a deep-electrification plan at −5% IRR) is usually the correct recommendation for a typical
+   hold — select it and say so plainly. `dashboard.recommendation` must **lead with the chosen plan and the
+   financial reason**, then note the alternative's tradeoff (stranding / ESG-mandate cases) — do NOT make
+   "it depends on hold period" the headline. Give each plan a one-line `plans[].thesis` (the recommendation
+   renders these as separated bulleted blocks); keep `plans[].summary_points[]` for the detailed bullets.
+
    **⚠️ EXTERNAL DELIVERABLE — no internal-process language anywhere in the report data.**
    The report is sent to external parties (owners, lenders, buyers) who have **no context**
    for our internal workflow. Nothing you put in ANY field — exec summary, dashboard, plan

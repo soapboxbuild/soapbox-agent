@@ -761,19 +761,12 @@
       }
       if (tiles) { setHtml('dash-grid', tiles); showEl('dash-grid'); anything = true; }
 
-      /* Recommendation strip (absorbs the exec-summary narrative) + J-curve sparkline */
+      /* Recommendation: a SHORT (≤3 sentence) recommendation only. The prior 'wall of text'
+         narrative and the cumulative-cashflow J-curve sparkline were removed for readability —
+         the recommendation must be digestible at a glance. */
       var recText = d.recommendation || ex.headline || null;
-      var spark = drawDashSparkline(d, ec, pl);
-      if (recText || spark) {
-        if (recText) setText('dash-rec-text', recText);
-        if (ex.narrative && ex.narrative !== recText) {
-          setText('dash-rec-narrative', ex.narrative);
-          showEl('dash-rec-narrative');
-        }
-        if (spark) {
-          setHtml('dash-spark', spark + '<div class="dash-spark-cap">Cumulative unlevered CF → exit</div>');
-          showEl('dash-spark');
-        }
+      if (recText) {
+        setText('dash-rec-text', recText);
         showEl('dash-rec');
         anything = true;
       }
@@ -787,52 +780,8 @@
              '<div class="m-sub">' + esc(sub) + '</div></div>';
     }
 
-    /* Small cumulative-cashflow J-curve sparkline. Uses dashboard.sparkline
-       [{year, cumulative}] when provided; falls back to the selected plan's
-       cashflow (cumulative + exit-year asset_value_impact). Returns '' when
-       no series is available. */
-    function drawDashSparkline(d, ec, pl) {
-      var seriesPts = [];
-      if (d.sparkline && d.sparkline.length > 1) {
-        d.sparkline.forEach(function(p) {
-          if (p && p.year != null && p.cumulative != null) seriesPts.push({ year: Number(p.year), v: Number(p.cumulative) });
-        });
-      } else {
-        var selPlan = null;
-        pl.forEach(function(p) { if (ec.selected_plan && p.name === ec.selected_plan) selPlan = p; });
-        if (!selPlan && pl.length === 1) selPlan = pl[0];
-        if (selPlan && selPlan.cashflow && selPlan.cashflow.length > 1) {
-          selPlan.cashflow.forEach(function(r) {
-            if (r.year != null && r.cumulative != null) {
-              var v = Number(r.cumulative) + (Number(r.asset_value_impact) || 0);
-              seriesPts.push({ year: Number(r.year), v: v });
-            }
-          });
-        }
-      }
-      if (seriesPts.length < 2) return '';
-
-      var yrs = seriesPts.map(function(p){ return p.year; });
-      var vs  = seriesPts.map(function(p){ return p.v; });
-      var yMin = Math.min.apply(null, yrs), yMax = Math.max.apply(null, yrs);
-      var vMin = Math.min.apply(null, vs.concat([0])), vMax = Math.max.apply(null, vs.concat([0]));
-      if (vMin === vMax) vMax = vMin + 1;
-      var X1=8, X2=232, Y1=8, Y2=72;
-      function sx(y){ return X1 + (yMax===yMin?0:(y-yMin)/(yMax-yMin))*(X2-X1); }
-      function sy(v){ return Y2 - (v-vMin)/(vMax-vMin)*(Y2-Y1); }
-      var poly = seriesPts.map(function(p){ return sx(p.year).toFixed(1)+','+sy(p.v).toFixed(1); }).join(' ');
-      /* Trough (minimum) + endpoint markers */
-      var trough = seriesPts[0];
-      seriesPts.forEach(function(p){ if (p.v < trough.v) trough = p; });
-      var end = seriesPts[seriesPts.length-1];
-      var svg = '<svg width="240" height="80" viewBox="0 0 240 80" role="img" aria-label="Cumulative unlevered cashflow J-curve">'
-              + '<line x1="'+X1+'" y1="'+sy(0).toFixed(1)+'" x2="'+X2+'" y2="'+sy(0).toFixed(1)+'" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"/>'
-              + '<polyline fill="none" stroke="#12253A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="'+poly+'"/>'
-              + '<circle cx="'+sx(trough.year).toFixed(1)+'" cy="'+sy(trough.v).toFixed(1)+'" r="2.6" fill="#B45309"/>'
-              + '<circle cx="'+sx(end.year).toFixed(1)+'" cy="'+sy(end.v).toFixed(1)+'" r="3" fill="'+(end.v >= 0 ? '#1F6B45' : '#B45309')+'"/>'
-              + '</svg>';
-      return svg;
-    }
+    /* (J-curve cumulative-cashflow sparkline removed for readability — the dashboard leads
+       with the ≤3-sentence recommendation and the value-creation waterfall carries the economics.) */
 
     /* ════════════════════════════════
        2b. EXECUTIVE SUMMARY (legacy fallback — only when no dashboard)
@@ -1369,9 +1318,7 @@
       <div class="dash-rec-body">
         <div class="dash-rec-label">Recommendation</div>
         <div class="dash-rec-text" id="dash-rec-text">—</div>
-        <div class="dash-rec-narrative" id="dash-rec-narrative" style="display:none"></div>
       </div>
-      <div class="dash-spark" id="dash-spark" style="display:none"><!-- JS: J-curve sparkline --></div>
     </div>
   </div>
 

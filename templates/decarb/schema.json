@@ -71,20 +71,7 @@
         "ghgi_target_year": { "type": "integer", "description": "Year the ghgi_change_pct is measured at (e.g. 2030)." },
         "downside_avoided": { "type": "number", "description": "Tile: PV of avoided downside (fines + stranding-risk value) in USD.", "minimum": 0 },
         "cf_positive_year": { "type": "integer", "description": "Tile: first year annual unlevered incremental cashflow turns positive." },
-        "recommendation": { "type": "string", "description": "One-line recommendation (e.g. 'Fund Plan 2 — the CRREM-aligned electrification roadmap.'). Falls back to executive_summary.headline when omitted." },
-        "sparkline": {
-          "type": "array",
-          "description": "Cumulative-cashflow J-curve sparkline points (include the exit-year value uplift in the final point). When omitted, the template derives the sparkline from the selected plan's cashflow (cumulative + asset_value_impact).",
-          "items": {
-            "type": "object",
-            "required": ["year", "cumulative"],
-            "additionalProperties": false,
-            "properties": {
-              "year": { "type": "integer", "description": "Calendar year." },
-              "cumulative": { "type": "number", "description": "Cumulative unlevered incremental cashflow in USD (fold the exit uplift into the final year)." }
-            }
-          }
-        }
+        "recommendation": { "type": "string", "description": "The recommendation, as a SHORT digestible summary — MAXIMUM 3 sentences. State the recommended plan, the single most important reason, and the key trade-off/condition. NOT a wall of text, NOT a full plan description (the per-plan detail lives in economics.plans[].summary_points). E.g. 'Fund Plan 2 — the CRREM-aligned electrification roadmap. It is the only path that keeps the asset non-stranded through a 2036 exit and unlocks green-financing pricing. The trade-off is a lower near-term IRR that Plan 1's capital-light bundle would otherwise maximize.'" }
       }
     },
 

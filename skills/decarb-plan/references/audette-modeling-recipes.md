@@ -182,20 +182,25 @@ and represents a *central plant conditioning the loop* — e.g. geothermal — n
 Do NOT split the units into `terminal_cooler` (split AC) + a separate heater — one reversible unit does
 both; a `terminal_cooler` would double-count cooling.
 
-**The condenser-loop boiler** is modeled as `central_plant_heater = gas_boiler`. Note two source facts:
+**The condenser-loop boiler** is modeled as `central_plant_heater = gas_boiler`. Keeping it alongside
+the WLHP is correct — the survey path auto-balances the skin-heating split. Source facts:
 - `central_plant_heater_terminal_units` (`fan_coil_units` etc.) is **never read** during boiler
   construction — only `size`/`installation_year` are. Don't agonize over the terminal-unit label for a
   WSHP loop boiler; it has no effect.
-- The survey path does **not** auto-balance the boiler's and the WLHP's skin-heating load ratios (the
-  `heater.heating.load_ratio = 1 - heat_pump.heating.load_ratio` balance exists only in the
-  ENCLOSED_MALL *archetype* path, not `_build_central_hvac_system`). Both install as skin-heating
-  devices and their load ratios **sum**; `verify_load_ratios` wants skin heating to total exactly 1.0.
-  So when you keep both a loop boiler and the WLHP, **set `heat_pump_heating_load_ratio` deliberately
-  and verify the resulting gas/electric split empirically** (submit → read the modelled fuel split →
-  tune) rather than assuming 1.0 on both. If the split comes out gas-heavy, the alternative is to drop
-  `central_plant_heater` and carry the residual gas on the MAU (`air_handling_equipment_heating_type =
-  gas`, a separate outdoor-air-heating end use that doesn't compete with the WLHP's skin heating), or
-  add the loop top-up as `generic_hvac_equipment` with `end_use = "outdoor_air_heating"`.
+- **Auto-balance:** `normalize_equipment_list._update_heating_load_ratio` runs in the survey path. When
+  a `HeatPump` **and** a heater (`Boiler`/`Furnace`/`UnitHeater`/`ElectricBaseboard`) are both present:
+  if the heat pump's heating load ratio is `1.0` it is scaled to **0.85** and the heater gets `1 − 0.85
+  = 0.15`. With a heat pump and **no** heater, the heat pump is forced to `1.0`. So leaving
+  `heat_pump_heating_load_ratio = null` + a loop boiler yields **~85% electric skin heat (WLHP) / 15%
+  gas (boiler)** automatically, and `verify_load_ratios` passes.
+- **To control the split**, set `heat_pump_heating_load_ratio` to your target **≠ 1.0** (e.g. `0.90` →
+  boiler auto-takes `0.10`). You **cannot** get 100% electric skin heat while a boiler exists — the
+  `1.0 → 0.85` cap always leaves the boiler ≥15%. For fully-electric skin heat, **drop the boiler**
+  (`central_plant_heater_exists = false`) and carry residual gas on the MAU
+  (`air_handling_equipment_heating_type = gas`, an outdoor-air-heating end use that doesn't compete
+  with the WLHP). Either way, **verify the modelled gas/electric split against the meters** (submit →
+  read fuel split → adjust). Note this normalization covers **heating only**; skin cooling relies on
+  the WLHP's inferred `cooling_load_ratio` (leave `null` unless the readback shows it off).
 
 **Cooling tower has no enum** — it's folded into the loop. A WSHP building has `central_plant_cooler_exists
 = false` (the WLHP + tower reject heat to the loop; there is no chiller).

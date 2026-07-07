@@ -11,7 +11,7 @@ description: >
   Triggers on: "onboard [client]", "create a soapbox account for", "portfolio
   onboarding workflow", "ingest the [client] portfolio", "run portfolio ingestion",
   "set up [client] in soapbox", a batch/zip of PCAs+audits with an asset register.
-version: 1.0.0
+version: 1.0.1
 ---
 
 # Portfolio Ingest
@@ -42,9 +42,16 @@ wizard call the same soapbox-api endpoints and must stay convention-compatible:*
   files, splits oversized PDFs, retries failed indexing, and enriches asset
   metadata from helper data. If the user is present and wants to eyeball matches,
   you can stop after Stage 2 and hand them to the UI ("Add assets") instead.
-- Address/footprint mapping ("📍 Map" chip) is the wizard's specialty (Nominatim +
-  Overture footprint queue). Skip it here unless asked; assets without footprints
-  just show the Map chip for later.
+- Footprint mapping ("📍 Map" chip — Overture footprint queue) is the wizard's specialty; skip
+  it here unless asked.
+- **BUT backfill the postal-address fields (`street_address, city, state_province, postal_zip_code,
+  country`) when you link Audette.** Audette's building model (`get_building_model_details`) carries
+  the full address for every property, and you are already pulling that model to link the asset —
+  copy the address into those columns in the same asset-update call. Do NOT leave them null (the
+  Greystar ingest did: 37/39 had lat/lon from geocoding but 0/39 had street/city/state, so every
+  downstream run — BPS applicability, CRREM region, RUBS/VNM legislation, physrisk, brave lookups —
+  had to re-pull addresses from Audette). `state_province` especially gates the jurisdiction checks.
+  If Audette is unavailable, reverse-geocode from lat/lon (Overture) as a fallback and label `(est.)`.
 
 ## Prerequisites
 

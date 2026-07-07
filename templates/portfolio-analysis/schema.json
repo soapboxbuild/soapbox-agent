@@ -148,17 +148,18 @@
 
     "emissions_trajectory": {
       "type": "array",
-      "description": "Portfolio emissions time series 2025-2050 (Phase 4E, only if include_crrem). Drives the 4-series line chart (absolute tCO2e/yr) + the target-year summary table. Section hides if < 2 rows. Confirmed against the sheet's Scenario Summary (BAU / Max Decarb / Target Decarb).",
+      "description": "Portfolio carbon-intensity time series 2025-2050 (Phase 4E, only if include_crrem). Drives the 5-line curve (BAU + three deployment screens + CRREM) + the target-year summary table. Values are portfolio GFA-weighted kgCO2e/m2. Section hides if < 2 rows.",
       "items": {
         "type": "object",
         "additionalProperties": true,
         "required": ["year"],
         "properties": {
           "year": { "type": "integer" },
-          "bau": { "type": "number", "description": "Business-as-usual portfolio emissions, tCO2e/yr (grey dashed line)." },
-          "irr_pathway": { "type": "number", "description": "IRR-hurdle-pathway emissions, tCO2e/yr (blue solid line)." },
-          "max_decarb": { "type": "number", "description": "Maximum-decarb emissions, tCO2e/yr (green solid line)." },
-          "crrem_target": { "type": "number", "description": "CRREM 1.5°C target, tCO2e/yr (red dashed line)." }
+          "bau": { "type": "number", "description": "Business-as-usual (no decarb capital), grey dashed line." },
+          "scenario_a": { "type": "number", "description": "Scenario A — measures with irr_excl_exit >= hurdle (IRR excluding exit residual), blue line." },
+          "scenario_b": { "type": "number", "description": "Scenario B — measures with irr_incremental >= hurdle (IRR including exit residual), green line." },
+          "scenario_c": { "type": "number", "description": "Scenario C — B plus max solar (BTM self-consumption + VNM export at 80% owner), purple line." },
+          "crrem_target": { "type": "number", "description": "CRREM 1.5°C target, red dashed line." }
         }
       }
     },

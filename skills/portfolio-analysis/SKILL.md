@@ -12,7 +12,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.6.1
+version: 1.7.0
 ---
 
 # Portfolio Analysis
@@ -801,12 +801,17 @@ local `dcf_engine.py` script (not shipped) and do **not** call `run_dcf`/`run_in
 - Annual inflow = net owner-NOI improvement (owner utility savings + ancillary + avoided fine)
 - Terminal uplift at `exit_year` = annual NOI improvement ÷ exit cap  ← the reported value creation
 
-**Step 5 — IRR screen:**
+**Step 5 — IRR screen (record BOTH IRRs from `compute_plan_economics`):**
+
+Capture `irr_excl_exit` AND `irr_incremental` for every measure — they drive the two screens and
+the A/B/C trajectory (Phase 4E). The **roster's "recommended" status uses `irr_incremental`**
+(value-inclusive, scenario B — the standard recommendation bar); `irr_excl_exit` additionally tags
+which measures also clear operationally (scenario A).
 
 | Result | Action |
 |--------|--------|
-| IRR ≥ `irr_hurdle` | Include in recommended measures |
-| IRR < hurdle rate | Exclude from recommendations; include in "below hurdle" table |
+| `irr_incremental` ≥ `irr_hurdle` | Include in recommended measures (also tag `pays_operationally: true` if `irr_excl_exit` ≥ hurdle) |
+| `irr_incremental` < hurdle | Exclude from recommendations; include in "below hurdle" table |
 | Compliance-required measure | Include regardless of IRR; flag as mandatory |
 
 > This IRR result is an **input** to the final status, not the status itself. Step 7 composes it
@@ -1056,13 +1061,20 @@ Skip this section entirely if `include_crrem: false`. Do not produce the chart, 
 
 Build a year-by-year portfolio emissions model for three scenarios and the CRREM 1.5°C pathway. This is the centrepiece of the report — it shows where the portfolio is going and what each investment strategy delivers.
 
-**Three scenarios to model:**
+**THE CENTRAL QUESTION this analysis answers:** *how far down the carbon-reduction curve can the
+portfolio get under three progressively less-conservative capital screens?* Model BAU as the
+reference, then three deployment scenarios — each is the SAME measure set filtered by a different
+economic bar. Each scenario is cumulative over the one before it in ambition.
 
 | Scenario | Definition |
 |----------|-----------|
-| **Business as Usual (BAU)** | No decarb capital deployed. Only passive grid decarbonization applies to Scope 2 emissions (~3.5%/yr for US multifamily, varies by grid region). Equipment degrades naturally. |
-| **15% IRR Pathway** | Only measures that pass the IRR hurdle (`irr_hurdle`) are deployed, at their modelled install years. Emissions drop as each measure comes online. |
-| **Maximum Decarb** | All Audette-recommended measures deployed at earliest viable install year, regardless of IRR. Represents the fastest achievable pathway given the existing building stock. |
+| **Business as Usual (BAU)** | No decarb capital deployed. Only passive grid decarbonization applies to Scope 2 (~3.5%/yr US multifamily, varies by grid region). Reference line. |
+| **A — IRR ≥ hurdle, EXCLUDING exit residual** | Deploy every measure whose **`irr_excl_exit` ≥ `irr_hurdle`** (operating cashflows only: owner utility savings + ancillary + annual avoided fine − capex + incentives; **NO** capitalized exit-value uplift). The "pays for itself operationally" set. Shallowest curve. |
+| **B — IRR ≥ hurdle, INCLUDING exit residual** | Deploy every measure whose **`irr_incremental` ≥ `irr_hurdle`** (value-inclusive: operating **+** the capitalized exit-value uplift / avoided-fine capitalization folded into the exit year). A superset of A — the exit residual pulls more measures over the bar. Deeper curve. |
+| **C — B + max solar (BTM + VNM)** | Scenario B **plus** on-site solar sized to the maximum feasible: behind-the-meter self-consumption (100% owner offset) **and** virtual-net-metered export (**80% owner** per the capture rule). Add every asset's max-viable solar array regardless of whether a smaller array would have cleared the hurdle. Deepest curve. |
+
+`irr_excl_exit` and `irr_incremental` both come from `compute_plan_economics` (per measure or the
+asset roll-up). A measure qualifies for A ⊆ B ⊆ C. Compliance-required measures are in all three.
 
 **CRREM overlay — tool-fetched, never hand-built (economics correctness rule 4):** fetch each
 asset's pathway from the **`crrem` MCP `get_pathway`** for its actual country/property-type/region
@@ -1075,22 +1087,26 @@ is unreachable, say so and omit the CRREM overlay — never fabricate it.
 For each asset:
 1. Start from Audette baseline carbon intensity (kgCO₂e/m²) in 2025
 2. BAU: apply grid decarbonization factor per year to Scope 2 component only
-3. 15% IRR: subtract each IRR-passing measure's annual emission reduction from its install year onward
-4. Max decarb: subtract all recommended measures from their install years onward
-5. Weight each asset's intensity by its gross floor area (m²) for portfolio aggregate
-6. CRREM target = GFA-weighted `get_pathway` curve (step above), NOT an Audette field
+3. Scenario A: subtract each measure with `irr_excl_exit ≥ irr_hurdle` (+ compliance-required), from its install year onward
+4. Scenario B: subtract each measure with `irr_incremental ≥ irr_hurdle` (superset of A; + compliance-required)
+5. Scenario C: B's reductions PLUS each asset's max-viable solar generation offset (BTM self-consumption + VNM export)
+6. Weight each asset's intensity by its gross floor area (m²) for portfolio aggregate
+7. CRREM target = GFA-weighted `get_pathway` curve, NOT an Audette field
 
-**Sanity check (rule 6):** each scenario curve must be **non-increasing** — a rising with-plan or
-BAU carbon line is a sign/axis bug; reject and fix.
+**Sanity check (rule 6):** each scenario curve must be **non-increasing**, and by construction
+A ≥ B ≥ C in residual intensity (each scenario reduces at least as much) — if C is shallower than
+B, or B shallower than A, the screen was mis-applied; reject and fix.
 
-**Output:** JSON array of `{ year, bau_intensity, irr_intensity, max_intensity, crrem_target }` for years 2025–2050.
+**Output:** JSON array of `{ year, bau, scenario_a, scenario_b, scenario_c, crrem_target }` (kgCO₂e/m²) for years 2025–2050. (Keys must be exactly these — the template reads `bau`/`scenario_a`/`scenario_b`/`scenario_c`/`crrem_target`.)
 
-**Render as an inline SVG line chart** in the HTML report:
-- X axis: 2025–2050
-- Y axis: kgCO₂e/m² (portfolio weighted average)
-- Lines: BAU (grey dashed), CRREM target (red dashed), 15% IRR pathway (blue solid), Max decarb (green solid)
-- Shaded area between BAU and CRREM target = stranding risk zone
-- Annotation: year where 15% IRR pathway crosses CRREM target (if it does)
+**Render as an inline SVG line chart** (the template draws it from the keys above):
+- X axis 2025–2050; Y axis kgCO₂e/m² (portfolio GFA-weighted)
+- Lines: BAU (grey dashed), CRREM target (red dashed), A (blue), B (green), C (purple)
+- Shaded stranding-risk zone between BAU and CRREM; annotate the year each scenario crosses under CRREM (if it does).
+
+**Report the answer to the central question explicitly** — for A, B, C: the achieved portfolio
+GHGI-reduction % at each target year, the net CapEx deployed, and whether/when it clears the CRREM
+1.5°C line. That "how far can we get under each screen" comparison IS the headline of this report.
 
 Use inline SVG only — no external charting libraries. The chart should be self-contained and print-ready.
 

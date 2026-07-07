@@ -537,10 +537,11 @@
       var yrs = rowsT.map(function(p){ return Number(p.year); });
       var yMinYr = Math.min.apply(null, yrs), yMaxYr = Math.max.apply(null, yrs);
       var series = [
-        { key: 'bau',         label: 'Business-as-Usual',   color: '#94A3B8', dash: '5,4' },
-        { key: 'irr_pathway', label: 'IRR-Hurdle Pathway',  color: '#2563EB', dash: '' },
-        { key: 'max_decarb',  label: 'Maximum Decarb',      color: '#059669', dash: '' },
-        { key: 'crrem_target',label: 'CRREM 1.5°C Target',  color: '#DC2626', dash: '5,4' }
+        { key: 'bau',          label: 'Business-as-Usual',            color: '#94A3B8', dash: '5,4' },
+        { key: 'scenario_a',   label: 'A · IRR≥hurdle (excl. exit)',  color: '#2563EB', dash: '' },
+        { key: 'scenario_b',   label: 'B · IRR≥hurdle (incl. exit)',  color: '#059669', dash: '' },
+        { key: 'scenario_c',   label: 'C · B + max solar (BTM+VNM)',  color: '#7C3AED', dash: '' },
+        { key: 'crrem_target', label: 'CRREM 1.5°C Target',           color: '#DC2626', dash: '5,4' }
       ];
       var allV = [];
       rowsT.forEach(function(p){ series.forEach(function(s){ if (p[s.key] != null) allV.push(Number(p[s.key])); }); });
@@ -589,8 +590,9 @@
       var tgtYears = (params.target_years && params.target_years.length) ? params.target_years : [2030, 2035, 2040, 2050];
       var tblSeries = [
         { key: 'bau', label: 'Business-as-Usual' },
-        { key: 'irr_pathway', label: 'IRR-Hurdle Pathway' },
-        { key: 'max_decarb', label: 'Maximum Decarb' },
+        { key: 'scenario_a', label: 'A · IRR≥hurdle (excl. exit)' },
+        { key: 'scenario_b', label: 'B · IRR≥hurdle (incl. exit)' },
+        { key: 'scenario_c', label: 'C · B + max solar (BTM+VNM)' },
         { key: 'crrem_target', label: 'CRREM 1.5°C Target' }
       ];
       var byYear = {};

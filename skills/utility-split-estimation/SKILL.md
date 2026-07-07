@@ -14,7 +14,7 @@ description: >
   "landlord share", "who pays the utilities", "utility responsibility", "RUBS",
   "utility recovery", "utilities included", "tenant pays electric", "savings basis",
   "master metered vs individually metered".
-version: 1.0.0
+version: 1.0.1
 ---
 
 # Utility-Split Estimation
@@ -113,7 +113,13 @@ phantom landlord credit, and fully-landlord amenity measures get under-credited.
 - Residential buildings with tenant-metered fuel: landlord share for that fuel = 0% in those building
   models. House-meter loads (corridor/exterior lighting, common HVAC) that live inside residential
   buildings keep a per-building landlord share for that fuel (typically electricity).
-- Amenity/clubhouse/pool buildings: landlord share = 100% for their fuels.
+- Amenity/clubhouse/pool buildings (no tenants): landlord share = 100% for their fuels.
+- **Master-metered ≠ 100% landlord.** A master-metered residential load is only ~100% owner if the
+  owner ABSORBS it. If the jurisdiction permits RUBS, assume the owner rebills up to ~90% → net
+  landlord share ≈ 10% for that load, unless documents show a true gross lease / no rebill. Never
+  set a master-metered residential load to 100% by default.
+- **Solar under Virtual Net Metering (VNM):** assume 80% of solar output value flows to the
+  landlord (owner-captured), unless docs state a different allocation.
 - If the model has NO separate amenity building (e.g. a property modeled as N identical residential
   buildings), set the tenant-metered fuel to 0% landlord across all modeled buildings and evaluate
   common-load measures (pool heater, clubhouse equipment) as standalone owner-paid line items outside

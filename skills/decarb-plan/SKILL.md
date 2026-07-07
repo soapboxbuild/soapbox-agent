@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.8.2
+version: 1.8.3
 ---
 
 # Decarb-Plan Engagement
@@ -120,13 +120,25 @@ org memory, the reference library, and the `decarb` report template.
      improvement = net-owner utility savings (post-capture, per above) + owner-share ancillary +
      annual avoided fine. Fine avoidance may ALSO be shown as a cumulative/undiscounted figure for
      context (e.g. "$3.7M cumulative, ~$1.7M PV"), but the exit-value line is the headline outcome.
-   - **Landlord-capture matches the end-use's payer.** Reject any measure whose owner-capture /
-     Audette landlord-share equals the account default (commonly 15%) while its end-use is
-     landlord-paid — central heating/DHW plant, elevators, garage ventilation, common lighting,
-     amenity loads = **100% owner**. A common-area measure priced at the blended in-unit split
-     understates owner IRR (the elevator-regen −6%→+12% flip). Record the correction as a
-     `verifier__record_finding` (kind `data-quality`, verdict `conflict`) tying the measure to its
-     true end-use capture from the 2C capture map.
+   - **Landlord-capture matches who BEARS the cost, not who pays the meter.** Two independent
+     questions: (a) is the load metered per tenant, or master/common? (b) does the owner ABSORB the
+     bill or REBILL it via RUBS? Do not collapse them:
+     - **In-unit tenant-metered** (tenant pays the utility directly) → owner capture ~0–5%.
+     - **Master-metered / landlord-paid** (central heating/DHW plant, elevators, garage/common
+       ventilation, common lighting, amenity): the owner pays the master bill but that is NOT the
+       same as bearing the cost. **If the jurisdiction ALLOWS RUBS, assume the owner recovers up to
+       ~90% from tenants → net owner capture ≈ 10%**, unless documents show the owner absorbs it (a
+       true gross lease with no RUBS, or an explicit statement). Only assume ~100% owner when the
+       owner genuinely absorbs the utility. **Never read "master-metered" as "100% owner."**
+     - Still do NOT price a common/central-plant load at the in-unit *blended* split (the
+       elevator-regen −6%→+12% error) — but the correct number is the RUBS-recovery split (~10%
+       when RUBS applies), not an automatic 100%.
+     - **BPS fine avoidance is 100% owner** regardless of lease/metering.
+     - **Solar under Virtual Net Metering (VNM): assume 80% of solar savings flows to the landlord**
+       (unless docs state otherwise).
+     Reject any measure whose owner-capture equals the account default (commonly 15%) without this
+     reasoning; record the correction as a `verifier__record_finding` (kind `data-quality`, verdict
+     `conflict`) tying the measure to its true end-use capture from the 2C capture map.
    - **Measure equipment type matches the documented system.** Reject a measure whose equipment
      contradicts the PCA/as-built — e.g. an RTU/packaged-unit measure on a WSHP-loop building, or a
      DHW measure that assumes electric resistance when the PCA specifies gas boilers. Cross-check
@@ -492,18 +504,26 @@ number. Tenant-metered fuel = 0% owner on residential; amenity/clubhouse buildin
 foundation input, not a P3 afterthought. Record it in `state.baseline`; an unconfirmed or presumed
 split is a `verifier__record_finding` conflict adjudicated at Gate 1.
 
-**Capture is PER END-USE, not one blended number per building.** A single residential building
-has BOTH tenant-metered in-unit loads (in-unit electric HVAC/appliances ≈ the tenant %) AND
-landlord-paid loads that are **100% owner regardless of the building's headline split**: the
-central heating/DHW plant, elevators, garage ventilation, corridor/common-area lighting, and
-amenity loads (spa, pool, common laundry). Build a **capture map** in `state.capture_map`
-— every end-use a measure could touch → who pays → owner-capture % — and **never inherit Audette's
-account-default landlord share (commonly 15%) onto a measure whose end-use is landlord-paid.** This
-one gap sat behind four of the Cortland Rosslyn model errors: the central gas plant carried the 15%
-default (belongs at 100%, which undervalued every gas measure) and elevator regen showed −6% IRR at
-15% → **+12% at its true 100% common-area capture**. Where an end-use's payer is unconfirmed (in-unit
-vs common laundry, spa heat source, garage metering), record a `verifier__record_finding` conflict
-and resolve at Gate 1 — public listing sources (apartments.com, Zillow) are valid cited evidence.
+**Capture is PER END-USE, and turns on who BEARS the cost — not one blended number per building.**
+A single residential building has BOTH tenant-metered in-unit loads (in-unit electric
+HVAC/appliances ≈ the tenant %) AND master-metered / landlord-paid loads (central heating/DHW
+plant, elevators, garage ventilation, corridor/common lighting, amenity — spa, pool, laundry).
+For the master-metered loads, do NOT apply the in-unit *blended* split — but also do NOT assume
+100% owner. **Master-metered means the owner pays the meter, not that it bears the cost:**
+- **If the jurisdiction ALLOWS RUBS, assume the owner rebills up to ~90% to tenants → net owner
+  capture ≈ 10%**, unless documents show the owner absorbs it (true gross lease / no RUBS).
+- **~100% owner only when the owner genuinely absorbs the utility** (documented gross lease, or
+  RUBS not permitted). Amenity/clubhouse buildings with no tenants are the clean 100% case.
+- **Solar under Virtual Net Metering (VNM): assume 80% of solar savings flows to the landlord.**
+- **BPS fine avoidance is 100% owner** regardless.
+Build a **capture map** in `state.capture_map` — every end-use → metering → RUBS-recovery status →
+net owner-capture % — and **never inherit Audette's account-default landlord share (commonly 15%)
+onto a master-metered end-use** (that under-credits it), **nor blanket it to 100%** (that
+over-credits it when RUBS applies — the Cortland error). The Rosslyn central gas plant carried the
+15% default when the correct figure was the RUBS-recovery split for its jurisdiction, not 15% and
+not an automatic 100%. Where metering or RUBS status is unconfirmed, record a
+`verifier__record_finding` conflict and resolve at Gate 1 — public listing sources (apartments.com,
+Zillow) + the jurisdiction's RUBS statute are valid cited evidence.
 
 ### 2D — Equipment inventory (establish now — it drives P3 measure sequencing)
 
@@ -597,11 +617,13 @@ Set `phase: "P3"` and save.
      unprovenanced numbers — supply real sources, never fabricate provenance.
    - Cap rate for exit math comes from `kickoff.cap_rate` **with its verbatim source string**.
    - **Savings basis = the LOCKED per-end-use capture (from the 2C capture map, Gate 1).** A
-     measure's dollar savings accrue only to the party that pays **that end-use's** bill — so a
-     common-area or central-plant measure (elevators, garage ventilation, corridor lighting,
-     central heating/DHW) uses its **100% owner capture, NOT the building's blended in-unit split**,
-     even in a tenant-metered residential building. Never inherit Audette's account-default share;
-     set Audette's landlord-share for the measure to the end-use's locked capture or modeled owner
+     measure's dollar savings accrue only to the share the owner actually BEARS for **that
+     end-use** — so a common-area or central-plant measure (elevators, garage ventilation, corridor
+     lighting, central heating/DHW) does NOT use the building's blended in-unit split, but takes the
+     end-use's **RUBS-recovery capture: ≈10% net owner where RUBS applies, ~100% only where the
+     owner absorbs the utility** (documented gross lease / no RUBS). Solar under VNM = 80% owner.
+     Never inherit Audette's 15% account-default, and never blanket a master-metered load to 100%.
+     Set Audette's landlord-share for the measure to the end-use's locked capture or modeled owner
      savings are mis-priced. Do NOT re-derive or re-open the map here.
    - Record returned measure ids in `state.measures.register_ids`.
 5. `retrofit__screen_measures` to produce the roster labels.

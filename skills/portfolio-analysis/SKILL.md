@@ -12,7 +12,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.6.0
+version: 1.6.1
 ---
 
 # Portfolio Analysis
@@ -103,13 +103,18 @@ single-asset gate.
    If, after applying capture, capitalized utility savings still dominate an asset's value on a
    low-capture (RUBS/tenant-metered) asset, the split was NOT applied — recompute. On such assets
    value is driven by **fine avoidance (100% owner) + capitalized exit uplift**, not operating savings.
-2. **Landlord-capture is PER END-USE, not one blended number per asset.** Landlord-paid loads —
-   central heating/DHW plant, elevators, garage/common ventilation, common lighting, amenity
-   (pool/spa/laundry) — are **100% owner regardless of the building's blended in-unit split**.
-   In-unit tenant-metered loads carry the tenant %. **Never inherit Audette's account-default
-   landlord share (commonly 15%) onto a landlord-paid-end-use measure** (the elevator-regen
-   −6%→+12% flip). BPS **fine avoidance is always 100% owner** regardless of lease structure.
-   Tenant-side savings are a separate figure and do NOT capitalize into the value bridge.
+2. **Landlord-capture is PER END-USE and turns on who BEARS the cost — not who pays the meter,
+   not one blended number per asset.** Master-metered / landlord-paid loads (central heating/DHW
+   plant, elevators, garage/common ventilation, common lighting, amenity): the owner pays the
+   master bill but that is NOT 100% capture. **If the jurisdiction ALLOWS RUBS, assume the owner
+   rebills up to ~90% to tenants → net owner capture ≈ 10%**, unless docs show the owner absorbs it
+   (true gross lease / no RUBS → ~100%). In-unit tenant-metered loads carry the tenant % (~0–5%).
+   Do NOT price a common/central load at the in-unit *blended* split (the elevator-regen −6%→+12%
+   error) — but the right figure is the RUBS-recovery split (~10% when RUBS applies), **not an
+   automatic 100%; never read "master-metered" as "100% owner."** Never inherit Audette's 15%
+   account default either. **Solar under Virtual Net Metering (VNM): assume 80% of solar savings
+   flows to the landlord.** BPS **fine avoidance is always 100% owner**. Tenant-side savings are a
+   separate figure and do NOT capitalize into the value bridge.
 3. **One value number = capitalized exit uplift.** The headline value is the capitalized exit-value
    uplift = (stabilized annual owner-NOI improvement ÷ exit cap), where NOI improvement =
    net-owner utility savings (post-capture, rule 1) + owner-share ancillary + annual avoided fine.
@@ -732,18 +737,22 @@ For each reconciled measure per asset, build the owner-share cash flows for
 
 **Step 1 — LL/TT allocation (inline capture map — per correctness rules 1–2, no tool):**
 
-Set `ll_capture_pct` per measure from the **end-use's payer**, not a blended building number:
+Set `ll_capture_pct` per measure from **who BEARS the cost of that end-use** (metering AND
+RUBS-recovery), not a blended building number and not "who pays the meter":
 | End-use the measure touches | `ll_capture_pct` |
 |---|---|
-| Landlord-paid: central heating/DHW plant, elevators, common/garage ventilation, common lighting, amenity (pool/spa/laundry) | **1.0 (100% owner)** — regardless of the building's blended split |
-| In-unit tenant-metered loads (in-unit HVAC/appliances) | the tenant-metered owner share (RUBS/NNN ≈ **0.05–0.10**) |
-| BPS fine avoidance | **1.0 (100% owner)** — always, regardless of lease structure |
+| Master-metered / landlord-paid (central heating/DHW plant, elevators, common/garage ventilation, common lighting, amenity) — **jurisdiction ALLOWS RUBS** (assume owner rebills up to ~90%) | **≈0.10** (net owner) — the default for master-metered in a RUBS jurisdiction |
+| Same loads, but owner **absorbs** the utility (documented gross lease / RUBS not permitted) | **1.0 (100% owner)** |
+| In-unit tenant-metered loads (in-unit HVAC/appliances) | tenant-metered owner share (**0.0–0.05**) |
+| Solar under **Virtual Net Metering (VNM)** allowed | **0.80** (owner) |
+| BPS fine avoidance | **1.0 (100% owner)** — always, regardless of lease/metering |
 
-Then compute the **net owner utility savings** = `measure.annual_savings_$ × ll_capture_pct`, and
-for a **fuel switch** net any owner-side load increase (do not credit the owner the whole gas cut
-while assigning the new electricity to tenants — rule 1). Never inherit Audette's account-default
-landlord share (commonly 15%) onto a landlord-paid-end-use measure. Tenant-side savings are tracked
-separately and do NOT enter the value bridge.
+**Never read "master-metered" as "100% owner"** — that is the common error; master-metered just
+means the owner pays the meter, and under RUBS ~90% is rebilled to tenants. Then compute **net
+owner utility savings** = `measure.annual_savings_$ × ll_capture_pct`, and for a **fuel switch**
+net any owner-side load increase (do not credit the owner the whole gas cut while assigning the new
+electricity to tenants — rule 1). Never inherit Audette's 15% account default. Tenant-side savings
+are tracked separately and do NOT enter the value bridge.
 
 **Step 2 — Retrofit lead time feasibility:**
 - Major capital (HVAC, electrification, envelope, solar): requires 18+ months — defer if hold_period < 1.5 yrs
@@ -759,10 +768,12 @@ compute_plan_economics(
   flows: [ for each year install_year … hold_exit_year:
     { year,
       incremental_capex:    <incremental capex over like-for-like, in the install year(s); positive>,
-      owner_utility_savings: <measure.annual_savings_$ × ll_capture_pct, net of owner-side load increase>,
+      owner_utility_savings: <measure.annual_savings_$ × ll_capture_pct, net of owner-side load increase,
+                              ESCALATED to year Y: × (1 + utility_escalation)^(Y − install_year)>,
       ancillary_revenue:     <owner-share solar/EV/DR this year — risk-adjusted, NOT a perpetuity>,
       incentives:            <IRA credit received this year>,
-      bps_fine_avoidance:    <annual fine avoided — only if non-compliant on the GOVERNING pathway> } ],
+      bps_fine_avoidance:    <annual fine avoided, ESCALATED with the standard's fine schedule — only if
+                              non-compliant on the GOVERNING pathway> } ],
   exit_cap_rate: asset.exit_cap_rate,
   exit_year:     hold_exit_year,
   discount_rate: <portfolio discount rate, default 0.08>
@@ -771,7 +782,11 @@ compute_plan_economics(
   (capitalized owner savings & ancillary ÷ exit cap, PV of fine avoidance, net_value_creation,
    terminal exit-value delta)
 ```
-Feed only auditable inputs — never pre-compute IRR, capitalization, or PV yourself.
+Feed only auditable inputs — never pre-compute IRR, capitalization, or PV yourself. **Apply
+`utility_escalation` (the run parameter, default 3%/yr) to `owner_utility_savings` each year** —
+savings grow as utility rates rise, so a flat savings line understates later-year NOI and the
+capitalized exit value. The terminal exit uplift capitalizes the STABILIZED (exit-year, escalated)
+owner-NOI improvement ÷ exit cap.
 
 **For batch screening across assets:** loop `compute_plan_economics` per asset (there is no
 `screen_measure_portfolio` — it is broken). One call per asset (all its recommended-measure flows)

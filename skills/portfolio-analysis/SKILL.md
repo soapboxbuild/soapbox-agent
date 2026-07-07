@@ -12,7 +12,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.9.0
+version: 1.10.0
 ---
 
 # Portfolio Analysis
@@ -542,6 +542,47 @@ Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures a
 assets — e.g. `Pulled decarb plans 15/39…`. Never go more than ~10 tool calls without
 a visible line of text; a silent multi-minute tool storm looks like a hang to the user.
 
+### 3·0 — BATCHED EXECUTION (required for portfolios > ~8 assets — this is how the run converges to a render)
+
+A large portfolio (e.g. 39 assets) does NOT fit in one session's working context: holding every
+asset's raw Audette plan + CRREM curve + legislation at once bloats the model's context until it
+can no longer emit `fill_report` — the run grinds for an hour and then summarizes instead of
+rendering. **Process assets in BATCHES and persist a compact result per asset, so the final render
+turn reads small saved summaries, not the raw data.**
+
+Protocol:
+1. **Batch size ≤ 8 assets.** Split the analysis-ready set into batches of at most 8.
+2. **Per asset, run 3A–3D, then PERSIST a compact `pa_result` and DROP the raw data.** After you
+   finish an asset, write its result via `update_asset_metadata(asset_id, {pa_result: {...}})` and
+   do NOT carry that asset's raw Audette/CRREM/legislation payloads forward into the next batch.
+   The `pa_result` is the ONLY thing that must survive to Phase 4. Compact shape:
+   ```
+   pa_result = {
+     baseline_ghgi_kg_m2, baseline_tco2e, gfa_m2, jurisdiction, fund,
+     rubs_status, vnm_status, capture_map_summary,          // cited determinations (rule 1b)
+     crrem_meta, crrem_points: [{year, target}],            // GFA-weight in Phase 4
+     bps: {liable, governing_metric, annual_fine_by_year},
+     measures: [{ name, family, install_year, annual_tco2e_reduction, capex_net,
+                  irr_excl_exit, irr_incremental, irr_2040, capture_pct, value_creation,
+                  screen: recommended|below|defensive|needs-data }],
+     exit_year, exit_cap_rate, data_confidence
+   }
+   ```
+   (The retrofit register already persists the measures durably; `pa_result` is the compact
+   analysis rollup the render reads.)
+3. **Between batches, emit a progress line** (`Batch 3/5 complete — 24/39 analyzed`) and keep only
+   `pa_result`s in context.
+4. **Phase 4 aggregates from the persisted `pa_result`s, NOT by re-pulling Audette.** Read all
+   assets' `pa_result` (one `query_portfolio_data` / per-asset read), then compute portfolio KPIs,
+   the A/B/C/D year-by-year trajectory (cheap arithmetic from each asset's measures + baseline +
+   GFA-weighted crrem_points), measure categories, top assets, the scale program, and
+   exit-price-protection. The render turn must hold only these compact rollups.
+5. **If a batch errors or an asset is unready**, persist a `pa_result` with `data_confidence:
+   "unavailable"` + the reason and move on — never let one asset block the batch or the render.
+
+This bounds per-session context so the run reliably reaches `fill_report`. Single-asset engagements
+(decarb-plan) don't need this; it's specific to portfolio scale.
+
 ### 3A — Pull all sources, reconcile, write back to Audette
 
 For every asset with an `audette_property_id`: call Audette FIRST (Steps 1–3), then search docs (Step 4), then reconcile (Step 5), then write back (Step 6). **The doc search in Step 4 is secondary and supplementary — never a replacement for Audette.**
@@ -1030,7 +1071,10 @@ After all assets complete, flatten the per-asset outputs into two arrays the XLS
 
 ## Phase 4: Portfolio Aggregation
 
-After all assets complete:
+After all assets complete: **aggregate from the persisted `pa_result`s (Phase 3·0), NOT by
+re-pulling Audette/CRREM.** Read every asset's `metadata.pa_result` in one pass, then compute
+everything below from those compact rollups — this is what keeps the render turn's context small
+enough to emit `fill_report`. Re-pulling raw plans here re-bloats context and defeats batching.
 
 ### 4A — Portfolio KPIs
 

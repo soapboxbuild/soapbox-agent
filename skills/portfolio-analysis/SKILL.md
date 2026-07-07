@@ -12,7 +12,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.8.0
+version: 1.9.0
 ---
 
 # Portfolio Analysis
@@ -1093,10 +1093,20 @@ economic bar. Each scenario is cumulative over the one before it in ambition.
 | **Business as Usual (BAU)** | No decarb capital deployed. Only passive grid decarbonization applies to Scope 2 (~3.5%/yr US multifamily, varies by grid region). Reference line. |
 | **A — IRR ≥ hurdle, EXCLUDING exit residual** | Deploy every measure whose **`irr_excl_exit` ≥ `irr_hurdle`** (operating cashflows only: owner utility savings + ancillary + annual avoided fine − capex + incentives; **NO** capitalized exit-value uplift). The "pays for itself operationally" set. Shallowest curve. |
 | **B — IRR ≥ hurdle, INCLUDING exit residual** | Deploy every measure whose **`irr_incremental` ≥ `irr_hurdle`** (value-inclusive: operating **+** the capitalized exit-value uplift / avoided-fine capitalization folded into the exit year). A superset of A — the exit residual pulls more measures over the bar. Deeper curve. |
-| **C — B + max solar (BTM + VNM)** | Scenario B **plus** on-site solar sized to the maximum feasible: behind-the-meter self-consumption (100% owner offset) **and** virtual-net-metered export (**80% owner** per the capture rule). Add every asset's max-viable solar array regardless of whether a smaller array would have cleared the hurdle. Deepest curve. |
+| **C — B + max solar (BTM + VNM)** | Scenario B **plus** on-site solar sized to the maximum feasible: behind-the-meter self-consumption (100% owner offset) **and** virtual-net-metered export (**80% owner** per the capture rule). Add every asset's max-viable solar array regardless of whether a smaller array would have cleared the hurdle. |
+| **D — Next Owner's Perspective** | The SAME `irr_incremental ≥ hurdle` screen as B **but computed at `exit_year = 2040`** (a rational acquirer's hold horizon), NOT a hold recommendation for the current owner. A 2031 buyer underwrites a longer hold + the 2030/2040 BPS & CRREM obligations + electrification risk, so more measures clear the hurdle → the **deepest** curve. Narrate strictly as the buyer's underwriting lens / the trajectory the asset is actually on — never as "you should hold to 2040." |
 
 `irr_excl_exit` and `irr_incremental` both come from `compute_plan_economics` (per measure or the
-asset roll-up). A measure qualifies for A ⊆ B ⊆ C. Compliance-required measures are in all three.
+asset roll-up; D re-runs it with `exit_year=2040`). A ⊆ B ⊆ C ⊆ D by construction. Compliance-required
+measures are in all four.
+
+**Exit-price protection (the seller's payoff on a short hold — populate `exit_price_protection`).**
+Scenario D matters to a 2031 seller because the buyer **chips the bid** for what D would fix. Quantify
+the avoided chip, grounded + cited: (a) **compliance/brown discount** — the cap-rate expansion or $
+haircut a buyer applies to a CRREM-stranded / BPS-fine-exposed asset (state the bps or % assumption);
+(b) **electrification deferred-retrofit reserve** — the future gas→electric capex + policy risk a buyer
+deducts from their bid. Decarbing toward D removes both, so a short-hold owner captures the value **at
+the closing table**, not the meter. This is the report's punchline — surface it in the executive summary.
 
 **CRREM overlay — tool-fetched, never hand-built (economics correctness rule 4):** fetch each
 asset's pathway from the **`crrem` MCP `get_pathway`** for its actual country/property-type/region
@@ -1112,23 +1122,28 @@ For each asset:
 3. Scenario A: subtract each measure with `irr_excl_exit ≥ irr_hurdle` (+ compliance-required), from its install year onward
 4. Scenario B: subtract each measure with `irr_incremental ≥ irr_hurdle` (superset of A; + compliance-required)
 5. Scenario C: B's reductions PLUS each asset's max-viable solar generation offset (BTM self-consumption + VNM export)
-6. Weight each asset's intensity by its gross floor area (m²) for portfolio aggregate
-7. CRREM target = GFA-weighted `get_pathway` curve, NOT an Audette field
+6. Scenario D: the B screen re-run with `exit_year = 2040` (measures with `irr_incremental_2040 ≥ hurdle`) — the next-owner horizon; more measures clear → deepest reductions
+7. Weight each asset's intensity by its gross floor area (m²) for portfolio aggregate
+8. CRREM target = GFA-weighted `get_pathway` curve, NOT an Audette field
 
 **Sanity check (rule 6):** each scenario curve must be **non-increasing**, and by construction
-A ≥ B ≥ C in residual intensity (each scenario reduces at least as much) — if C is shallower than
-B, or B shallower than A, the screen was mis-applied; reject and fix.
+A ≥ B ≥ C ≥ D residual intensity (each reduces at least as much; D deepest) — if any is out of order,
+the screen was mis-applied; reject and fix.
 
-**Output:** JSON array of `{ year, bau, scenario_a, scenario_b, scenario_c, crrem_target }` (kgCO₂e/m²) for years 2025–2050. (Keys must be exactly these — the template reads `bau`/`scenario_a`/`scenario_b`/`scenario_c`/`crrem_target`.)
+**Output:** JSON array of `{ year, bau, scenario_a, scenario_b, scenario_c, scenario_d, crrem_target }`
+(kgCO₂e/m²) for years **2025–2050** (the template reads exactly these keys). ALWAYS include rows through
+**2040** (the curve must be contextualized to at least 2040, past the 2031 exit) — the target-year table
+reports 2030/2035/2040.
 
 **Render as an inline SVG line chart** (the template draws it from the keys above):
-- X axis 2025–2050; Y axis kgCO₂e/m² (portfolio GFA-weighted)
-- Lines: BAU (grey dashed), CRREM target (red dashed), A (blue), B (green), C (purple)
-- Shaded stranding-risk zone between BAU and CRREM; annotate the year each scenario crosses under CRREM (if it does).
+- X axis 2025–2050 (curve visible through ≥2040); Y axis kgCO₂e/m² (portfolio GFA-weighted)
+- Lines: BAU (grey dashed), CRREM target (red dashed), A (blue), B (green), C (purple), D — Next Owner (amber)
+- Shaded stranding-risk zone between BAU and CRREM; annotate the year each scenario crosses under CRREM.
 
-**Report the answer to the central question explicitly** — for A, B, C: the achieved portfolio
-GHGI-reduction % at each target year, the net CapEx deployed, and whether/when it clears the CRREM
-1.5°C line. That "how far can we get under each screen" comparison IS the headline of this report.
+**Report the answer to the central question explicitly** — for A, B, C, **and D**: the achieved portfolio
+GHGI-reduction % at **2030 / 2035 / 2040**, the net CapEx deployed, and whether/when it clears the CRREM
+1.5°C line. Frame A/B/C as the current owner's 2031-exit screens and **D as the next-owner lens + the
+exit-price-protection story** (`exit_price_protection`). That comparison IS the headline of this report.
 
 Use inline SVG only — no external charting libraries. The chart should be self-contained and print-ready.
 

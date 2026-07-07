@@ -243,6 +243,7 @@
     var dq     = data.data_quality    || {};
     var prog   = data.programmatic_recommendation || null;
     var scaleOpps = data.scale_opportunities || [];
+    var epp    = data.exit_price_protection || null;
 
     /* ════ Helpers (reused from RSRA/decarb) ════ */
     function safe(val) {
@@ -543,6 +544,7 @@
         { key: 'scenario_a',   label: 'A · IRR≥hurdle (excl. exit)',  color: '#2563EB', dash: '' },
         { key: 'scenario_b',   label: 'B · IRR≥hurdle (incl. exit)',  color: '#059669', dash: '' },
         { key: 'scenario_c',   label: 'C · B + max solar (BTM+VNM)',  color: '#7C3AED', dash: '' },
+        { key: 'scenario_d',   label: 'D · Next owner (2040 horizon)', color: '#D97706', dash: '' },
         { key: 'crrem_target', label: 'CRREM 1.5°C Target',           color: '#DC2626', dash: '5,4' }
       ];
       var allV = [];
@@ -595,6 +597,7 @@
         { key: 'scenario_a', label: 'A · IRR≥hurdle (excl. exit)' },
         { key: 'scenario_b', label: 'B · IRR≥hurdle (incl. exit)' },
         { key: 'scenario_c', label: 'C · B + max solar (BTM+VNM)' },
+        { key: 'scenario_d', label: 'D · Next owner (2040 horizon)' },
         { key: 'crrem_target', label: 'CRREM 1.5°C Target' }
       ];
       var byYear = {};
@@ -704,8 +707,20 @@
        10b. PORTFOLIO-SCALE PROGRAM & ECONOMIES OF SCALE (hide-gated)
     ════════════════════════════════ */
     var scaleSection = document.getElementById('scale-section');
-    if (scaleSection && (prog || scaleOpps.length > 0)) {
+    if (scaleSection && (prog || scaleOpps.length > 0 || epp)) {
       if (prog && prog.thesis) setHtml('scale-thesis', esc(prog.thesis));
+      /* Exit-price-protection callout — the seller's payoff on a short hold (avoided price chip). */
+      if (epp) {
+        var eppRows = '';
+        if (epp.compliance_discount_avoided != null) eppRows += '<tr><td>Compliance / brown-discount avoided</td><td class="num">' + esc(typeof epp.compliance_discount_avoided === 'number' ? fmtCurrency(Number(epp.compliance_discount_avoided)) : String(epp.compliance_discount_avoided)) + '</td></tr>';
+        if (epp.electrification_reserve_avoided != null) eppRows += '<tr><td>Electrification deferred-retrofit reserve avoided</td><td class="num">' + esc(typeof epp.electrification_reserve_avoided === 'number' ? fmtCurrency(Number(epp.electrification_reserve_avoided)) : String(epp.electrification_reserve_avoided)) + '</td></tr>';
+        if (epp.total != null) eppRows += '<tr class="totals-row"><td>Total exit-price protection</td><td class="num">' + esc(typeof epp.total === 'number' ? fmtCurrency(Number(epp.total)) : String(epp.total)) + '</td></tr>';
+        var eppHtml = '<div class="section-label" style="margin-top:4px">Exit-Price Protection — Next Owner\'s Perspective</div>'
+          + (epp.headline ? '<p class="section-intro">' + esc(epp.headline) + '</p>' : '')
+          + (eppRows ? '<div style="overflow-x:auto"><table class="profile-table"><thead><tr><th>Avoided buyer price chip</th><th class="num">Value protected at 2031 exit</th></tr></thead><tbody>' + eppRows + '</tbody></table></div>' : '')
+          + (epp.basis ? '<div class="chart-source">' + esc(epp.basis) + '</div>' : '');
+        setHtml('exit-price-protection', eppHtml);
+      }
       var pHtml = '';
       ((prog && prog.phases) || []).forEach(function(ph){
         pHtml += '<tr>'
@@ -1047,6 +1062,7 @@
     <div class="section-label">Portfolio Strategy</div>
     <h2 class="section-title">Portfolio-Scale Program &amp; Economies of Scale</h2>
     <p class="section-intro" id="scale-thesis">The measures above, executed programmatically across the portfolio rather than asset-by-asset, unlock procurement, financing, and mobilization efficiencies. The sequenced program and the scale levers below are derived from the aggregated results — same measures, executed at portfolio scale.</p>
+    <div id="exit-price-protection"><!-- JS: exit-price-protection callout --></div>
     <div class="sub-heading">Sequenced portfolio program</div>
     <div style="overflow-x:auto">
       <table class="profile-table">

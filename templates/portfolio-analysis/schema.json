@@ -200,8 +200,22 @@
           "scenario_a": { "type": "number", "description": "Scenario A — measures with irr_excl_exit >= hurdle (IRR excluding exit residual), blue line." },
           "scenario_b": { "type": "number", "description": "Scenario B — measures with irr_incremental >= hurdle (IRR including exit residual), green line." },
           "scenario_c": { "type": "number", "description": "Scenario C — B plus max solar (BTM self-consumption + VNM export at 80% owner), purple line." },
+          "scenario_d": { "type": "number", "description": "Scenario D — Next Owner's Perspective: the B screen re-run at exit_year=2040 (deepest), amber line." },
           "crrem_target": { "type": "number", "description": "CRREM 1.5°C target, red dashed line." }
         }
+      }
+    },
+
+    "exit_price_protection": {
+      "type": "object",
+      "description": "The seller's payoff on a short hold (Phase 4G / Scenario D): the buyer price chip that decarb avoids at the 2031 exit. Renders as a callout in the Portfolio-Scale section. Values may be $ (number → formatted) or a string (e.g. '25-50 bps'). Every figure needs a cited basis — do not invent.",
+      "additionalProperties": true,
+      "properties": {
+        "headline": { "type": "string", "description": "1-2 sentence framing — decarb protects the exit price by removing the buyer's compliance + electrification price-chip levers." },
+        "compliance_discount_avoided": { "description": "Cap-rate expansion / brown-discount a buyer would apply to a CRREM-stranded / BPS-exposed asset, avoided by decarb. Number (USD) or string (e.g. '25 bps cap-rate')." },
+        "electrification_reserve_avoided": { "description": "Deferred gas→electric retrofit reserve a buyer would deduct from their bid, avoided. Number (USD) or string." },
+        "total": { "description": "Total exit-price protection. Number (USD) or string." },
+        "basis": { "type": "string", "description": "The cited assumption/source behind the figures (discount bps, reserve $/unit, comparable, etc.)." }
       }
     },
 

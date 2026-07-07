@@ -336,7 +336,11 @@ Use these results verbatim to populate `physical_climate_risk` in the dispatch J
 
 **If asset_value is not yet known:** run `assess_physical_risk` only; omit `climate_var` from the dispatch JSON. Note in the physical risk section: "Call `calculate_climate_var` with purchase price to generate dollar-denominated VaR."
 
-### 4B — Fallback: Manual Sources (use when lat/lon unavailable)
+**Fabrication gate:** every hazard score, flood zone, and FEMA panel number MUST come from a `physrisk` tool result or an explicitly cited source. NEVER emit a plausible-looking FEMA panel or hazard score from memory. If physrisk is unavailable and 4B cannot supply a cited value, mark the hazard **"data unavailable"** in the dispatch JSON — do not guess.
+
+### 4B — Fallback: Manual Sources (use ONLY when lat/lon unavailable, or for wildfire/seismic which physrisk does not model)
+
+Label every value sourced here as web-sourced/cited — do not present it as a physrisk result.
 
 | Hazard | Risk Level | Data Source | Horizon |
 |--------|-----------|------------|---------|

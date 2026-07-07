@@ -538,7 +538,9 @@ Gather the **real** equipment set + install years / remaining useful life (RUL) 
 drawings / audit **now** — equipment type and RUL determine electrification timing (electrify at
 end-of-life, DHW→HPWH at RUL), so the roadmap in P3 cannot be sequenced without it. Map each system
 to its Audette representation per `references/audette-modeling-recipes.md` recipe 5 (e.g. hydronic
-furnaces → native `hydronic_furnace`, not a fan-coil proxy). Record the inventory in `state`.
+furnaces → native `hydronic_furnace`, not a fan-coil proxy; WSHP → `heat_pump.water_loop_heat_pump`).
+Record capacities in **refrigeration tons** (Audette peculiarity — see recipe 5; DHW too), so the
+write-back in P4 is already in the right unit. Record the inventory in `state`.
 NOTE: the Audette `submit_equipment_survey` **write-back** happens in P4; here you establish the
 inventory *knowledge* that feeds measure selection.
 
@@ -683,8 +685,17 @@ Set `phase: "P4"` and save.
    `_average_installation_year` keys, enum values are lowercase_snake (`hydronic_furnace`,
    `gas_heater`, …), and blank sizes/years must be `null` not `0`. Do NOT guess keys — copy the
    recipe's payload template. Hydronic furnaces map to `central_plant_heater_type=hydronic_furnace`
-   (native match), never the fan-coil proxy. Submit in batches of ≤6 buildings per turn (the Audette
-   OAuth token dies on large parallel bursts) and verify each with `get_equipment_survey`.
+   (native match), never the fan-coil proxy. WSHP/water-loop heat pumps map to the `heat_pump` group
+   (`water_loop_heat_pump`), never `central_plant_heat_pump` (recipe 5c). Submit in batches of ≤6
+   buildings per turn (the Audette OAuth token dies on large parallel bursts) and verify each with
+   `get_equipment_survey`.
+   **⚠️ UNITS — every `*_size` capacity is in REFRIGERATION TONS, including DHW.** This is an Audette
+   peculiarity verified from source: `KW_PER_TON=3.5169`, and the value you submit is stored and
+   modelled verbatim as tons with NO conversion. Convert BEFORE submitting: MBH ÷ 12 = tons;
+   kW ÷ 3.5169 = tons. Never submit kW, MBH, kBtu, litres, or gallons in a `*_size` field. The ONE
+   exception is `air_handling_equipment_supply_air_rate`, which is CFM. There is **no** "schema says
+   kW" comment anywhere in the Audette source or this skill — do not invent one to justify kW; if
+   unsure, re-read recipe 5, do not guess.
 3. **RENDER GATE (HARD):** call `verifier__verification_status` for the asset and write the
    result to `state.report.verification_status`. The deployed tool returns
    `{pass: boolean, open_high: number, open_total: number}` — store that shape verbatim.

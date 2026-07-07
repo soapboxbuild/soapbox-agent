@@ -121,6 +121,14 @@ guessed keys like `domestic_hot_water`). Rules:
   - `rooftop_unit_heating_type`: `electric_resistance` | `gas`; `rooftop_unit_cooling_type`: `direct_expansion`
   - `clothes_dryers_type`: `electric` | `gas`; `heat_pump_type`: `water_loop_heat_pump` | `split_air_source_heat_pump`
 - **Sizes/years left blank must be `null`, NOT `0`** — a `0` size triggers a divide-by-zero in the inferrer.
+- **ALL capacity/size fields are in TONS — including DHW** (Audette peculiarity, verified from source
+  2026-07-07). Every `*_size` field (`central_plant_heater_size`, `central_plant_cooler_size`,
+  `central_plant_heat_pump_size`, `heat_pump_size`, `terminal_cooler_size`, `terminal_heater_size`,
+  `terminal_heater_cooler_size`, **`domestic_hot_water_heater_size`**) is interpreted as **tons of
+  heating/cooling capacity** — the internal coverage-ratio math is entirely in tons and does no unit
+  conversion at submit. Convert first: MBH ÷ 12 = tons; kW ÷ 3.517 = tons; for DHW/boilers given in
+  input-BTU, apply efficiency then ÷ 12,000. Do **not** submit gallons, kBtu, MBH, cfm, or kW in these
+  fields. (The only unit-tagged field is `generic_hvac_equipment[].size_units`: `cfm | mbtu | tons`.)
 - `other_equipment` REQUIRES: `clothes_dryers_exists`, `clothes_washers_exists`, `elevators_exists`,
   `escalator_exists`, `rooftop_photovoltaics_exists` (all booleans).
 - **Cross-group validation — a ventilation path is mandatory:** at least ONE of
@@ -159,6 +167,64 @@ terminals** (not a ducted furnace) and there is no literal match, model as
 `central_plant_heater = gas_boiler + fan_coil_units`. This is a proxy for fuel/distribution
 fidelity, not a physical description. Document it explicitly in `state` so it isn't read as a data
 error. Do not apply this to hydronic furnaces — use 5a.
+
+### 5c. Water-source heat pumps (WSHP / water-loop heat pumps) — the units live in `heat_pump`
+
+A WSHP building has distributed reversible heat-pump units in each zone/suite tied to a common
+condenser-water loop. The loop is kept in range by a gas boiler (winter top-up) and a cooling tower
+(summer rejection), and ventilation is a make-up-air unit (MAU). The units do **both** zone heating
+and zone cooling, electrically. **Verified from Audette source 2026-07-07.**
+
+**The native match:** the WSHP units are `heat_pump` with `heat_pump_type = water_loop_heat_pump`
+(class `WaterLoopHeatPump`) — a skin-heating **and** skin-cooling device that owns both. Do NOT use
+`central_plant_heat_pump` for them (that field is only `air_source_heat_pump | ground_source_heat_pump`
+and represents a *central plant conditioning the loop* — e.g. geothermal — not the distributed units).
+Do NOT split the units into `terminal_cooler` (split AC) + a separate heater — one reversible unit does
+both; a `terminal_cooler` would double-count cooling.
+
+**The condenser-loop boiler** is modeled as `central_plant_heater = gas_boiler`. Note two source facts:
+- `central_plant_heater_terminal_units` (`fan_coil_units` etc.) is **never read** during boiler
+  construction — only `size`/`installation_year` are. Don't agonize over the terminal-unit label for a
+  WSHP loop boiler; it has no effect.
+- The survey path does **not** auto-balance the boiler's and the WLHP's skin-heating load ratios (the
+  `heater.heating.load_ratio = 1 - heat_pump.heating.load_ratio` balance exists only in the
+  ENCLOSED_MALL *archetype* path, not `_build_central_hvac_system`). Both install as skin-heating
+  devices and their load ratios **sum**; `verify_load_ratios` wants skin heating to total exactly 1.0.
+  So when you keep both a loop boiler and the WLHP, **set `heat_pump_heating_load_ratio` deliberately
+  and verify the resulting gas/electric split empirically** (submit → read the modelled fuel split →
+  tune) rather than assuming 1.0 on both. If the split comes out gas-heavy, the alternative is to drop
+  `central_plant_heater` and carry the residual gas on the MAU (`air_handling_equipment_heating_type =
+  gas`, a separate outdoor-air-heating end use that doesn't compete with the WLHP's skin heating), or
+  add the loop top-up as `generic_hvac_equipment` with `end_use = "outdoor_air_heating"`.
+
+**Cooling tower has no enum** — it's folded into the loop. A WSHP building has `central_plant_cooler_exists
+= false` (the WLHP + tower reject heat to the loop; there is no chiller).
+
+**WSHP office payload — MAU-carries-gas variant** (one valid approach: loop boiler dropped, residual
+gas on the gas MAU. The other valid approach keeps `central_plant_heater = gas_boiler` and tunes
+`heat_pump_heating_load_ratio` per the note above.) Sizes are **tons** (245 First — Office, Clarion
+Partners; adjust COPs/sizes/years/MAU rate per building — heating COP 3.7 per audit, cooling COP est. 3.5):
+
+```json
+{
+  "air_handling_equipment": { "air_handling_equipment_exists": true, "air_handling_equipment_type": "make_up_air_unit", "air_handling_equipment_heating_type": "gas", "air_handling_equipment_cooling_type": null, "air_handling_equipment_supply_air_rate": <cfm to hit measured gas>, "air_handling_equipment_average_installation_year": null },
+  "central_plant_heater": { "central_plant_heater_exists": false },
+  "central_plant_cooler": { "central_plant_cooler_exists": false },
+  "central_plant_heat_pump": { "central_plant_heat_pump_exists": false },
+  "domestic_hot_water_heater": { "domestic_hot_water_heater_exists": true, "domestic_hot_water_heater_central_distribution": <per audit>, "domestic_hot_water_heater_type": "<gas_heater|electric_heater|indirect_heater>", "domestic_hot_water_heater_size": null, "domestic_hot_water_heater_average_installation_year": null },
+  "terminal_cooler": { "terminal_cooler_exists": false },
+  "terminal_heater": { "terminal_heater_exists": false },
+  "rooftop_unit": { "rooftop_unit_exists": false },
+  "heat_pump": { "heat_pump_exists": true, "heat_pump_type": "water_loop_heat_pump", "heat_pump_heating_coefficient_of_performance": 3.7, "heat_pump_cooling_coefficient_of_performance": 3.5, "heat_pump_heating_load_ratio": 1.0, "heat_pump_cooling_load_ratio": 1.0, "heat_pump_size": null, "heat_pump_installation_year": <year> },
+  "other_equipment": { "clothes_dryers_exists": false, "clothes_washers_exists": false, "elevators_exists": <per audit>, "escalator_exists": false, "rooftop_photovoltaics_exists": false }
+}
+```
+
+`heat_pump_*_load_ratio = 1.0` makes the WLHP own 100% of skin heating + cooling deterministically
+(verify passes: skin heating 1.0 = WLHP, OA heating 1.0 = gas MAU, OA cooling 0.0). `load_ratio` must
+be `0 < x ≤ 1` — never `0`. **Then calibrate empirically:** submit, read back the modelled fuel split,
+and tune the MAU `supply_air_rate` (drives gas) so modelled gas ≈ measured and electricity rises to
+match — don't ship on the inference alone.
 
 ## 6. Utility allocation recipe (never-even-split rule)
 

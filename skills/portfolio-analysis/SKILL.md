@@ -696,7 +696,11 @@ For assets with no Audette link and no uploaded docs:
 
 There is **no `run_dcf` base model** — value creation is an **incremental** bridge, not a
 levered whole-asset DCF, so a going-in NOI model is not required (and `run_dcf` is broken in prod
-anyway — see ground rule 2). For each asset just fix the hold window:
+anyway — see ground rule 2). `compute_plan_economics` computes IRR and value creation from the NOI
+**delta** (the incremental owner-share flows: capex out, owner utility savings + ancillary +
+avoided fine in, terminal uplift = annual NOI delta ÷ exit cap) — it does **NOT** take the going-in
+NOI level. **Never ask the user for going-in NOI, and never block or defer a run because it is
+missing.** For each asset just fix the hold window:
 ```
 hold_exit_year = max(asset.exit_year, exit_year_floor)
 install→exit years = each measure's install_year … hold_exit_year
@@ -881,7 +885,6 @@ For each asset, compile:
   "exit_year": 2030,
   "exit_cap_rate": 0.045,
   "hold_period_years": 4,
-  "going_in_noi": 850000,
   "gav": null,
   "audette_eui": 85.2,
   "carbon_intensity_kg": 42,
@@ -967,7 +970,6 @@ After all assets complete, flatten the per-asset outputs into two arrays the XLS
     "exit_year": 2031,
     "exit_cap_rate": 0.045,
     "gav": null,
-    "going_in_noi": 850000,
     "hold_period_years": 5,
     "eui_kwh_m2": 85.2,
     "ghgi_kg_m2": 42.0,

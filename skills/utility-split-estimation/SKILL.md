@@ -14,7 +14,7 @@ description: >
   "landlord share", "who pays the utilities", "utility responsibility", "RUBS",
   "utility recovery", "utilities included", "tenant pays electric", "savings basis",
   "master metered vs individually metered".
-version: 1.0.1
+version: 1.0.2
 ---
 
 # Utility-Split Estimation
@@ -117,9 +117,15 @@ phantom landlord credit, and fully-landlord amenity measures get under-credited.
 - **Master-metered ≠ 100% landlord.** A master-metered residential load is only ~100% owner if the
   owner ABSORBS it. If the jurisdiction permits RUBS, assume the owner rebills up to ~90% → net
   landlord share ≈ 10% for that load, unless documents show a true gross lease / no rebill. Never
-  set a master-metered residential load to 100% by default.
-- **Solar under Virtual Net Metering (VNM):** assume 80% of solar output value flows to the
-  landlord (owner-captured), unless docs state a different allocation.
+  set a master-metered residential load to 100% by default. **The RUBS assumption is CONDITIONAL on
+  the jurisdiction permitting RUBS — confirm it in step 3 (cite the statute); if RUBS is BARRED, the
+  owner bears the cost (~100% on master-metered), not ~10%.**
+- **Solar under Virtual Net Metering (VNM):** assume 80% of solar output value flows to the landlord
+  (owner-captured) — but **ONLY after confirming the state/utility actually offers VNM / aggregated
+  NEM / community-solar export** (check the reference library → PUC/utility tariff → cite the rule +
+  URL). **If only behind-the-meter (BTM) net metering is available (no virtual/export aggregation),
+  solar value = BTM self-consumption offset only** — owner-share on the owner-paid loads it displaces
+  — NOT the 80% VNM credit. Never assume VNM without the jurisdiction check.
 - If the model has NO separate amenity building (e.g. a property modeled as N identical residential
   buildings), set the tenant-metered fuel to 0% landlord across all modeled buildings and evaluate
   common-load measures (pool heater, clubhouse equipment) as standalone owner-paid line items outside

@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.8.3
+version: 1.8.4
 ---
 
 # Decarb-Plan Engagement
@@ -136,6 +136,13 @@ org memory, the reference library, and the `decarb` report template.
      - **BPS fine avoidance is 100% owner** regardless of lease/metering.
      - **Solar under Virtual Net Metering (VNM): assume 80% of solar savings flows to the landlord**
        (unless docs state otherwise).
+     - **VERIFY the RUBS and VNM legislation for the asset's jurisdiction — never assume it.** The
+       ~10% RUBS capture and the 80% VNM solar credit are CONDITIONAL: check (reference library →
+       web/`brave-search` + `web_fetch` → **cite statute/PUC rule + URL**) whether RUBS/submetering
+       pass-through is permitted (**if BARRED → owner-borne ~100% on master-metered, not ~10%**) and
+       whether Virtual Net Metering / aggregated NEM is available (**if only behind-the-meter NEM
+       exists, solar = BTM self-consumption offset only, NOT the 80% VNM credit**). Record the
+       RUBS + VNM determination + source as a Gate-1 finding.
      Reject any measure whose owner-capture equals the account default (commonly 15%) without this
      reasoning; record the correction as a `verifier__record_finding` (kind `data-quality`, verdict
      `conflict`) tying the measure to its true end-use capture from the 2C capture map.

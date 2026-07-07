@@ -12,7 +12,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.7.0
+version: 1.7.1
 ---
 
 # Portfolio Analysis
@@ -103,6 +103,17 @@ single-asset gate.
    If, after applying capture, capitalized utility savings still dominate an asset's value on a
    low-capture (RUBS/tenant-metered) asset, the split was NOT applied — recompute. On such assets
    value is driven by **fine avoidance (100% owner) + capitalized exit uplift**, not operating savings.
+   - **VERIFY the RUBS and VNM legislation per jurisdiction — never assume it.** The ~10% RUBS
+     capture and the 80% VNM solar credit are CONDITIONAL on the jurisdiction actually permitting
+     them. For each asset's jurisdiction, check (reference library → `brave-search`/web + `web_fetch`
+     → **cite the statute/PUC rule + URL**): (a) whether RUBS / submetering pass-through is permitted
+     and any allocation cap — **if RUBS is BARRED, the owner bears the utility → ~100% on
+     master-metered, NOT ~10%**; (b) whether **Virtual Net Metering / aggregated NEM / community-solar
+     export** is available — **if only behind-the-meter (BTM) net metering exists (no virtual/export
+     aggregation), Scenario-C solar value = BTM self-consumption offset only** (owner-share on the
+     loads it displaces), NOT the 80% VNM credit. Record each RUBS + VNM determination with its
+     source as a `verifier__record_finding` (kind `data-quality`); an unconfirmed jurisdiction
+     assumption is flagged in Data Quality, never silently applied.
 2. **Landlord-capture is PER END-USE and turns on who BEARS the cost — not who pays the meter,
    not one blended number per asset.** Master-metered / landlord-paid loads (central heating/DHW
    plant, elevators, garage/common ventilation, common lighting, amenity): the owner pays the

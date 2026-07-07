@@ -2,16 +2,17 @@
 name: portfolio-analysis
 description: >
   Run a portfolio-scale decarbonization analysis across all analysis-ready assets in a
-  Soapbox portfolio. For each asset: pulls Audette decarb plan (physics), runs Soapbox
-  DCF engine (financial model), applies LL/TT allocation decision tree, screens measures by
-  IRR ≥ hurdle. Aggregates to fund-level and portfolio-level summary. Produces
+  Soapbox portfolio. For each asset: pulls Audette decarb plan (physics), runs the
+  compute_plan_economics cashflow engine (incremental value bridge + IRR), applies LL/TT
+  allocation decision tree, screens measures by IRR ≥ hurdle. Aggregates to fund-level and
+  portfolio-level summary. Produces
   presentation-ready HTML report. Works for any client portfolio — parameters are fully
   configurable per run. Spec 2 of 2 — portfolio ingestion (Spec 1) is a prerequisite.
   Triggers on: "run portfolio analysis", "analyze the portfolio", "portfolio decarbonization",
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.5.0
+version: 1.6.0
 ---
 
 # Portfolio Analysis
@@ -24,8 +25,8 @@ capital, value creation, and emissions trajectory across all assets.
 hardcoded client assumptions.
 
 **This skill replaces client-specific helper spreadsheets.** Audette provides the physics
-(energy measures, decarb plan, EUI), the Soapbox DCF engine provides the finance (IRR,
-value creation, NOI uplift).
+(energy measures, decarb plan, EUI), the `compute_plan_economics` cashflow engine provides the
+finance (incremental IRR, value creation, NOI uplift).
 
 **Single-asset engagement:** if the ask is a full asset decarbonization engagement (one
 asset, multi-week, gated, client-deliverable), route to the `decarb-plan` skill instead.
@@ -43,14 +44,22 @@ to `decarb-plan`; this is the screening-scale product.
 
 **Ground rules — hold them on every asset:**
 
-1. **No LLM arithmetic on reported numbers.** Every economic figure comes from the DCF/cashflow
-   engine, an Audette model, or a cited source. You never compute a reported number yourself.
-2. **The DCF engine owns the economics; the retrofit agent owns discipline + building science +
-   the register.** Feed engine outputs *into* `retrofit__evaluate_measure` as
-   `engine`-provenanced fields (`engine: "soapbox-dcf"` / `"cashflow-mcp"`); the tool's
-   provenance gate then passes on real numbers and rejects fabricated ones. The register's
-   server-computed `exit_value_delta` (NOI÷cap) is a screening proxy — report **value creation**
-   always comes from the DCF engine, never the register.
+1. **No LLM arithmetic on reported numbers.** Every economic figure comes from the
+   `compute_plan_economics` cashflow engine, an Audette model, or a cited source. You never
+   compute a reported number yourself.
+2. **`compute_plan_economics` owns the economics; the retrofit agent owns discipline + building
+   science + the register.** ⚠️ **Do NOT call `run_dcf`, `run_intervention_irr`, `get_ll_capture`,
+   or `screen_measure_portfolio`** — those four cashflow-MCP tools execute Python scripts that are
+   NOT deployed in prod (`execFileSync python3` → ENOENT); they fail every time. The ONLY working
+   economics tool is **`compute_plan_economics`** (pure TypeScript, deterministic) — it takes
+   per-year owner-share cash flows and returns `irr_incremental` + the value-creation waterfall
+   (capitalized owner savings/ancillary ÷ exit cap, PV of fine avoidance, net value creation,
+   terminal exit-value delta). Determine the LL/TT split inline (Step 1 below), build each asset's
+   per-year owner-share flows, and call `compute_plan_economics`. Feed its outputs *into*
+   `retrofit__evaluate_measure` as `engine: "compute_plan_economics"`-provenanced fields; the
+   provenance gate passes real numbers and rejects fabricated ones. The register's server-computed
+   `exit_value_delta` (NOI÷cap) is a screening proxy — report **value creation** always comes from
+   `compute_plan_economics`, never the register.
 3. **Recommended = screen AND hurdle.** A measure is *recommended in the report* iff
    `retrofit__screen_measures` labels it `recommended` **AND** its DCF IRR ≥ `irr_hurdle`.
    Screen-recommended but IRR-missing → below-hurdle. Screen `defensive` → defensive. Screen
@@ -75,6 +84,60 @@ reconciliation and measure-screening lessons", fiduciary: true)`. Use `fiduciary
 the portfolio report is a client-facing deliverable (validated tier only). Carry any relevant
 lessons into reconciliation and screening. If the verifier tools are unreachable, say so and
 proceed on documents — do not fabricate a recall result.
+
+---
+
+## Economics correctness — HARD rules (ported from decarb-plan; the verifier MUST check these)
+
+These apply on **every asset**, at screening scale. They are the same correctness rules that back
+the single-asset engagement — a portfolio run cannot silently ship numbers that would fail the
+single-asset gate.
+
+1. **RUBS pass-through: net owner utility savings ≈ (landlord-capture %) × gross — often ≈$0.**
+   Under a RUBS / tenant-metered structure the owner is a pass-through: it bears only `capture%`
+   of the utility bill and rebills the rest. A measure that cuts the bill by $X returns only
+   `capture% × $X` to owner NOI. At a ~5–10% capture, owner savings round to **≈$0/yr**, NOT the
+   gross. **Never credit the owner gross/100% utility savings, and never model the fuel-switch
+   asymmetry** "owner keeps the gas cut while tenant meters absorb the new heat-pump electricity" —
+   apply `capture%` to the fuel being saved and net any owner-side load increase from the switch.
+   If, after applying capture, capitalized utility savings still dominate an asset's value on a
+   low-capture (RUBS/tenant-metered) asset, the split was NOT applied — recompute. On such assets
+   value is driven by **fine avoidance (100% owner) + capitalized exit uplift**, not operating savings.
+2. **Landlord-capture is PER END-USE, not one blended number per asset.** Landlord-paid loads —
+   central heating/DHW plant, elevators, garage/common ventilation, common lighting, amenity
+   (pool/spa/laundry) — are **100% owner regardless of the building's blended in-unit split**.
+   In-unit tenant-metered loads carry the tenant %. **Never inherit Audette's account-default
+   landlord share (commonly 15%) onto a landlord-paid-end-use measure** (the elevator-regen
+   −6%→+12% flip). BPS **fine avoidance is always 100% owner** regardless of lease structure.
+   Tenant-side savings are a separate figure and do NOT capitalize into the value bridge.
+3. **One value number = capitalized exit uplift.** The headline value is the capitalized exit-value
+   uplift = (stabilized annual owner-NOI improvement ÷ exit cap), where NOI improvement =
+   net-owner utility savings (post-capture, rule 1) + owner-share ancillary + annual avoided fine.
+   `compute_plan_economics` returns this. Report ONE value number per asset/plan — do not present a
+   PV-of-cashflows `net_value_creation` next to a contradicting capitalized `exit_value_delta`.
+   Fine avoidance may also be shown cumulative + PV for context.
+4. **CRREM provenance — real curve, never hand-built from Audette fields.** Pull the pathway from
+   the **`crrem` MCP `get_pathway`** for each asset's actual country/property-type/region; put those
+   points in the trajectory and set `crrem_meta` (country/property_type/region/scenario). Do NOT
+   interpolate, eyeball, or reuse an Audette `crrem_pathway_target_*` model field as the plotted
+   curve. Portfolio-weight the per-asset tool-fetched curves for the aggregate pathway. If the tool
+   is unreachable, say so — never fabricate the curve.
+5. **Fine avoidance assessed honestly against the governing metric.** Assess each BPS against the
+   metric it actually uses. **Dual-pathway standards (comply via EITHER site-EUI OR GHG-intensity —
+   e.g. CO Reg 28) require failing the GOVERNING/elected pathway**, not merely the harder one —
+   don't manufacture a penalty off the EUI pathway if the asset clears the GHG pathway. A compliant
+   asset gets fine avoidance **null, not 0-that-reads-as-a-number**. No phantom penalties in the
+   headline compliance-exposure KPI.
+6. **Sanity checks (reject + recompute if violated):** emissions trajectories are **non-increasing**
+   (a rising with-plan/BAU carbon curve is a sign/axis bug); at-RUL / bundled-capital-event
+   incremental cost is **positive** (only the upgrade spec above the mandatory like-for-like is
+   incremental — a re-roof is baseline, only added insulation is incremental); **ancillary/DR revenue
+   is NOT capitalized as a perpetuity** (risk-adjust / PV over term); **subscription measures judged
+   on annual net**, not capitalized-fee-vs-savings; every headline % equals the underlying
+   tonnage/energy math on the **same basis** (never mix grid-inclusive vs measure-only in one figure).
+7. **On a re-run, REGENERATE — never `read_file` the prior rendered report HTML** to "get the
+   structure." Rebuild the data object from `state` + live tool outputs + the template **schema**;
+   re-call `crrem get_pathway`. A stored data object may predate template/rule changes.
 
 ---
 
@@ -330,13 +393,12 @@ For each asset still missing required fields, present a focused card:
 Only show missing fields. `skip` leaves null and excludes the asset from analysis.
 `disposed` marks the asset and includes it in emissions inventory only.
 
-Run LL/TT allocation once inputs are known using the **cashflow MCP `get_ll_capture` tool** —
-the hosted skill runtime does not ship local Python scripts, so always use the MCP tool, never a
-`python3 …ll_allocation.py` call:
-`get_ll_capture(lease_structure, metering_config, jurisdiction, measure_type, bps_liable)`
-→ returns `ll_capture_pct` + warnings.
-If `include_bps: false`, pass `bps_liable: null` — treated as "not assessed", so the
-fine-avoidance benefit is omitted from the LL capture calculation.
+Determine LL/TT allocation **inline** (do NOT call `get_ll_capture` — it is broken in prod; the
+hosted runtime ships no Python). Set `ll_capture_pct` per the **end-use capture map** in economics
+correctness rules 1–2 above: landlord-paid loads (central plant, elevators, common, amenity) = 1.0
+regardless of the blended split; in-unit tenant-metered ≈ 0.05–0.10; BPS fine avoidance = 1.0
+always; and net owner utility savings = `capture% × gross` (≈$0 on low-capture/RUBS assets — never
+the gross). If `include_bps: false`, treat fine avoidance as "not assessed" and omit it from owner NOI.
 
 Write results to asset metadata:
 ```
@@ -356,7 +418,7 @@ If `N_ready = 0`: stop and ask the user to provide financial parameters.
 
 Confirm:
 
-### 1E — Load confirmed analysis-ready assets for the run
+### 1E-bis — Load confirmed analysis-ready assets for the run
 
 ```sql
 SELECT id, name, address, property_type, metadata
@@ -630,23 +692,20 @@ For assets with no Audette link and no uploaded docs:
 - Call `get_statistics(analyze_by: "site_eui", filters: {building_type: ["<asset_type>"], climate_zone: ["<zone>"]})` on BPD MCP to get the median EUI for the asset's building type + climate zone. Use the 50th-percentile value as the baseline EUI — label every derived value `(est.)`.
 - **Circular benchmarking rule:** Never use a BPD-derived benchmark EUI as the subject EUI in a subsequent BPD `get_eui_percentile` call. Skip the percentile comparison for that asset.
 
-### 3B — Run DCF base model (use the cashflow MCP tool)
+### 3B — Establish hold window (NO base DCF model)
 
-Call `run_dcf` for each asset:
+There is **no `run_dcf` base model** — value creation is an **incremental** bridge, not a
+levered whole-asset DCF, so a going-in NOI model is not required (and `run_dcf` is broken in prod
+anyway — see ground rule 2). For each asset just fix the hold window:
 ```
-run_dcf(
-  asset_type: "multifamily",
-  hold_period_years: max(exit_year, exit_year_floor) - current_year,
-  exit_cap_rate: asset.exit_cap_rate,
-  going_in_noi: <from Audette model or document-extracted NOI>
-)
+hold_exit_year = max(asset.exit_year, exit_year_floor)
+install→exit years = each measure's install_year … hold_exit_year
 ```
+If `hold_exit_year - current_year < 1` (already past exit): mark disposed, skip financial analysis.
 
-If hold period < 1 year (already past exit): mark as disposed, skip financial analysis.
+### 3C — Compute per-asset economics via `compute_plan_economics` + persist to the retrofit register
 
-### 3C — Apply each measure through the cashflow MCP + retrofit register
-
-The economics run through the DCF/cashflow engine (Steps 1–6 below); the **retrofit
+The economics run through **`compute_plan_economics`** (Steps 1–6 below); the **retrofit
 (building-science) agent** frames the candidates, supplies feasibility/staging doctrine, and is
 the **system of record** for the resulting measures (Step 0 and Step 7). Persisting to the
 register means a later `decarb-plan` engagement on any of these assets **inherits** this work.
@@ -663,56 +722,65 @@ register means a later `decarb-plan` engagement on any of these assets **inherit
   This doctrine — combustion safety after air-sealing, A2L refrigerants, envelope-before-HVAC
   sizing — informs the feasibility check in Step 5 below and the `feasibility.score` in Step 7.
 
-For each reconciled measure per asset, use the cashflow MCP tools — do NOT use simple payback math:
+For each reconciled measure per asset, build the owner-share cash flows for
+`compute_plan_economics` — do NOT use simple payback math, and do NOT call `get_ll_capture`
+(broken in prod).
 
-**Step 1 — LL/TT allocation (call `get_ll_capture`):**
-```
-get_ll_capture(
-  lease_structure: asset.lease_structure,
-  metering_config: asset.metering_config,
-  jurisdiction: asset.jurisdiction,
-  measure_type: measure.category,
-  bps_liable: asset.bps_liable
-)
-→ returns ll_capture_pct + warnings
-```
+**Step 1 — LL/TT allocation (inline capture map — per correctness rules 1–2, no tool):**
 
-**LL capture is the fraction of energy savings that flows to landlord NOI.**
-A NNN tenant-metered building gets `ll_capture_pct ≈ 0.05` on in-unit measures.
-BPS fine avoidance is always LL-captured regardless of lease structure.
+Set `ll_capture_pct` per measure from the **end-use's payer**, not a blended building number:
+| End-use the measure touches | `ll_capture_pct` |
+|---|---|
+| Landlord-paid: central heating/DHW plant, elevators, common/garage ventilation, common lighting, amenity (pool/spa/laundry) | **1.0 (100% owner)** — regardless of the building's blended split |
+| In-unit tenant-metered loads (in-unit HVAC/appliances) | the tenant-metered owner share (RUBS/NNN ≈ **0.05–0.10**) |
+| BPS fine avoidance | **1.0 (100% owner)** — always, regardless of lease structure |
+
+Then compute the **net owner utility savings** = `measure.annual_savings_$ × ll_capture_pct`, and
+for a **fuel switch** net any owner-side load increase (do not credit the owner the whole gas cut
+while assigning the new electricity to tenants — rule 1). Never inherit Audette's account-default
+landlord share (commonly 15%) onto a landlord-paid-end-use measure. Tenant-side savings are tracked
+separately and do NOT enter the value bridge.
 
 **Step 2 — Retrofit lead time feasibility:**
 - Major capital (HVAC, electrification, envelope, solar): requires 18+ months — defer if hold_period < 1.5 yrs
 - Compliance-required measures: never defer regardless of hold period
 - Controls/LED/commissioning: 3–6 months — feasible for any hold period
 
-**Step 3 — Value-inclusive IRR (call `run_intervention_irr`):**
+**Step 3 — Value-inclusive IRR + value bridge (call `compute_plan_economics`):**
+
+Build the per-year owner-share flow schedule for the measure (or, for the asset roll-up, all
+recommended measures combined) and call the one working engine:
 ```
-run_intervention_irr(
-  base_model: <result from run_dcf>,
-  intervention_type: <mapped from measure category>,
-  capex: measure.install_cost,
-  annual_savings: measure.annual_savings_$ × ll_capture_pct,
-  utility_escalation: utility_escalation,
-  start_year: measure.install_year - current_year,
-  ll_capture_pct: ll_capture_pct
+compute_plan_economics(
+  flows: [ for each year install_year … hold_exit_year:
+    { year,
+      incremental_capex:    <incremental capex over like-for-like, in the install year(s); positive>,
+      owner_utility_savings: <measure.annual_savings_$ × ll_capture_pct, net of owner-side load increase>,
+      ancillary_revenue:     <owner-share solar/EV/DR this year — risk-adjusted, NOT a perpetuity>,
+      incentives:            <IRA credit received this year>,
+      bps_fine_avoidance:    <annual fine avoided — only if non-compliant on the GOVERNING pathway> } ],
+  exit_cap_rate: asset.exit_cap_rate,
+  exit_year:     hold_exit_year,
+  discount_rate: <portfolio discount rate, default 0.08>
 )
-→ returns IRR, payback_years, exit_value_delta, yield_on_cost
+→ returns irr_incremental, the full cashflow schedule, and the value-creation waterfall
+  (capitalized owner savings & ancillary ÷ exit cap, PV of fine avoidance, net_value_creation,
+   terminal exit-value delta)
 ```
+Feed only auditable inputs — never pre-compute IRR, capitalization, or PV yourself.
 
-**For batch screening across assets:** use `screen_measure_portfolio` to run one measure type across all assets at once.
+**For batch screening across assets:** loop `compute_plan_economics` per asset (there is no
+`screen_measure_portfolio` — it is broken). One call per asset (all its recommended-measure flows)
+gives the asset's value creation + IRR; per-measure calls give per-measure IRR for the screen.
 
-**Step 4 — IRR screen (use the `irr_hurdle` parameter):**
+**Step 4 — Use the engine's outputs directly:**
 
-Use the IRR, payback, and `exit_value_delta` already returned by `run_intervention_irr`
-in Step 3 — do **not** recompute with a local `dcf_engine.py` script (the hosted skill runtime
-does not ship it; the cashflow MCP is the engine). For batch runs, `screen_measure_portfolio`
-returns the same fields across assets.
-
-IRR is unlevered, inclusive of asset value:
-- Cash outflow at `install_year` = capex
-- Annual cash inflow = `annual_noi_uplift` for each year from `install_year` to `exit_year`
-- Terminal value uplift at `exit_year` = `annual_noi_uplift / exit_cap_rate`
+Use `irr_incremental` and the waterfall from `compute_plan_economics` — do **not** recompute with a
+local `dcf_engine.py` script (not shipped) and do **not** call `run_dcf`/`run_intervention_irr`
+(broken). The value bridge is unlevered and incremental:
+- Outflow at `install_year` = incremental capex (over like-for-like)
+- Annual inflow = net owner-NOI improvement (owner utility savings + ancillary + avoided fine)
+- Terminal uplift at `exit_year` = annual NOI improvement ÷ exit cap  ← the reported value creation
 
 **Step 5 — IRR screen:**
 
@@ -742,21 +810,21 @@ Label net capex separately from gross in all tables.
 
 **Step 7 — Evaluate, persist, and screen through the retrofit register:**
 
-Now that the DCF engine has produced the economics for the measure, record it in the retrofit
-register through the provenance gate, then screen it. This is what makes the measure durable and
-disciplined — the gate rejects any number without engine or source provenance.
+Now that `compute_plan_economics` has produced the economics for the measure, record it in the
+retrofit register through the provenance gate, then screen it. This is what makes the measure
+durable and disciplined — the gate rejects any number without engine or source provenance.
 
-1. **`retrofit__evaluate_measure`** — feed the DCF outputs in as engine-provenanced fields.
+1. **`retrofit__evaluate_measure`** — feed the engine outputs in as engine-provenanced fields.
    `feasibility.score` is an **integer 1–5** informed by the Step 0 playbook doctrine; every econ
-   field carries `engine` (the DCF/cashflow engine) or a cited `source`:
+   field carries `engine: "compute_plan_economics"` or a cited `source`:
    ```
    retrofit__evaluate_measure(
      asset_id: "<Soapbox asset UUID>",
      measure: {
        measure_family: "hvac", name: "...", candidate_source: "audette|pca|audit|originated",
-       cost:                 { value: <net or gross capex>, unit: "USD", engine: "soapbox-dcf" },
-       owner_savings_annual: { value: <annual_savings_$ × ll_capture_pct>, unit: "USD/yr", engine: "cashflow-mcp" },
-       noi_delta_annual:     { value: <annual_noi_uplift>, unit: "USD/yr", engine: "soapbox-dcf" },
+       cost:                 { value: <net or gross incremental capex>, unit: "USD", engine: "compute_plan_economics" },
+       owner_savings_annual: { value: <annual_savings_$ × ll_capture_pct, net of load increase>, unit: "USD/yr", engine: "compute_plan_economics" },
+       noi_delta_annual:     { value: <annual owner-NOI improvement>, unit: "USD/yr", engine: "compute_plan_economics" },
        cap_rate:             { value: <exit_cap_rate>, unit: "ratio", source: "<verbatim source of the cap rate>" },
        incentives:           [{ value: <ira_credit_$>, unit: "USD", program: "§48E|§179D|§45L", eligibility_basis: "...", source: "<statute/rule>" }],
        feasibility:          { score: <1-5>, site_conditions: "...", disruption: "none|light|in-unit|vacancy-required", contractor_reality: "...", staging: "<from staging playbook>", sources: ["<audit/PCA/Audette/playbook>"] },
@@ -771,8 +839,8 @@ disciplined — the gate rejects any number without engine or source provenance.
    filling citations reflexively on every measure inflates the roster and lets weak measures escape
    the value screen. Empty citations let poor economics screen out honestly.
    The tool computes `exit_value_delta = noi_delta_annual ÷ cap_rate` server-side as a screening
-   proxy — **do not** use it in report value-creation tables (those stay the DCF engine's
-   `run_intervention_irr` output). If the gate rejects a field, supply the real provenance —
+   proxy — **do not** use it in report value-creation tables (those stay `compute_plan_economics`'s
+   waterfall / terminal exit-value output). If the gate rejects a field, supply the real provenance —
    never fabricate an `engine`/`source` string to get past it.
 
 2. **`retrofit__screen_measures(asset_id)`** — labels each measure
@@ -979,7 +1047,11 @@ Build a year-by-year portfolio emissions model for three scenarios and the CRREM
 | **15% IRR Pathway** | Only measures that pass the IRR hurdle (`irr_hurdle`) are deployed, at their modelled install years. Emissions drop as each measure comes online. |
 | **Maximum Decarb** | All Audette-recommended measures deployed at earliest viable install year, regardless of IRR. Represents the fastest achievable pathway given the existing building stock. |
 
-**CRREM overlay:** Plot the portfolio-weighted CRREM 1.5°C pathway target for each year.
+**CRREM overlay — tool-fetched, never hand-built (economics correctness rule 4):** fetch each
+asset's pathway from the **`crrem` MCP `get_pathway`** for its actual country/property-type/region
+(set `crrem_meta` per asset), then GFA-weight the per-asset tool curves into the portfolio target.
+Do NOT reuse an Audette `crrem_pathway_target_*` model field or interpolate a curve. If `crrem`
+is unreachable, say so and omit the CRREM overlay — never fabricate it.
 
 **Calculation method per year Y (2025–2050):**
 
@@ -989,6 +1061,10 @@ For each asset:
 3. 15% IRR: subtract each IRR-passing measure's annual emission reduction from its install year onward
 4. Max decarb: subtract all recommended measures from their install years onward
 5. Weight each asset's intensity by its gross floor area (m²) for portfolio aggregate
+6. CRREM target = GFA-weighted `get_pathway` curve (step above), NOT an Audette field
+
+**Sanity check (rule 6):** each scenario curve must be **non-increasing** — a rising with-plan or
+BAU carbon line is a sign/axis bug; reject and fix.
 
 **Output:** JSON array of `{ year, bau_intensity, irr_intensity, max_intensity, crrem_target }` for years 2025–2050.
 
@@ -1119,7 +1195,7 @@ The template renders these sections (reference — this is the template's contra
     audit > Audette model > estimate)."
 
 [Footer]
-  Data sources: Audette · Soapbox DCF Engine · CRREM 2024 · IRA §48E/§179D · BPD (LBNL)
+  Data sources: Audette · Soapbox compute_plan_economics engine · CRREM (tool get_pathway) · IRA §48E/§179D · BPD (LBNL)
   Parameters: IRR [X]% · Utility escalation 3% · Exit year floor [Y] · Value-inclusive IRR
   Limitations: This analysis is based on data available at time of run. CapEx estimates
   carry ±30% uncertainty without site inspection. IRR sensitivity to exit cap rate is high —
@@ -1196,27 +1272,19 @@ Call `list_customer_accounts()` to get the available account list, present names
 user, and ask which one to use. Do not guess. Do not proceed with a wrong account —
 data from another client's account would silently corrupt the analysis.
 
-**DCF engine failure:**
-If the cashflow MCP DCF tools (`run_dcf` / `run_intervention_irr`) return an error for an asset,
-mark that asset `analysis_failed`, report the error, continue with remaining assets.
+**`compute_plan_economics` failure:**
+If `compute_plan_economics` returns an error for an asset (bad inputs, tool unreachable), mark that
+asset `analysis_failed`, report the error, continue with remaining assets. Do NOT fall back to
+`run_dcf`/`run_intervention_irr` (broken) or hand-compute the IRR/value bridge yourself.
 
 **Verifier or retrofit tools unavailable at runtime:**
 If `verifier__*` or `retrofit__*` tools error or are absent, say so at the top of the run
 ("⚠ Verifier/Retrofit plugin unreachable — running without the findings ledger / measure
-register"). You may still produce the analysis from Audette + docs + the DCF engine, but: do NOT
-fabricate finding ids, verification-status results, or register entries; note that conflicts were
-not logged to the ledger and the measure register was not updated; and tell the user to reconnect
-the plugin to restore verification and the shared register. Never present the report as verified
-when the verifier was unreachable.
-
-**Verifier or retrofit tools unavailable at runtime:**
-If `verifier__*` or `retrofit__*` tools error or are absent, say so at the top of the run
-("⚠ Verifier/Retrofit plugin unreachable — running without the findings ledger / measure
-register"). You may still produce the analysis from Audette + docs + the DCF engine, but: do NOT
-fabricate finding ids, verification-status results, or register entries; note that conflicts were
-not logged to the ledger and the measure register was not updated; and tell the user to reconnect
-the plugin to restore verification and the shared register. Never present the report as verified
-when the verifier was unreachable.
+register"). You may still produce the analysis from Audette + docs + `compute_plan_economics`, but:
+do NOT fabricate finding ids, verification-status results, or register entries; note that conflicts
+were not logged to the ledger and the measure register was not updated; and tell the user to
+reconnect the plugin to restore verification and the shared register. Never present the report as
+verified when the verifier was unreachable.
 
 **IRR does not converge:**
 Mark the measure `irr: "no_convergence"`, exclude from recommendations, note in output.

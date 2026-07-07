@@ -1094,8 +1094,11 @@
           var si = item.getAttribute('data-si');
           if (si == null) return;
           /* Toggle EVERY chart element tagged with this series index — the polyline plus,
-             for CRREM, its stranding-year marker group — so they hide/show together. */
-          var els = chartEl.querySelectorAll('[data-si="'+si+'"]');
+             for CRREM, its stranding-year marker group — so they hide/show together.
+             Scope to `svg` descendants: the legend item ITSELF also carries data-si, and
+             matching it here would set display:none on the button, making it vanish so it
+             can never be clicked back on ("toggles off, gone forever"). */
+          var els = chartEl.querySelectorAll('svg [data-si="'+si+'"]');
           if (!els.length) return;
           var hidden = item.classList.toggle('leg-off');
           els.forEach(function(el){ el.style.display = hidden ? 'none' : ''; });

@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.8.1
+version: 1.8.2
 ---
 
 # Decarb-Plan Engagement
@@ -99,6 +99,27 @@ org memory, the reference library, and the `decarb` report template.
    - **Tenant vs landlord savings are SEPARATE explicit columns** in the cashflow — never merged.
      Only landlord/owner-share savings capitalize into the value-creation bridge; tenant-side
      savings do not accrue to the owner (see owner-share discipline in recipe 8 + analytics standards).
+   - **RUBS pass-through: net owner utility savings ≈ (landlord-capture %) × gross savings — often ≈$0
+     (HARD — the verifier MUST check this).** Under a Ratio Utility Billing System (RUBS) the owner is
+     a pass-through: it pays the master/utility bill and rebills ~(1 − capture%) to tenants, so it only
+     BEARS `capture%` of the cost. A measure that cuts the bill by $X therefore returns only
+     `capture% × $X` to the owner — the rest was tenant money that also disappears from the rebill.
+     At a 10% landlord capture, owner utility savings are ~10% of gross ≈ **$0/yr at plan scale**, NOT
+     the gross figure. **Never credit the owner the gross (or 100%) utility savings, and never model the
+     owner-favorable fuel-switch asymmetry** "owner keeps 100% of the gas cut while tenant meters absorb
+     the new heat-pump electricity" — apply the locked `capture%` to the fuel BEING SAVED and net any
+     owner-side load INCREASE from the switch. If, after applying capture, `capitalized_utility_savings`
+     still dominates the bridge on a low-capture (RUBS/tenant-metered) asset, the split was not applied —
+     reject and recompute. On such assets the value bridge is driven by **fine avoidance (100% owner —
+     the owner pays fines, not tenants) + the capitalized exit uplift**, not operating savings.
+   - **Headline value = capitalized exit uplift at the exit cap, and the waterfall must bridge to IT.**
+     Report ONE value number, not two. Do not headline a PV-of-cashflows `net_value_creation` (e.g.
+     $1.9M) while a separate `asset_value_impact` (annual NOI ÷ exit cap, e.g. $13M) sits in the
+     per-year rows — that is two valuation methods in one report. The bridge terminates at the
+     capitalized exit-value uplift = (stabilized annual NOI improvement ÷ exit cap), where the NOI
+     improvement = net-owner utility savings (post-capture, per above) + owner-share ancillary +
+     annual avoided fine. Fine avoidance may ALSO be shown as a cumulative/undiscounted figure for
+     context (e.g. "$3.7M cumulative, ~$1.7M PV"), but the exit-value line is the headline outcome.
    - **Landlord-capture matches the end-use's payer.** Reject any measure whose owner-capture /
      Audette landlord-share equals the account default (commonly 15%) while its end-use is
      landlord-paid — central heating/DHW plant, elevators, garage ventilation, common lighting,

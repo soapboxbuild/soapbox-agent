@@ -12,7 +12,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.7.1
+version: 1.8.0
 ---
 
 # Portfolio Analysis
@@ -409,12 +409,23 @@ For each asset still missing required fields, present a focused card:
 Only show missing fields. `skip` leaves null and excludes the asset from analysis.
 `disposed` marks the asset and includes it in emissions inventory only.
 
-Determine LL/TT allocation **inline** (do NOT call `get_ll_capture` — it is broken in prod; the
+**Check the leasing brochures per asset (part of the workflow, not optional).** Before setting the
+split, pull each asset's current leasing marketing — `apartments.com`, the property's own site,
+Zillow rentals (via `brave-search`/`web_fetch`) — and read it for two things: (1) **whether
+utilities are included** in rent or itemized as resident-paid ("utilities included", "resident pays
+electric/gas/water", a RUBS/flat-fee line) — this is current, market-facing evidence of who bears
+each fuel and directly sets/confirms the capture split; and (2) the **amenity set** (pool, spa,
+clubhouse, fitness, common laundry, EV stalls, garage) — amenities are landlord-paid common loads
+that carry their own 100%-owner capture AND surface measure opportunities (pool-heat HP, common-area
+controls, EV). Cite the listing + URL; a brochure statement outranks a building-form inference.
+
+Then determine LL/TT allocation **inline** (do NOT call `get_ll_capture` — it is broken in prod; the
 hosted runtime ships no Python). Set `ll_capture_pct` per the **end-use capture map** in economics
-correctness rules 1–2 above: landlord-paid loads (central plant, elevators, common, amenity) = 1.0
-regardless of the blended split; in-unit tenant-metered ≈ 0.05–0.10; BPS fine avoidance = 1.0
-always; and net owner utility savings = `capture% × gross` (≈$0 on low-capture/RUBS assets — never
-the gross). If `include_bps: false`, treat fine avoidance as "not assessed" and omit it from owner NOI.
+correctness rules 1–2 above: master-metered/landlord-paid loads (central plant, elevators, common,
+amenity) at their RUBS-recovery capture (~10% net owner where RUBS applies — verified per rule 1b —
+or ~100% if the owner absorbs); in-unit tenant-metered ≈ 0.0–0.05; BPS fine avoidance = 1.0 always;
+net owner utility savings = `capture% × gross` (≈$0 on low-capture/RUBS assets — never the gross).
+If `include_bps: false`, treat fine avoidance as "not assessed" and omit it from owner NOI.
 
 Write results to asset metadata:
 ```
@@ -1148,6 +1159,32 @@ scale that would let one bad asset block the entire report, which is wrong — s
 
 This is the batch analog of decarb-plan's fail-closed gate: the report always renders, but it can
 never present unconfirmed data as confirmed — and it never exposes internal QA machinery to the client.
+
+### 4G — Portfolio-scale program & economies of scale (`programmatic_recommendation` + `scale_opportunities`)
+
+The point of a PORTFOLIO analysis (vs N single-asset runs) is the plays that only exist at scale.
+Derive these from the aggregation you just built — do NOT invent numbers; every capex/reduction
+figure is engine-sourced and every quantified benefit needs a basis (label assumed discounts `(est.)`).
+
+- **`programmatic_recommendation`** — the same recommended measures executed as a **sequenced
+  portfolio program**, not asset-by-asset. Phase by the most defensible axis (CRREM-stranding
+  urgency, capital-event/RUL timing, or measure family), each phase carrying its asset count,
+  what it deploys, aggregate net CapEx (Σ engine), and the portfolio GHGI-reduction % it delivers.
+  A natural shape: Phase 1 = the low-cost portfolio-wide controls/RCx + lighting rollout (clears the
+  quick reduction), Phase 2 = clustered electrification/envelope at capital events, Phase 3 =
+  solar/deep measures. Tie it to the A/B/C curve (which screen each phase belongs to).
+- **`scale_opportunities`** — the economies-of-scale levers the run reveals, each grounded in the
+  data (which measures/assets/geographies): **bulk/framework procurement** (e.g. one HPWH or LED
+  order across the N assets that share the measure → volume discount), **clustered-metro contractor
+  mobilization** (assets in the same market → shared mobilization/GC), **aggregated solar / VNM /
+  community solar** across a utility territory, **portfolio green financing** (single green loan /
+  C-PACE / Fannie-Freddie Green facility sized to total CapEx vs asset-by-asset), **shared M&V /
+  monitoring subscription** at a portfolio rate, **IRA bonus stacking** (domestic-content / energy-
+  community across the fleet), and **GRESB/disclosure leverage**. Quantify where the data supports
+  it (e.g. "28 assets × LED = $X at a 10%-assumed bulk discount (est.)"); otherwise state the lever
+  and mark the benefit "—". Use `applies_to` to show the count/segment each lever covers.
+
+These render as the "Portfolio-Scale Program & Economies of Scale" section (hidden if both are absent).
 
 ---
 

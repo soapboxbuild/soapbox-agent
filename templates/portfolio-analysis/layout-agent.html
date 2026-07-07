@@ -241,6 +241,8 @@
     var below  = data.below_hurdle    || [];
     var deferred = data.deferred      || [];
     var dq     = data.data_quality    || {};
+    var prog   = data.programmatic_recommendation || null;
+    var scaleOpps = data.scale_opportunities || [];
 
     /* ════ Helpers (reused from RSRA/decarb) ════ */
     function safe(val) {
@@ -699,6 +701,38 @@
     }
 
     /* ════════════════════════════════
+       10b. PORTFOLIO-SCALE PROGRAM & ECONOMIES OF SCALE (hide-gated)
+    ════════════════════════════════ */
+    var scaleSection = document.getElementById('scale-section');
+    if (scaleSection && (prog || scaleOpps.length > 0)) {
+      if (prog && prog.thesis) setHtml('scale-thesis', esc(prog.thesis));
+      var pHtml = '';
+      ((prog && prog.phases) || []).forEach(function(ph){
+        pHtml += '<tr>'
+          + '<td><strong>' + esc(ph.name || '') + '</strong></td>'
+          + '<td>' + esc(ph.years || '—') + '</td>'
+          + '<td class="num">' + esc(ph.assets != null ? String(ph.assets) : '—') + '</td>'
+          + '<td>' + esc(ph.program || ph.measures || '') + '</td>'
+          + '<td class="num">' + (ph.capex_net != null ? fmtCurrency(Number(ph.capex_net)) : '—') + '</td>'
+          + '<td class="num">' + (ph.reduction_pct != null ? fmtPct(Number(ph.reduction_pct)) : '—') + '</td>'
+          + '</tr>';
+      });
+      setHtml('scale-prog-tbody', pHtml || '<tr><td colspan="6" style="color:#94A3B8">No phased program provided.</td></tr>');
+      var oHtml = '';
+      scaleOpps.forEach(function(o){
+        oHtml += '<tr>'
+          + '<td><strong>' + esc(o.lever || '') + '</strong></td>'
+          + '<td class="num">' + esc(o.applies_to != null ? String(o.applies_to) : '—') + '</td>'
+          + '<td>' + esc(o.description || o.opportunity || '') + '</td>'
+          + '<td class="num">' + esc(o.quantified_benefit || o.est_benefit || '—') + '</td>'
+          + '<td>' + esc(o.basis || o.source || '—') + '</td>'
+          + '</tr>';
+      });
+      setHtml('scale-opps-tbody', oHtml || '<tr><td colspan="5" style="color:#94A3B8">No scale opportunities identified.</td></tr>');
+      scaleSection.style.display = '';
+    }
+
+    /* ════════════════════════════════
        11. ASSET-BY-ASSET DETAIL (optional — hide-gated)
     ════════════════════════════════ */
     var assetSection = document.getElementById('asset-section');
@@ -1004,6 +1038,40 @@
           <th class="num">$/tCO₂</th>
         </tr></thead>
         <tbody id="cat-tbody"><!-- JS --></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 10b. PORTFOLIO-SCALE PROGRAM & ECONOMIES OF SCALE -->
+  <div id="scale-section" class="section" style="display:none">
+    <div class="section-label">Portfolio Strategy</div>
+    <h2 class="section-title">Portfolio-Scale Program &amp; Economies of Scale</h2>
+    <p class="section-intro" id="scale-thesis">The measures above, executed programmatically across the portfolio rather than asset-by-asset, unlock procurement, financing, and mobilization efficiencies. The sequenced program and the scale levers below are derived from the aggregated results — same measures, executed at portfolio scale.</p>
+    <div class="sub-heading">Sequenced portfolio program</div>
+    <div style="overflow-x:auto">
+      <table class="profile-table">
+        <thead><tr>
+          <th>Phase</th>
+          <th>Years</th>
+          <th class="num">Assets</th>
+          <th>Program</th>
+          <th class="num">Net CapEx</th>
+          <th class="num">GHGI reduction</th>
+        </tr></thead>
+        <tbody id="scale-prog-tbody"><!-- JS --></tbody>
+      </table>
+    </div>
+    <div class="sub-heading">Economies of scale</div>
+    <div style="overflow-x:auto">
+      <table class="profile-table">
+        <thead><tr>
+          <th>Lever</th>
+          <th class="num">Applies to</th>
+          <th>Opportunity</th>
+          <th class="num">Est. benefit</th>
+          <th>Basis</th>
+        </tr></thead>
+        <tbody id="scale-opps-tbody"><!-- JS --></tbody>
       </table>
     </div>
   </div>

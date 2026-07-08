@@ -416,6 +416,16 @@ back** via `update_asset_metadata(asset_id, {utility_split: {...}})` (allowliste
 reports a REJECTED key the write failed, surface it) so the next thread reads it instead of
 re-defaulting. See the persistence contract in the `utility-split-estimation` skill.
 
+**Audette landlord-share is NOT optional — WRITE it to Audette AND the DB, then VERIFY.** Audette's
+measure model applies its OWN per-building landlord-share to compute owner savings, and it re-defaults
+to ~100% on every model re-pull. So the confirmed split must be written into Audette
+(`default_landlord_share_electricity` / `default_landlord_share_natural_gas`, per building) AND into
+`metadata.utility_split` — BOTH — and read back to confirm it persisted (see `utility-split-estimation`
+→ "Audette landlord-share settings"). **Before trusting any asset's value/IRR, confirm its Audette
+landlord-share equals the confirmed split; if Audette is at its default (~100%), the owner savings,
+IRR, and value creation are overstated — do not use them.** If Audette is unreachable, STOP and ask the
+user to reconnect; never compute at 100%.
+
 **Check the leasing brochures per asset (part of the workflow, not optional).** Before setting the
 split, pull each asset's current leasing marketing — `apartments.com`, the property's own site,
 Zillow rentals (via `brave-search`/`web_fetch`) — and read it for two things: (1) **whether

@@ -187,8 +187,14 @@ and the register file is a human doc; **neither is read by the economics.** The 
   derivation when it is absent. **NEVER default to 100% owner, and never read the split from
   Audette's landlord-share, when a stored `utility_split` exists** (Audette re-defaults to 100% on
   model re-pull, which is why it can't be the source of truth).
-- Audette landlord-share (below) is a **secondary mirror** for Audette's own engine; the Soapbox
-  economics read `metadata.utility_split`. Keep them in sync but treat metadata as authoritative.
+- **WRITE the split to BOTH stores on every run, where Audette is in play:** `metadata.utility_split`
+  (the canonical Soapbox record) AND Audette's per-building landlord-share (section below). Audette's
+  own engine applies its landlord-share to decide which measure savings accrue to the owner, so a
+  split that lives only in metadata while Audette sits at its ~100% default produces overstated owner
+  savings, IRRs, and value creation (the exact failure this skill exists to prevent). Keep the two in
+  sync — `metadata.utility_split` is the authoritative human record — but **the split is NOT 'applied'
+  until Audette reflects it.** (You still never *read* the source-of-truth split *from* Audette — it
+  re-defaults to ~100% on re-pull — but you MUST *write* the confirmed split into Audette.)
 
 ## Record as a verifier finding (adjudicable)
 
@@ -209,11 +215,24 @@ Store the returned `finding_id`. In a `decarb-plan` engagement this finding is a
 split finding; reference it (see the Cortland gas-split finding pattern in
 `decarb-plan` P1/P2). Resolve it via `verifier__resolve_finding` once the owner confirms.
 
-## Audette landlord-share settings
+## Audette landlord-share settings — MANDATORY write + read-back (not a 'note to self')
 
-When Audette is in play for this asset, the confirmed split must be reflected in Audette's
-account/asset-level **landlord-share settings** — Audette applies landlord share to compute
-which savings accrue to the owner, so a mismatch there re-introduces the same mis-pricing
-this skill exists to prevent. After the owner confirms the split, note (in the engagement
-state / to the user) that the Audette landlord-share settings must be updated to match the
-confirmed per-fuel split. Do not treat the split as fully applied until Audette reflects it.
+When Audette is in play, the confirmed per-fuel split MUST be written INTO Audette, because
+**Audette's engine — not the Soapbox economics alone — computes which measure savings accrue to the
+owner.** A split that lives only in `metadata.utility_split` while Audette sits at its ~100% default
+yields overstated owner savings, IRRs, and value. This is not optional and is not a flag-for-later.
+
+Per building (Audette is building-level; a multi-building asset needs EVERY building set):
+1. Look up the building model uid(s) for the asset (not the property uid).
+2. Write `default_landlord_share_electricity` = <owner elec fraction> and
+   `default_landlord_share_natural_gas` = <owner gas fraction> via the Audette building-edit tool.
+3. Editing a building triggers a synchronous re-model that often exceeds the tool timeout; **the
+   write still commits in the background.** Always **read the building back and confirm the value
+   persisted** (retry any that rolled back). For many buildings, fire all edits first, then do one
+   batch read-back pass rather than verify-each-inline.
+4. Record in the engagement state which buildings were written AND verified.
+
+**Do NOT run or trust the decarb-plan / portfolio economics for an asset until its Audette
+landlord-share equals the confirmed split.** If Audette is unreachable (connector down/expired),
+STOP and tell the user to reconnect — never fall back to Audette's default and never silently
+compute at 100%.

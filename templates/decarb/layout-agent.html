@@ -1145,10 +1145,12 @@
                    exempt:    ['#3730A3','#E0E7FF','Exempt'],
                    'non-compliant': ['#991B1B','#FEE2E2','Non-compliant'] };
       var rows = list.map(function(e){
-        var st = pill[e.status] || pill.compliant;
+        var st = pill[e.status] || ['#334155', '#F1F5F9', esc(e.status || '—')];
         /* Bar scaled so the target sits at 100%; building marker is building/target. */
         var tgtV = Number(e.target_eui) || 1;
-        var pct = Math.max(0, Math.min(100, (Number(e.building_eui) / tgtV) * 100));
+        var bldg = Number(e.building_eui);
+        if (!isFinite(bldg)) bldg = 0;
+        var pct = Math.max(0, Math.min(100, (bldg / tgtV) * 100));
         var deadline = e.compliance_year ? ' · by ' + esc(String(e.compliance_year)) : '';
         return ''
           + '<div class="eui-row">'

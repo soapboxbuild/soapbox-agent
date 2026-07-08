@@ -324,6 +324,11 @@
     }
     .neg { color: #B45309; font-weight: 600; }
 
+    /* Plan Comparison: Plan column ~3× a data column; 5 columns fit with no scroll */
+    #comparison-section .profile-table { table-layout: fixed; width: 100%; }
+    #comparison-section .profile-table th:first-child,
+    #comparison-section .profile-table td:first-child { width: 46%; }
+
     /* ─── Roadmap tables: give the Measure column ~2x width and compress the rest ───
        Fixed layout + colgroup so long measure titles ("Gas WSHP boiler → air-source
        heat pump — full central plant (734-ton, 2034)") stop wrapping to 4-5 lines,
@@ -1411,13 +1416,6 @@
         var isSel = econ.selected_plan && p.name === econ.selected_plan;
         cmpHtml += '<tr' + (isSel ? ' class="totals-row"' : '') + '>';
         cmpHtml += '<td><strong>' + esc(p.name || '—') + '</strong>' + (isSel ? ' ✓' : '') + '<br><span style="font-size:11px;color:#64748B">' + esc(p.label || '') + '</span></td>';
-        cmpHtml += '<td class="num">' + (w.baseline_capex != null ? fmtCurrency(Number(w.baseline_capex)) : '—') + '</td>';
-        cmpHtml += '<td class="num neg">' + fmtCurrency(Number(w.incremental_capex)||0) + '</td>';
-        cmpHtml += '<td class="num' + ((Number(w.capitalized_subscription)||0) < 0 ? ' neg' : '') + '">' + (w.capitalized_subscription != null ? fmtSignedCurrency(Number(w.capitalized_subscription)) : '—') + '</td>';
-        cmpHtml += '<td class="num">' + fmtCurrency(Number(w.incentives)||0) + '</td>';
-        cmpHtml += '<td class="num">' + fmtCurrency(Number(w.capitalized_utility_savings)||0) + '</td>';
-        cmpHtml += '<td class="num">' + fmtCurrency(Number(w.capitalized_ancillary_revenue)||0) + '</td>';
-        cmpHtml += '<td class="num">' + (w.pv_bps_fine_avoidance != null ? fmtCurrency(Number(w.pv_bps_fine_avoidance)) : '—') + '</td>';
         cmpHtml += '<td class="num pos">' + fmtSignedCurrency(w.net_value_creation != null ? Number(w.net_value_creation) : 0) + '</td>';
         cmpHtml += '<td class="num">' + (p.irr_incremental != null ? fmtPct(Number(p.irr_incremental)) : '—') + '</td>';
         cmpHtml += '<td class="num">' + (p.ghgi_reduction_pct != null ? '−' + fmtPct(Math.abs(Number(p.ghgi_reduction_pct))) : '—') + '</td>';
@@ -1429,12 +1427,6 @@
       var exitBits = [];
       if (econ.exit_cap != null)  exitBits.push('Exit cap ' + fmtPct(Number(econ.exit_cap)));
       if (econ.exit_year != null) exitBits.push('Exit year ' + esc(String(econ.exit_year)));
-      /* Explain a '—' fine-avoidance column: when no plan models a fine regime there is no
-         downside to avoid, so it is shown as '—' rather than a misleading $0. */
-      var anyFine = plans.some(function(p){ return p.waterfall && p.waterfall.pv_bps_fine_avoidance != null; });
-      if (!anyFine) {
-        exitBits.push(econ.bps_note || 'BPS fine avoidance shown as “—”: no mandatory BPS penalty regime applies in this jurisdiction, so there is no fine exposure to avoid');
-      }
       if (exitBits.length) setText('comparison-exit-note', exitBits.join(' · '));
       cmpSection.style.display = '';
     }
@@ -1561,13 +1553,6 @@
       <table class="profile-table">
         <thead><tr>
           <th>Plan</th>
-          <th class="num">Baseline<br>CapEx</th>
-          <th class="num">Incr. CapEx</th>
-          <th class="num">Cap.<br>Subscription</th>
-          <th class="num">Incentives</th>
-          <th class="num">Cap. Utility<br>Savings</th>
-          <th class="num">Cap. Ancillary<br>Revenue</th>
-          <th class="num">PV Fine<br>Avoidance</th>
           <th class="num">Net Value<br>Creation</th>
           <th class="num">Incr. IRR</th>
           <th class="num">GHGI<br>Reduction</th>

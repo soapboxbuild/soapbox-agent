@@ -40,6 +40,14 @@
       --wf-decrement: #B45309;  /* incremental capex — decrement */
       --wf-add:       #1F6B45;  /* additive value bars — green */
       --wf-net:       #12253A;  /* net value creation — anchor */
+
+      /* Shared brand + status tokens (design kit) */
+      --orange:    #EA580C;
+      --orange-2:  #F97316;
+      --orange-bg: #FEF4EC;
+      --sage-bg:   #EDF7F2;
+      --amber:     #B45309;  --amber-bg: #FEF9EC;
+      --red:       #B91C1C;  --red-bg:   #FEF2F2;
     }
 
     /* ─── RESET ─── */
@@ -65,9 +73,14 @@
        1. DOCUMENT HEADER (mirrors RSRA)
     ───────────────────────────────── */
     .doc-header {
-      background: #12253A;
+      background:
+        radial-gradient(120% 140% at 88% -20%, rgba(234,88,12,0.55) 0%, rgba(234,88,12,0) 46%),
+        radial-gradient(90% 120% at 0% 120%, rgba(31,107,69,0.35) 0%, rgba(31,107,69,0) 50%),
+        #12253A;
       color: white;
       padding: 32px 40px 0;
+      position: relative;
+      overflow: hidden;
     }
     .doc-header-eyebrow {
       font-size: 8px;
@@ -76,6 +89,12 @@
       text-transform: uppercase;
       color: #4CAF82;
       margin-bottom: 8px;
+    }
+    .doc-header-eyebrow::before,
+    .section-label::before {
+      content: '// ';
+      color: var(--orange-2);
+      font-weight: 800;
     }
     .doc-header-property-name {
       font-size: 28px;
@@ -648,6 +667,20 @@
       .dash-grid { grid-template-columns: repeat(2, 1fr); }
       .dash-tile:nth-child(3n) { border-right: 1px solid #E2E8F0; }
       .dash-tile:nth-child(2n) { border-right: none; }
+    }
+
+    @media print {
+      html, body { background: #fff; }
+      .section { break-inside: avoid; }
+      .metrics-bar, .profile-dl, .profile-table, .dash-grid, .dash-tile,
+      .dash-rec, .dash-rec-plan, #waterfall-plans, .dq-grid, .chart-legend {
+        break-inside: avoid;
+      }
+      .doc-header, .doc-header-meta-strip, #exec-summary-row,
+      .dash-rec, .dash-rec-plan.sel, .drp-badge {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
   </style>
 </head>

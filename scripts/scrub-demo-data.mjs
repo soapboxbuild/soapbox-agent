@@ -1,7 +1,21 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { inflateRawSync } from 'node:zlib'
 
-const BANNED = ['Azora','azora','Nestar','Lazora','Esternova','Kepa','Bernaola','Vanessa','López','Lopez','@azora.com','Madrid','Valenciana','Barcelona','León','Leon','Sevilla']
+// The banned-token list contains real (un-anonymized) identifiers and must never be
+// committed to tracked source. It lives in a gitignored sidecar file instead. Fail loudly
+// (not silently pass) if that file is missing, so this check can't become a no-op.
+const denylistPath = new URL('../skills/esg-profile/demo/.scrub-denylist.json', import.meta.url).pathname
+if (!existsSync(denylistPath)) {
+  throw new Error(
+    `missing denylist file: ${denylistPath}\n` +
+    `This file is intentionally untracked/gitignored (it holds real identifiers). ` +
+    `Recreate it locally before running this scrub check — see skills/esg-profile/SKILL.md.`
+  )
+}
+const BANNED = JSON.parse(readFileSync(denylistPath, 'utf8'))
+if (!Array.isArray(BANNED) || BANNED.length === 0) {
+  throw new Error(`denylist file ${denylistPath} must contain a non-empty JSON array of strings`)
+}
 const dir = new URL('../skills/esg-profile/demo/static/', import.meta.url).pathname
 
 // Minimal pure-Node zip reader (no `unzip` binary dependency — not guaranteed present

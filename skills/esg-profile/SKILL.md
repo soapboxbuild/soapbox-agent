@@ -4,7 +4,7 @@ description: >
   Produce a sponsor-level ESG Profile (with fund-level rollup) for quarterly asset-management
   engagement — collates ESG questionnaire scorecards, energy/EPC, CRREM stranding, physical
   climate risk, regulatory exposure, peer benchmarks, materiality, and governance rights into
-  Katie-style Sponsor Profile + Fund Overview deliverables. Data sources are swappable
+  asset-manager-style Sponsor Profile + Fund Overview deliverables. Data sources are swappable
   (live MCP or static extract) via a connector registry. Triggers on: "ESG profile",
   "sponsor ESG profile", "ESG asset management dashboard", "ESG scorecard profile",
   "quarterly ESG engagement", "fund ESG overview".
@@ -52,15 +52,18 @@ to `decarb-plan`.
 3. **Anonymization is mandatory — and NOT pre-done in the source files.** `config.anonymize`
    defaults `true` and is enforced at every phase boundary: the real sponsor name, contacts, and
    identifying locations never surface in `state`, the rendered artifact, or any export. **Do not
-   trust the source extract's own "anonymized" label.** Katie's own scrubbed-labeled files still
-   leak the real sponsor identity — verified leaks include the sponsor name itself
-   (**Azora / Nestar / Lazora**), contact emails (**@azora.com**), and specific **Spanish
-   cities**. Before any value from the extract enters `state.collected` or the report, scan it
-   for this leak list (and any other proper noun that looks like a real sponsor, contact, or
-   place name) and substitute the run's pseudonym (`config.sponsor`, e.g. "Sponsor Sierra") and a
-   generic region label ("Southern Europe", not the named city). Treat a fresh, never-before-seen
-   extract the same way — assume it is NOT pre-scrubbed until you have personally verified it,
-   because the anonymize flag governs OUR obligation, not a property of the input file.
+   trust the source extract's own "anonymized" label.** The asset manager's own scrubbed-labeled
+   files can still leak the real sponsor identity — the source extract/notes may still contain
+   the real sponsor name, personnel names, contact emails, consultant names, city names, and
+   country. Scrub ALL such identifiers before any value from the extract enters
+   `state.collected` or the report; the demo denylist of previously-observed leak tokens lives in
+   the untracked `skills/esg-profile/demo/.scrub-denylist.json` (gitignored — it is regenerated
+   locally, never committed, because it necessarily contains real identifiers). Substitute the
+   run's pseudonym (`config.sponsor`, e.g. "Sponsor Sierra") for any real entity name and a
+   generic region label ("Southern Europe", not the named city) for any place name. Treat a
+   fresh, never-before-seen extract the same way — assume it is NOT pre-scrubbed until you have
+   personally verified it, because the anonymize flag governs OUR obligation, not a property of
+   the input file.
 
 4. **The render gate is HARD, fail-closed, and sponsor-scoped.** No report render without
    verification passing for THIS sponsor, or a documented override
@@ -72,7 +75,7 @@ to `decarb-plan`.
    widening the query; fix the scoping id instead.
 
 5. **Analytics Standards apply to every displayed number.** Energy intensity in **kWh/m²**
-   (never kBTU/sq ft — her own extract mixes units across years, which is exactly why the
+   (never kBTU/sq ft — the asset manager's own extract mixes units across years, which is exactly why the
    `energy` connector normalizes on ingest). Absolute energy scaled to magnitude (kWh → MWh at
    ≥1,000, GWh at ≥1,000,000). Carbon in a single normalized unit (kgCO₂e/m² or tCO₂e — never mix
    lb and kg CO₂ across years, another flagged discrepancy in the source notes). Max 2
@@ -111,7 +114,7 @@ phase. If the file is missing, this is a new run — start at kickoff.
    (`energy`, `green_street`, `physical_risk`, `bps`, `questionnaire`, `peer_benchmark`,
    `materiality`, `investment_info`, `governance`, `crrem`), the schema of what `value` must
    contain (`produces`), the `default_live_adapter`, and whether it is a `gap_filler` (a source
-   Katie's own process currently leaves blank: `green_street`, `physical_risk`, `crrem`). For each
+   the asset manager's own process currently leaves blank: `green_street`, `physical_risk`, `crrem`). For each
    `source_id`, default `config.connectors[source_id]` to that entry's `default_live_adapter`
    shape, then apply any run-specific override the user or a prior kickoff config supplied (e.g.
    pointing `energy` at a static EU extract instead of the ESPM default because the demo sponsor
@@ -134,7 +137,7 @@ For each `source_id`, resolve the binding by `kind`:
   (location, asset class, property type, region). Set `provenance.mode: "live"`,
   `provenance.origin` = the tool name.
 - **`kind: file`** → read the bound `path` (and `sheet` where the source is a spreadsheet tab —
-  most of Katie's static fields live on sheet `30_input_qualitative`). Extract the fields the
+  most of the asset manager's static fields live on sheet `30_input_qualitative`). Extract the fields the
   registry's `produces` contract names for that `source_id`. Set `provenance.mode: "static"`,
   `provenance.origin` = the file path (+ sheet).
 - **`kind: manual`** → use the literal value from config. Set `provenance.mode: "estimate"`
@@ -146,7 +149,7 @@ A source that errors or returns nothing is `status: "missing"` or `status: "erro
 silently omitted from state, and never backfilled with a guessed value.
 
 **Call the three gap-filler connectors explicitly and visibly** — `crrem`, `physical_risk`, and
-`green_street` are exactly the fields Katie's own process today ships as "not provided" or
+`green_street` are exactly the fields the asset manager's own process today ships as "not provided" or
 "analysis underway." Resolving them live is the whole point of this skill's value proposition,
 so surface each one as its own streamed line (e.g. "→ crrem get_pathway... stranding year 2034"),
 not folded silently into a batch.
@@ -251,7 +254,7 @@ Set `phase: "export"` and save.
 ## Phase: export
 
 Hand off to the `report-review` workflow for export: **PDF** (Playwright), **PPTX mapped to
-Katie's Template v3** (her team's actual working format — this is the export they use, not just
+the asset manager's Template v3** (their team's actual working format — this is the export they use, not just
 the branded HTML), and **XLSX** (openpyxl, for anyone who wants the underlying numbers in a
 sheet). The report-review workflow presents the rendered artifact for review before finalizing
 exports, per its own contract — this skill does not duplicate that review loop, it dispatches
@@ -291,7 +294,7 @@ computed: by a tool, not by you doing the arithmetic in your head.
 
 ## Data mapping — `30_input_qualitative` columns → schema paths
 
-Katie's static extract carries most of the qualitative/static connector fields on a single
+the asset manager's static extract carries most of the qualitative/static connector fields on a single
 spreadsheet tab, `30_input_qualitative`. This table is the canonical field map from that sheet
 (and the other static/live connector outputs) into `templates/esg-profile/schema.json` paths.
 Use it verbatim when writing the `file`-kind adapters' field maps — do not re-derive column
@@ -337,16 +340,16 @@ meanings from scratch on each run.
 
 The primary near-term use of this skill is the **60-second collect-phase tool-streaming beat**
 on stage: one instruction kicks off a run against a pre-loaded, anonymized static-data repo
-(Katie's scrubbed extracts under `skills/esg-profile/demo/`) plus the live connectors already
+(the asset manager's scrubbed extracts under `skills/esg-profile/demo/`) plus the live connectors already
 connected (ESPM/EPC-region-aware `energy` where applicable, `crrem`, `physrisk`). The collect
 phase fans out with visibly streaming tool calls, paced so the audience can read each line —
 static sources resolve near-instantly, and the three gap-fillers (**`crrem`**, **`physical_risk`**,
-**`green_street`**) are called out explicitly as they run, because they are the fields Katie's
+**`green_street`**) are called out explicitly as they run, because they are the fields the asset manager's
 own process ships today as "not provided" or "analysis underway." Watching them resolve live —
 turning a blank into a real stranding year and a real hazard rating — is the demonstration's
 entire point: reconcile → verify → the render gate passes cleanly on the demo sponsor → the
 branded HTML artifact renders in-band, then the PPTX export to Template v3 is shown as "the same
-profile, in the format her team actually uses." No live Q&A dependency, no mid-run human gate —
+profile, in the format the asset manager's team actually uses." No live Q&A dependency, no mid-run human gate —
 the run is deterministic end to end. If a live gap-filler call runs long (physical-risk lookups
 have run to ~45 minutes in other skills at full scope), keep the demo scope to a single sponsor
 location so the call stays tight and the beat holds.

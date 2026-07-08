@@ -12,9 +12,9 @@
       "fine_exposure":"TBD"
     },
     "sponsor_metrics": [
-      {"sponsor":"Sponsor Sierra","asset_class":"Residential / BTR","total_score":90.5,"yoy_change":"+5.5 pts"},
-      {"sponsor":"Sponsor Meridian","asset_class":"Logistics","total_score":52.1,"yoy_change":"-3.2 pts"},
-      {"sponsor":"Sponsor Halcyon","asset_class":"Office","total_score":67.8,"yoy_change":"+1.4 pts"}
+      {"sponsor":"Sponsor Sierra","green_cert_pct":"38%","energy_rating_pct":"91%","gresb_status":"Participant","net_zero_policy_status":"In progress","energy_data_coverage":"81%","renewable_pct":"22%","mieppi":"+30.5 pts","mir":"+32.5 pts"},
+      {"sponsor":"Sponsor Meridian","green_cert_pct":"12%","energy_rating_pct":"64%","gresb_status":"Not rated","net_zero_policy_status":"Not started","energy_data_coverage":"41%","renewable_pct":"5%","mieppi":"-7.9 pts","mir":"-5.9 pts"},
+      {"sponsor":"Sponsor Halcyon","green_cert_pct":"20%","energy_rating_pct":"73%","gresb_status":"Participant","net_zero_policy_status":"Formalized","energy_data_coverage":"58%","renewable_pct":"11%","mieppi":"+7.8 pts","mir":"+9.8 pts"}
     ],
     "ranking": [
       {"rank":1,"sponsor":"Sponsor Sierra","score":90.5,"yoy_change":"+5.5 pts","vs_mieppi":"+30.5 pts","vs_mir":"+32.5 pts"},

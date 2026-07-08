@@ -3,7 +3,7 @@
 **Date:** 2026-07-08
 **Author:** Christopher (via Claude)
 **Status:** Draft for review
-**Client driver:** Katie Cappola (VP ESG, Madison International Realty) — IMN ESG & Decarbonizing Real Estate Summer Forum demo
+**Client driver:** the asset manager (VP ESG, the Investor) — IMN ESG & Decarbonizing Real Estate Summer Forum demo
 **Related:** `decarb-plan`, `portfolio-analysis`, `rsra`, `sustainability-passport` (shared spine); `soapbox-report` (render path)
 
 ---
@@ -17,10 +17,10 @@ for an asset-management team. It supports **risk monitoring, budget planning, an
 asset-management decision-making**, moving a firm from raw GRESB-style data collection to
 actionable, investment-level insight.
 
-> **Grain (confirmed from Katie's Template v3 + extract):** Madison invests in **sponsors**
+> **Grain (confirmed from the asset manager's Template v3 + extract):** the Investor invests in **sponsors**
 > (JV / GP positions) held across funds (Fund VI / VII / VIII). The profile is produced
 > **per sponsor**, benchmarked against **Fund avg**, **Asset-Class avg**, **MIR avg**
-> (Madison-wide) and **MIEPPI**. "Investment/asset-level" in earlier notes = **sponsor-level**.
+> (Investor-wide) and **MIEPPI**. "Investment/asset-level" in earlier notes = **sponsor-level**.
 > Fund-level rollup aggregates a fund's sponsors.
 
 It reuses the exact design spine of `decarb-plan` / `portfolio-analysis` / `rsra`:
@@ -39,7 +39,7 @@ connected tools visibly streaming.
 | `sustainability-passport` | Disposition / refi | Investor-grade disclosure data room |
 | **`esg-profile`** | **Quarterly asset management** | **Monitoring + Q4 budget planning** |
 
-`esg-profile` fills the gap Katie named: firms hold the data post-GRESB-submission (July)
+`esg-profile` fills the gap the asset manager named: firms hold the data post-GRESB-submission (July)
 but rarely operationalize it before Q4 budget season.
 
 ---
@@ -58,17 +58,17 @@ but rarely operationalize it before Q4 budget season.
 4. **Fund + sponsor level.** Sponsor-level profile is primary; fund-level is an aggregation
    rollup over the fund's sponsors.
 5. **Client-fidelity output.** Render a Soapbox-branded HTML artifact (stage wow), and
-   export a **PPTX mapped to Katie's `ESG Profile Template v3`** for her team's real use.
+   export a **PPTX mapped to the asset manager's `ESG Profile Template v3`** for her team's real use.
 6. **Anonymization.** Sponsor identity is scrubbed by default (`anonymize: true`); the real
-   sponsor name never surfaces in state, artifact, or export. Demo uses "Azora".
+   sponsor name never surfaces in state, artifact, or export. Demo uses "the real sponsor".
 
 ---
 
 ## 3. Inputs → connectors
 
-The 9 inputs Katie specified, plus CRREM, mapped to the **actual fields in her template +
+The 9 inputs the asset manager specified, plus CRREM, mapped to the **actual fields in her template +
 extract**. Each row is a **connector**; the demo binding is what the IMN run uses. The
-"Fills a live gap" column is the wow: three inputs are **blank in Katie's own data today**
+"Fills a live gap" column is the wow: three inputs are **blank in the asset manager's own data today**
 ("not provided / analysis underway") and our live connectors populate them.
 
 | # | Input | Connector id | Produces (her fields) | Live source (target) | Demo binding | Fills a live gap? |
@@ -89,11 +89,11 @@ extract**. Each row is a **connector**; the demo binding is what the IMN run use
 > plus the qualitative status the profile narrates. Today it's questionnaire PDFs; the live
 > target is Fabric/Cambio.
 >
-> **The demo's headline:** CRREM + physical_risk + green_street are the three fields Katie's
+> **The demo's headline:** CRREM + physical_risk + green_street are the three fields the asset manager's
 > team leaves blank. Running them **live on stage** turns "not provided" into real values —
 > the profile does something her current manual process cannot.
 >
-> **EU context:** the demo sponsor is Spain-based residential/BTR. ESPM (US) does not apply;
+> **EU context:** the demo sponsor is Southern-Europe-based residential/BTR. ESPM (US) does not apply;
 > EU energy performance is EPC-based. The `energy` connector's adapter is region-aware
 > (ESPM for US, EPC for EU) — another reason the connector abstraction matters.
 
@@ -101,7 +101,7 @@ extract**. Each row is a **connector**; the demo binding is what the IMN run use
 
 ## 4. Report sections (from Template v3 — now obtained)
 
-Katie's template has **two content layouts** plus two static boilerplate pages. The
+the asset manager's template has **two content layouts** plus two static boilerplate pages. The
 `esg-profile` template reproduces these; PPTX export maps to them 1:1.
 
 ### 4A. Fund ESG Overview (fund scope)
@@ -257,7 +257,7 @@ underperformers table.
    the `soapbox-report` meta-skill, mapped to Template v3. **v1 includes BOTH layouts:**
    **Sponsor ESG Profile** (§4B) and **Fund ESG Overview** (§4A, a rollup over the fund's
    sponsors), plus Glossary + Endnotes boilerplate.
-5. Static demo data repo — Katie's **scrubbed** extracts placed under the project's
+5. Static demo data repo — the asset manager's **scrubbed** extracts placed under the project's
    static-data repository, plus `bps_cache.json` and `materiality.json`.
 6. Smoke tests — (a) one sponsor → Sponsor Profile artifact + PPTX; (b) fund rollup over ≥2
    sponsors → Fund Overview artifact + PPTX. Both end-to-end through the render gate.
@@ -266,7 +266,7 @@ underperformers table.
 
 ## 8. Demo choreography (the wow)
 
-One managed workspace, static-data repo pre-loaded with Katie's anonymized extracts and the
+One managed workspace, static-data repo pre-loaded with the asset manager's anonymized extracts and the
 live connectors (ESPM, CRREM, physrisk) connected. Single instruction → **collect** phase
 fans out with visibly streaming tool calls (paced ESPM → CRREM → physrisk) → reconcile →
 **branded HTML artifact renders live in ~60s**. Close: "and here's the same profile as the
@@ -279,13 +279,13 @@ PPTX her team actually uses" (PPTX export to Template v3). No live Q&A dependenc
 1. **Template v3 fidelity.** ✓ **Obtained** via the Superhuman MCP and reverse-engineered
    (§4 now reflects the real 2-layout + glossary + endnotes structure and field list).
    Remaining build task: pixel-match the PPTX export to her master layout.
-2. **⚠️ Anonymization is NOT actually done in Katie's files.** Despite her note, the extract +
-   notes leak the real sponsor: **Azora / Nestar / (formerly Lazora)**, contact names + emails
-   (`@azora.com`), and specific Spanish cities. **Before anything goes on stage or into the
+2. **⚠️ Anonymization is NOT actually done in the asset manager's files.** Despite her note, the extract +
+   notes leak the real sponsor: **the real sponsor names / **, contact names + emails
+   (`the real contact domain`), and specific specific city names. **Before anything goes on stage or into the
    static repo, run a scrub pass** (sponsor→pseudonym, strip PII/contacts/locations). This
    validates the `anonymize` requirement — and is a concrete pre-demo checklist item. Flag to
-   Katie that her "anonymized" files still contain the real identity.
-3. **Green Street / First Street API access** — Katie action item; static until confirmed.
+   the asset manager that her "anonymized" files still contain the real identity.
+3. **Green Street / First Street API access** — the asset manager action item; static until confirmed.
    Note these + CRREM are exactly the fields blank in her data (the demo gap-fillers).
 4. **Fabric / Cambio questionnaire API** — future live binding for the core `questionnaire`
    connector (today: questionnaire PDFs).
@@ -294,17 +294,17 @@ PPTX her team actually uses" (PPTX export to Template v3). No live Q&A dependenc
 6. **Unit normalization** — her data mixes kBTU/sq ft and lb vs kg CO₂/sq ft across years
    (her own flagged discrepancy). The `energy` connector must normalize to kWh/m² and a single
    carbon unit.
-7. **EU applicability** — ESPM is US-only; the demo sponsor is Spain. `energy` connector must
+7. **EU applicability** — ESPM is US-only; the demo sponsor is Southern Europe. `energy` connector must
    be region-aware (EPC for EU). Do not promise live ESPM for this specific demo sponsor.
 
 **Extracted source artifacts** (for the build) are in the session scratchpad:
-`katie/{template.pptx, extract.xlsx, notes.docx}` + this reverse-engineered structure.
+`the raw source files` + this reverse-engineered structure.
 
 ---
 
 ## 10. Out of scope (YAGNI)
 
 - Live Q&A / interrogation layer on the profile (explicitly deferred; not needed for demo).
-- Automated quarterly scheduling / consumption-spike alerting (separate future workflow Katie
+- Automated quarterly scheduling / consumption-spike alerting (separate future workflow the asset manager
   raised; not this skill).
 - Writing back to Audette / fund systems.

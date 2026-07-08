@@ -35,18 +35,22 @@ All RSRA HTML output must conform to these rules. Claude must apply them on ever
 
 **Colors**
 - Navy: `#12253A` — headers, section titles, strong text
-- Green: `#4CAF82` — eyebrows, accents, positive signals, chart fills
+- Orange: `#EA580C` (accent `#F97316`) — eyebrows/labels, primary accent. Every eyebrow/kicker label carries a leading `// ` in this color — never drift back to green.
+- Sage: `#1F6B45` — positive/on-pathway status signals, chart fills
 - Muted: `#64748B` — secondary text, axis labels
 - Page bg: `#F8F9FB`
 - Section bg: `#fff`
 - Border: `#E2E8F0`
-- Warn: `#F59E0B` · Danger: `#EF4444`
+- Warn: `#B45309` (amber) · Danger: `#B91C1C` (red)
 
 **Typography**
 - Font stack everywhere: `-apple-system,'Helvetica Neue',Arial,sans-serif`
 - Zero `Georgia`, zero `serif`, zero `@import`, zero web fonts
-- Section label: 9px, weight 600, `letter-spacing:.15em`, `text-transform:uppercase`, color `#1F6B45`
+- Section label: 9px, weight 600, `letter-spacing:.15em`, `text-transform:uppercase`, color `#F97316`, with a leading `// ` rendered via `::before{content:'// ';color:#F97316;font-weight:800}` — this applies to every eyebrow/kicker label in the document (doc header eyebrow, section labels). Never drift back to a bare label or the old green `#4CAF82`.
 - Section title: 18px, weight 700, color `#12253A`, `border-bottom:1.5px solid #12253A`, `padding-bottom:8px`
+
+**Header treatment**
+- `.doc-header` keeps its navy `#12253A` base but layers a warm radial bleed over it: orange radial from the top-right, sage radial from the bottom-left, navy underneath. Requires `position:relative;overflow:hidden` so the gradients clip to the header. See the exact CSS in Step 4.
 
 **Section chrome pattern**
 ```html
@@ -579,9 +583,9 @@ Deliver the passport as a two-phase artifact using the same file path. The loadi
 
 ### Phase 1 — Loading Skeleton (emit at file path before research begins)
 
-Navy header with property name and address already filled in. Shimmer placeholders for the 16 sections. Three pulsing dots with status text.
+Navy header (with the warm radial bleed and orange `// ` eyebrow, per the Design System above) with property name and address already filled in. Shimmer placeholders for the 16 sections. Three pulsing dots with status text.
 
-Use the same consulting aesthetic as the RSRA loading skeleton: navy `#12253A` header, `#F8F9FB` background, section cards in `#fff`, pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`). Zero Paged.js, zero external CDN.
+Use the same consulting aesthetic as the RSRA loading skeleton: navy `#12253A` header with the warm radial layered on top, orange `// ` eyebrow (never green), `#F8F9FB` background, section cards in `#fff`, pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`). Zero Paged.js, zero external CDN.
 
 ### Phase 2 — Full Passport (update the same file path)
 
@@ -591,8 +595,9 @@ The Phase 2 full passport uses this CSS (identical to RSRA):
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
 .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
-.doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
-.doc-header-eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+.doc-header{background:radial-gradient(120% 140% at 88% -20%,rgba(234,88,12,0.55) 0%,rgba(234,88,12,0) 46%),radial-gradient(90% 120% at 0% 120%,rgba(31,107,69,0.35) 0%,rgba(31,107,69,0) 50%),#12253A;color:#fff;padding:32px 40px 0;position:relative;overflow:hidden}
+.doc-header-eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#F97316;margin-bottom:8px}
+.doc-header-eyebrow::before{content:'// ';color:#F97316;font-weight:800}
 .doc-header-property-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
 .doc-header-address{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
 .doc-header-meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
@@ -600,7 +605,8 @@ body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F
 .meta-item{display:flex;flex-direction:column;gap:2px}
 .meta-label{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
 .section{padding:32px 40px;background:#fff;margin-bottom:2px}
-.section-label{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
+.section-label{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#F97316;margin-bottom:4px}
+.section-label::before{content:'// ';color:#F97316;font-weight:800}
 .section-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
 .profile-dl{display:grid;gap:0}
 .profile-row{display:grid;grid-template-columns:160px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid #F1F4F8}
@@ -613,6 +619,10 @@ tr:nth-child(even) td{background:#FAFBFC}
 .risk-high{color:#991B1B;font-weight:600}
 .risk-moderate{color:#92400E;font-weight:600}
 .risk-low{color:#065F46;font-weight:600}
+@media print {
+  .section{break-inside:avoid}
+  .doc-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 ```
 
 **Typography:** Every element must use `-apple-system,'Helvetica Neue',Arial,sans-serif`. Zero `Georgia`, zero `serif`, zero web font imports. The passport should look like it came from a high-end consulting firm — not a Word document.

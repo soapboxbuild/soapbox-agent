@@ -14,7 +14,7 @@ description: >
   "landlord share", "who pays the utilities", "utility responsibility", "RUBS",
   "utility recovery", "utilities included", "tenant pays electric", "savings basis",
   "master metered vs individually metered".
-version: 1.0.2
+version: 1.1.0
 ---
 
 # Utility-Split Estimation
@@ -161,6 +161,34 @@ confirms the presumed fuels. Example: *"For each of electricity, gas, and water 
 individually metered and billed directly to residents, master-metered and paid by ownership,
 or billed back via RUBS? If RUBS, what allocation formula?"* Tailor it to what is actually
 still open.
+
+## Persist to asset metadata (the CANONICAL record — read this FIRST on every run)
+
+The resolved split MUST be written to a machine-readable field that survives across threads —
+otherwise every new session re-derives it and re-defaults to Audette's 100% landlord-share (the
+exact bug this skill exists to prevent). The verifier finding (below) is a QA/adjudication artifact
+and the register file is a human doc; **neither is read by the economics.** The canonical store is
+`metadata.utility_split`.
+
+- **WRITE** it via `update_asset_metadata(asset_id, { utility_split: {...} })` (an allowlisted key):
+  ```
+  utility_split = {
+    elec: <owner fraction 0-1>, gas: <0-1>, water: <0-1>,   // net owner capture per fuel
+    source: "gig-cad | lease | listing | building-form | audette-default",
+    confidence: "confirmed | presumed",
+    basis: "<one line: RUBS X% CAD / individually-metered / gross-master-absorbed / all-electric→gas 0 / VNM 80>",
+    resolved_at: "<YYYY-MM-DD>"
+  }
+  ```
+  If the tool response reports a **REJECTED / not-in-allowlist** key, the split did NOT persist —
+  STOP and surface it (the platform allowlist must include `utility_split`).
+- **READ it FIRST.** Before deriving a split — in this skill, in `portfolio-analysis`, and in
+  `decarb-plan` — read `metadata.utility_split`; if present, USE it. Only run the four-source
+  derivation when it is absent. **NEVER default to 100% owner, and never read the split from
+  Audette's landlord-share, when a stored `utility_split` exists** (Audette re-defaults to 100% on
+  model re-pull, which is why it can't be the source of truth).
+- Audette landlord-share (below) is a **secondary mirror** for Audette's own engine; the Soapbox
+  economics read `metadata.utility_split`. Keep them in sync but treat metadata as authoritative.
 
 ## Record as a verifier finding (adjudicable)
 

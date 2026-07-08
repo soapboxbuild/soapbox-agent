@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.8.4
+version: 1.8.5
 ---
 
 # Decarb-Plan Engagement
@@ -503,9 +503,13 @@ For **each field**: gather ALL candidate values with their sources.
 
 ### 2C — Utility split (per fuel, per building)
 
-Establish the owner/tenant utility split **per fuel, per building** via the
-**utility-split-estimation** skill (`cat skills/utility-split-estimation/SKILL.md`) — building form
-+ jurisdiction RUBS rules + on-file docs + leasing evidence. Never default to 100%-owner or a round
+**Read `metadata.utility_split` first** — if the asset already has a persisted split, use it (don't
+re-derive, don't default to 100%). Only if absent, establish the owner/tenant utility split
+**per fuel, per building** via the **utility-split-estimation** skill
+(`cat skills/utility-split-estimation/SKILL.md`) — building form + jurisdiction RUBS rules + on-file
+docs + leasing evidence — then **persist it to `metadata.utility_split`** (the canonical record read
+by every future run; see that skill's persistence contract) in addition to `state.baseline` and the
+Gate-1 finding. Never default to 100%-owner or a round
 number. Tenant-metered fuel = 0% owner on residential; amenity/clubhouse buildings are typically
 100% owner on both fuels. The split is the **savings basis for every retrofit IRR**, so it is a
 foundation input, not a P3 afterthought. Record it in `state.baseline`; an unconfirmed or presumed

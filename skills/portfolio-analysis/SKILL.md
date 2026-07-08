@@ -12,7 +12,7 @@ description: >
   "run the portfolio", "portfolio summary", "show me the portfolio results", "portfolio IRR",
   "portfolio CapEx", "run analysis on [client]",
   after portfolio-ingest completes.
-version: 1.10.0
+version: 1.11.0
 ---
 
 # Portfolio Analysis
@@ -408,6 +408,13 @@ For each asset still missing required fields, present a focused card:
 
 Only show missing fields. `skip` leaves null and excludes the asset from analysis.
 `disposed` marks the asset and includes it in emissions inventory only.
+
+**READ `metadata.utility_split` FIRST (canonical, persisted).** If the asset already has
+`metadata.utility_split`, USE it — do not re-derive and never default to 100% / Audette's
+landlord-share. Only when it is ABSENT do you run the derivation below; then **persist the result
+back** via `update_asset_metadata(asset_id, {utility_split: {...}})` (allowlisted key — if the tool
+reports a REJECTED key the write failed, surface it) so the next thread reads it instead of
+re-defaulting. See the persistence contract in the `utility-split-estimation` skill.
 
 **Check the leasing brochures per asset (part of the workflow, not optional).** Before setting the
 split, pull each asset's current leasing marketing — `apartments.com`, the property's own site,

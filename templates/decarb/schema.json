@@ -323,6 +323,54 @@
               }
             }
           }
+        },
+        "bps_label": {
+          "type": "string",
+          "description": "Legend/footnote label for the carbon bps_target line, e.g. 'Seattle BEPS (GHGI target)'. Defaults to 'BPS compliance target' when omitted."
+        },
+        "bps_source": {
+          "type": "string",
+          "description": "Provenance citation for the bps_target values (jurisdiction + standard + table/rule + URL). Required whenever any trajectory point sets bps_target. Rendered as a chart footnote; NOT server-verified."
+        },
+        "eui_compliance": {
+          "type": "array",
+          "description": "Energy-based BPS standards (e.g. WA Clean Buildings Act / WSCBA) shown as a compact compliance panel. Omit or empty to hide the panel. Each entry is one standard applicable to the asset's jurisdiction.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["standard", "unit", "building_eui", "target_eui", "status", "source"],
+            "properties": {
+              "standard": {
+                "type": "string",
+                "description": "Standard name, e.g. 'WA Clean Buildings Act (WSCBA)'."
+              },
+              "unit": {
+                "type": "string",
+                "description": "EUI display unit, e.g. 'kBtu/sf/yr' or 'kWh/m2/yr'. building_eui and target_eui must be in this unit."
+              },
+              "building_eui": {
+                "type": "number",
+                "description": "The building's current/whole-building EUI in `unit`."
+              },
+              "target_eui": {
+                "type": "number",
+                "description": "The standard's EUI target (EUIt) for this property type in `unit`."
+              },
+              "compliance_year": {
+                "type": "integer",
+                "description": "First compliance deadline year. Optional."
+              },
+              "status": {
+                "type": "string",
+                "enum": ["compliant", "non-compliant", "exempt"],
+                "description": "Compliance status for this standard."
+              },
+              "source": {
+                "type": "string",
+                "description": "Provenance citation (WAC/rule/table + URL). Required — never fabricate."
+              }
+            }
+          }
         }
       }
     },

@@ -168,6 +168,8 @@ single-asset gate.
    structure." Rebuild the data object from `state` + live tool outputs + the template **schema**;
    re-call `crrem get_pathway`. A stored data object may predate template/rule changes.
 
+   **BPS fine avoidance — use the Regulations & Fines engine, don't hand-estimate.** For each BPS-liable asset call `compute_bps_fine_avoidance` (bps-compliance / Regulations & Fines connector) with the asset's `gross_floor_area_m2` + before/after annual emissions; it returns the fine avoided (100% owner) for carbon-based standards (NYC LL97, Boston BERDO) and `null` + the needed input for EUI-based ones (DC BEPS, Denver — supply the EUI target/gap). Feed the result as `bps_fine_avoidance`. NOTE: fine avoidance tracks the measures' CARBON cut, so it is chiefly a deep-decarb (Scenario D) lever — under an in-hold Scenario-B screen it is often ~$0 (revenue/O&M measures don't cut carbon, and many liable assets already sit under the near-term cap). Never assume a fine number.
+
 ---
 
 ## Design System

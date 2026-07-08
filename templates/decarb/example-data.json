@@ -78,6 +78,19 @@
     "calibration_basis": "24 months of ESPM-linked actuals; conflicting source values resolved with the owner; zero-variance GFA-weighted building allocation."
   },
   "targets": {
+    "bps_label": "Seattle BEPS (GHGI target)",
+    "bps_source": "Seattle OSE Director's Rule — office GHGI targets (verify at seattle.gov/ose)",
+    "eui_compliance": [
+      {
+        "standard": "WA Clean Buildings Act (WSCBA)",
+        "unit": "kBtu/sf/yr",
+        "building_eui": 33.5,
+        "target_eui": 60.9,
+        "compliance_year": 2027,
+        "status": "compliant",
+        "source": "WAC 194-50-150 — office EUIt"
+      }
+    ],
     "crrem_stranding_year": 2031,
     "crrem_meta": {
       "country": "US",

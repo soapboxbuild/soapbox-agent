@@ -1,0 +1,29 @@
+{
+  "meta": {"fund":"Fund VII","reporting_year":2025,"anonymized":true,"generated_period":"Q3 2025"},
+  "fund_overview": {
+    "stats": {
+      "asset_classes":"Residential / BTR, Logistics, Office",
+      "locations":"Southern Europe, Northern Europe",
+      "total_size":"~42,000 units / 3.1M sq ft",
+      "standing_dev":"64 / 3",
+      "response_rate":"82%",
+      "yoy_performance":"+6.1 pts",
+      "avg_crrem_stranding_year":2033,
+      "fine_exposure":"TBD"
+    },
+    "sponsor_metrics": [
+      {"sponsor":"Sponsor Sierra","asset_class":"Residential / BTR","total_score":90.5,"yoy_change":"+5.5 pts"},
+      {"sponsor":"Sponsor Meridian","asset_class":"Logistics","total_score":52.1,"yoy_change":"-3.2 pts"},
+      {"sponsor":"Sponsor Halcyon","asset_class":"Office","total_score":67.8,"yoy_change":"+1.4 pts"}
+    ],
+    "ranking": [
+      {"rank":1,"sponsor":"Sponsor Sierra","score":90.5,"yoy_change":"+5.5 pts","vs_mieppi":"+30.5 pts","vs_mir":"+32.5 pts"},
+      {"rank":2,"sponsor":"Sponsor Halcyon","score":67.8,"yoy_change":"+1.4 pts","vs_mieppi":"+7.8 pts","vs_mir":"+9.8 pts"},
+      {"rank":3,"sponsor":"Sponsor Meridian","score":52.1,"yoy_change":"-3.2 pts","vs_mieppi":"-7.9 pts","vs_mir":"-5.9 pts"}
+    ],
+    "underperformers": [
+      {"sponsor":"Sponsor Meridian","identified_risk":"No formal Net Zero policy; energy data coverage at 41% of portfolio, below MIR average of 60%","mitigation":"Q4 2025 engagement to formalize energy data collection SLA and set a Net Zero target year"},
+      {"sponsor":"Sponsor Halcyon","identified_risk":"Governance & Resourcing pillar flat year-over-year; no dedicated ESG committee","mitigation":"Requested formation of senior-leadership ESG task force by FY2026 review"}
+    ]
+  }
+}

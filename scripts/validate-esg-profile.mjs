@@ -26,3 +26,14 @@ console.log('schema + fixture OK')
 const stateSchema = load('../skills/esg-profile/state-schema.json')
 ajv.compile(stateSchema)  // throws if malformed
 console.log('state-schema OK')
+
+// 4. fund fixture
+const fundFixture = load('../skills/esg-profile/demo/example-fund.json')
+if (!validate(fundFixture)) { console.error(validate.errors); throw new Error('example-fund.json fails schema') }
+if (!fundFixture.fund_overview || !Array.isArray(fundFixture.fund_overview.ranking) || fundFixture.fund_overview.ranking.length < 2)
+  throw new Error('example-fund.json must include a ranking with 2+ entries')
+const sponsorNames = new Set((fundFixture.fund_overview.sponsor_metrics || []).map(s => s.sponsor))
+if (sponsorNames.size < 2) throw new Error('example-fund.json must include 2+ pseudonymous sponsors')
+if (!Array.isArray(fundFixture.fund_overview.underperformers) || fundFixture.fund_overview.underperformers.length < 1)
+  throw new Error('example-fund.json must include at least one underperformer')
+console.log('example-fund.json OK')

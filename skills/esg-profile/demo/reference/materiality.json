@@ -1,0 +1,49 @@
+{
+  "considerations": [
+    {
+      "topic": "Energy efficiency & EPC compliance",
+      "relevance": "High",
+      "rationale": "Residential/BTR assets face escalating minimum-EPC-rating regulation across most developed markets; non-compliant units risk rent restrictions or unlettability."
+    },
+    {
+      "topic": "Decarbonization of heating (gas-to-electric transition)",
+      "relevance": "High",
+      "rationale": "Space and water heating dominate residential energy use; electrification (heat pumps/aerothermal) is the primary lever for both carbon reduction and stranding-risk mitigation."
+    },
+    {
+      "topic": "Tenant affordability & energy cost pass-through",
+      "relevance": "Medium",
+      "rationale": "BTR economics are sensitive to utility cost trends; energy-efficiency capex must be weighed against rent-setting constraints and tenant affordability commitments."
+    },
+    {
+      "topic": "Water & waste management at asset level",
+      "relevance": "Medium",
+      "rationale": "Multifamily portfolios generate material water and waste footprints; asset-level tracking and reduction plans are increasingly expected by LPs and green-lease frameworks."
+    },
+    {
+      "topic": "Physical climate risk (heat, wind, drought)",
+      "relevance": "Medium",
+      "rationale": "Residential assets in warm, water-stressed climates face increasing exposure to heat stress and drought-driven water restrictions, affecting operating cost and resilience capex."
+    },
+    {
+      "topic": "Green lease adoption",
+      "relevance": "Medium",
+      "rationale": "Formalized green lease clauses (cost-sharing for efficiency upgrades, data-sharing obligations) are a maturing governance signal for institutional residential sponsors."
+    },
+    {
+      "topic": "Embodied carbon in renovation/retrofit",
+      "relevance": "Low-Medium",
+      "rationale": "As operational carbon declines through electrification, embodied carbon from major renovation cycles becomes a growing share of whole-life emissions."
+    },
+    {
+      "topic": "Community & social impact (affordability, wellbeing)",
+      "relevance": "Low-Medium",
+      "rationale": "Residential/BTR sponsors are increasingly evaluated on socio-economic impact metrics (affordability, walkability, resident wellbeing) alongside environmental performance."
+    },
+    {
+      "topic": "Governance & data assurance",
+      "relevance": "High",
+      "rationale": "Third-party assurance of asset-level energy/water/waste/GHG data underpins investor confidence in ESG scorecards and cross-sponsor benchmarking."
+    }
+  ]
+}

@@ -789,7 +789,7 @@
         aHtml += '<td class="num">' + (a.capex_net != null ? fmtCurrency(Number(a.capex_net)) : '—') + '</td>';
         aHtml += '<td class="num">' + (a.value_creation != null ? fmtSignedCurrency(Number(a.value_creation)) : '—') + '</td>';
         aHtml += '<td class="num">' + (a.pct_reduction != null ? fmtPct(Number(a.pct_reduction)) : '—') + '</td>';
-        aHtml += '<td class="num">' + (a.irr != null ? (typeof a.irr === 'number' ? fmtPct(Number(a.irr)) : esc(a.irr)) : '—') + '</td>';
+        aHtml += '<td class="num">' + (a.irr != null ? (typeof a.irr === 'number' ? (Math.round(Number(a.irr) * 100) + '%') : esc(a.irr)) : '—') + '</td>';
         if (showCrrem) {
           var cs = String(a.crrem_status || '').toLowerCase();
           var csb = cs === 'aligned' ? '<span class="badge badge-green">aligned</span>'

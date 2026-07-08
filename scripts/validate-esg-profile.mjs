@@ -21,3 +21,8 @@ const validate = ajv.compile(schema)
 const fixture = load('../skills/esg-profile/demo/example-sponsor.json')
 if (!validate(fixture)) { console.error(validate.errors); throw new Error('example-sponsor.json fails schema') }
 console.log('schema + fixture OK')
+
+// 3. state schema compile check
+const stateSchema = load('../skills/esg-profile/state-schema.json')
+ajv.compile(stateSchema)  // throws if malformed
+console.log('state-schema OK')

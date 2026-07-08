@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "esg-profile-state",
+  "type": "object",
+  "required": ["phase","config"],
+  "additionalProperties": false,
+  "properties": {
+    "phase": {"enum":["kickoff","collect","reconcile","verify","render","export","done"]},
+    "config": {
+      "type":"object","required":["scope","fund","reporting_year","anonymize","connectors"],
+      "additionalProperties": false,
+      "properties": {
+        "scope": {"enum":["sponsor","fund"]},
+        "fund": {"type":"string"},
+        "sponsor": {"type":"string"},
+        "reporting_year": {"type":"integer"},
+        "anonymize": {"type":"boolean"},
+        "connectors": {"type":"object","additionalProperties":{"type":"object","required":["kind"],
+          "properties":{"kind":{"enum":["mcp","file","api","manual"]},"tool":{"type":"string"},"path":{"type":"string"},"sheet":{"type":"string"},"region":{"type":"string"},"value":{}}}}
+      }
+    },
+    "collected": {"type":"object","additionalProperties":{"type":"object","required":["status","provenance"],
+      "properties":{"value":{},"status":{"enum":["ok","missing","error"]},"notes":{"type":"string"},
+        "provenance":{"type":"object","required":["source_id","mode"],"properties":{"source_id":{"type":"string"},"mode":{"enum":["live","static","estimate"]},"origin":{"type":"string"},"period":{"type":"string"},"retrieved_at":{"type":"string"}}}}}},
+    "findings": {"type":"array","items":{"type":"object","required":["id","severity","summary"],
+      "properties":{"id":{"type":"string"},"severity":{"enum":["low","medium","high"]},"summary":{"type":"string"},"suggested_resolution":{"type":"string"}}}},
+    "overrides": {"type":"array","items":{"type":"object","required":["finding_id","override_reason","approved_by"],
+      "properties":{"finding_id":{"type":"string"},"override_reason":{"type":"string"},"approved_by":{"type":"string"}}}},
+    "artifact_id": {"type":"string"}
+  }
+}

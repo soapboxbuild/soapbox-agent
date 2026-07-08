@@ -301,3 +301,61 @@ cd ~/soapbox-agent && git push -u origin feat/decarb-compliance-overlays
 **Placeholder scan:** every code step shows real code; no TBD/TODO. Verification steps that depend on the render harness are explicitly cross-referenced to Task 4 (not vague "add tests"). ✓
 
 **Type/name consistency:** `bps_label`, `bps_source`, `eui_compliance[]` field names identical across Tasks 1–5; `renderEuiCompliance`, `setHtml`, `esc`, `#eui-compliance-section`/`#eui-compliance-block` consistent across Task 3 and 4. Series key `bps_target` matches the existing schema/layout. ✓
+
+---
+
+### Task 7: Slim the Plan Comparison Table to 5 columns + widen Plan 3×
+
+**Files:**
+- Modify: `templates/decarb/layout-agent.html` — comparison thead (lines ~1523–1536), row-builder JS in the "SCENARIO COMPARISON" block (lines ~1373–1386), the exit-note block (lines ~1393–1398), and a **scoped** CSS rule.
+
+**Interfaces:**
+- Consumes: existing `plans[]` data (`p.name`, `p.label`, `p.waterfall.net_value_creation`, `p.irr_incremental`, `p.ghgi_reduction_pct`, `p.compliant`) and helpers `esc`, `fmtSignedCurrency`, `fmtPct`.
+
+**Requirement:** the Plan Comparison Table must show ONLY these columns — **Plan**, **Net Value Creation**, **Incr. IRR**, **GHGI Reduction**, **Compliance** — with the **Plan column ~3× the width of a data column**, and must fit with **no horizontal scrolling**. Drop the other seven columns (Baseline CapEx, Incr. CapEx, Cap. Subscription, Incentives, Cap. Utility Savings, Cap. Ancillary Revenue, PV Fine Avoidance).
+
+- [ ] **Step 1: Reduce the thead** (lines ~1523–1536) to exactly:
+
+```html
+        <thead><tr>
+          <th>Plan</th>
+          <th class="num">Net Value<br>Creation</th>
+          <th class="num">Incr. IRR</th>
+          <th class="num">GHGI<br>Reduction</th>
+          <th class="ctr">Compliance</th>
+        </tr></thead>
+```
+
+- [ ] **Step 2: Reduce the row-builder** so each `cmpHtml += '<tr…>'` emits ONLY the Plan cell + the four kept cells. Remove the seven dropped `<td>` lines (baseline_capex, incremental_capex, capitalized_subscription, incentives, capitalized_utility_savings, capitalized_ancillary_revenue, pv_bps_fine_avoidance). Keep exactly (in order):
+
+```js
+        cmpHtml += '<tr' + (isSel ? ' class="totals-row"' : '') + '>';
+        cmpHtml += '<td><strong>' + esc(p.name || '—') + '</strong>' + (isSel ? ' ✓' : '') + '<br><span style="font-size:11px;color:#64748B">' + esc(p.label || '') + '</span></td>';
+        cmpHtml += '<td class="num pos">' + fmtSignedCurrency(w.net_value_creation != null ? Number(w.net_value_creation) : 0) + '</td>';
+        cmpHtml += '<td class="num">' + (p.irr_incremental != null ? fmtPct(Number(p.irr_incremental)) : '—') + '</td>';
+        cmpHtml += '<td class="num">' + (p.ghgi_reduction_pct != null ? '−' + fmtPct(Math.abs(Number(p.ghgi_reduction_pct))) : '—') + '</td>';
+        cmpHtml += '<td class="ctr">' + (p.compliant === true ? '<span class="pos">✓ Compliant</span>' : p.compliant === false ? '<span class="neg">At risk</span>' : '—') + '</td>';
+        cmpHtml += '</tr>';
+```
+
+(`var w = p.waterfall || {};` above the block stays — `w.net_value_creation` still uses it.)
+
+- [ ] **Step 3: Remove the orphaned PV-Fine-Avoidance exit note.** In the exit-note block (~1393–1398), delete the `anyFine` computation and the `if (!anyFine) { exitBits.push(… 'BPS fine avoidance shown as “—”' …) }` lines — that column no longer exists. Keep the exit-cap and exit-year `exitBits` and the `setText('comparison-exit-note', …)` call.
+
+- [ ] **Step 4: Widen the Plan column, scoped to this table only.** `.profile-table` is SHARED (comment ~line 274, "mirrors RSRA profile-table") — do NOT change the shared rules. Add a scoped rule near the profile-table CSS:
+
+```css
+    /* Plan Comparison: Plan column ~3× a data column; 5 columns fit with no scroll */
+    #comparison-section .profile-table { table-layout: fixed; width: 100%; }
+    #comparison-section .profile-table th:first-child,
+    #comparison-section .profile-table td:first-child { width: 46%; }
+```
+
+- [ ] **Step 5: Verify** the file still reads (`node -e "require('fs').readFileSync('templates/decarb/layout-agent.html','utf8')"`), grep confirms the thead has exactly 5 `<th>` and the dropped headers ("Baseline", "Incentives", "PV Fine") are gone. Full visual verification happens in Task 4's render harness (the comparison-section renders only with ≥2 plans, which the example data provides).
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add templates/decarb/layout-agent.html
+git commit -m "feat(decarb): slim Plan Comparison Table to 5 columns, widen Plan column 3x"
+```

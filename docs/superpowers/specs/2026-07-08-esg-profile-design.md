@@ -207,11 +207,15 @@ JSON schema at `skills/esg-profile/state-schema.json`.
 6. **export** — PDF (Playwright), **PPTX mapped to Template v3**, XLSX (openpyxl) via the
    `report-review` workflow.
 
-### 5.3 Fund-level rollup
+### 5.3 Fund-level rollup (v1, §4A Fund ESG Overview)
 
-Fund profile = aggregation over the fund's investment-level profiles (same connectors, same
-schema, `scope: "fund"`). Rollup metrics (portfolio EUI, weighted stranding, aggregate fine
-exposure) computed by the same engines, never by the LLM.
+Fund profile = aggregation over the fund's sponsor-level profiles (same connectors, same
+schema, `scope: "fund"`). Produces the §4A layout: sponsor metrics matrix, scorecard ranking
+(with vs-MIEPPI / vs-MIR deltas), fund overview stats (response rate, YoY performance, **avg
+CRREM stranding year**, fine exposure), and the underperformers → risk/mitigation table.
+Rollup metrics (weighted stranding, aggregate fine exposure, avg scorecard) computed by the
+same engines, never by the LLM. Sponsors below fund/MIR avg are auto-selected into the
+underperformers table.
 
 ---
 
@@ -250,10 +254,13 @@ exposure) computed by the same engines, never by the LLM.
 2. `skills/esg-profile/state-schema.json` — durable state contract.
 3. `skills/esg-profile/connectors/registry.json` — source_id → schema + default live adapter.
 4. `templates/esg-profile/` — `fill_report` template (layout + schema + xlsx map), built via
-   the `soapbox-report` meta-skill, mapped to Template v3 sections.
-5. Static demo data repo — Katie's anonymized extracts placed under the project's static-data
-   repository, plus `bps_cache.json` and `materiality.json`.
-6. Smoke test — one investment, demo bindings, end-to-end to rendered artifact + PPTX.
+   the `soapbox-report` meta-skill, mapped to Template v3. **v1 includes BOTH layouts:**
+   **Sponsor ESG Profile** (§4B) and **Fund ESG Overview** (§4A, a rollup over the fund's
+   sponsors), plus Glossary + Endnotes boilerplate.
+5. Static demo data repo — Katie's **scrubbed** extracts placed under the project's
+   static-data repository, plus `bps_cache.json` and `materiality.json`.
+6. Smoke tests — (a) one sponsor → Sponsor Profile artifact + PPTX; (b) fund rollup over ≥2
+   sponsors → Fund Overview artifact + PPTX. Both end-to-end through the render gate.
 
 ---
 

@@ -10,12 +10,18 @@
 
 ## 1. Summary
 
-A new sibling skill, **`esg-profile`**, that produces an **ESG Profile** — an
-investment-level (with fund-level rollup) monitoring deliverable that collates disparate
+A new sibling skill, **`esg-profile`**, that produces an **ESG Profile** — a
+**sponsor-level** (with fund-level rollup) monitoring deliverable that collates disparate
 ESG, climate, building-performance, and investment data into decision-useful information
 for an asset-management team. It supports **risk monitoring, budget planning, and
 asset-management decision-making**, moving a firm from raw GRESB-style data collection to
 actionable, investment-level insight.
+
+> **Grain (confirmed from Katie's Template v3 + extract):** Madison invests in **sponsors**
+> (JV / GP positions) held across funds (Fund VI / VII / VIII). The profile is produced
+> **per sponsor**, benchmarked against **Fund avg**, **Asset-Class avg**, **MIR avg**
+> (Madison-wide) and **MIEPPI**. "Investment/asset-level" in earlier notes = **sponsor-level**.
+> Fund-level rollup aggregates a fund's sponsors.
 
 It reuses the exact design spine of `decarb-plan` / `portfolio-analysis` / `rsra`:
 durable state ledger, no-LLM-arithmetic discipline, Verifier + Retrofit agent gates,
@@ -49,8 +55,8 @@ but rarely operationalize it before Q4 budget season.
    carries provenance; Verifier/Retrofit gates apply (batch-adapted, per `portfolio-analysis`).
 3. **Deterministic, demo-safe.** No interactive human gate mid-run; the render gate
    fails closed but auto-passes when there are no open-high findings on the asset.
-4. **Fund + investment level.** Investment-level profile is primary; fund-level is an
-   aggregation rollup over the fund's investments.
+4. **Fund + sponsor level.** Sponsor-level profile is primary; fund-level is an aggregation
+   rollup over the fund's sponsors.
 5. **Client-fidelity output.** Render a Soapbox-branded HTML artifact (stage wow), and
    export a **PPTX mapped to Katie's `ESG Profile Template v3`** for her team's real use.
 6. **Anonymization.** Sponsor identity is scrubbed by default (`anonymize: true`); the real
@@ -60,46 +66,82 @@ but rarely operationalize it before Q4 budget season.
 
 ## 3. Inputs → connectors
 
-The 9 inputs Katie specified, plus CRREM (her named preferred connector for transition/
-stranding risk). Each row is a **connector**; `demo mode` is the binding used for the IMN run.
+The 9 inputs Katie specified, plus CRREM, mapped to the **actual fields in her template +
+extract**. Each row is a **connector**; the demo binding is what the IMN run uses. The
+"Fills a live gap" column is the wow: three inputs are **blank in Katie's own data today**
+("not provided / analysis underway") and our live connectors populate them.
 
-| # | Input | Connector id | Live source (target) | Demo binding |
-|---|-------|--------------|----------------------|--------------|
-| 1 | Energy Star / benchmarking | `espm` | ESPM via `citizen-energy` MCP | **LIVE** |
-| 2 | Green Street | `green_street` | Green Street API (pending access) | static (extract) |
-| 3 | Physical climate risk | `physical_risk` | `physrisk` MCP (First Street target) | **LIVE** |
-| 4 | Building regulation monitoring | `bps` | `run_compliance_analysis` / browser-mcp | static-cached |
-| 5 | Sponsor questionnaire | `questionnaire` | Fabric or Cambio API (pending) | static (extract) |
-| 6 | Fund / asset-class averages | `peer_benchmark` | BPD peers + Green Street averages | static |
-| 7 | Materiality considerations | `materiality` | reference library | static |
-| 8 | Basic investment info | `investment_info` | fund system / manual | static (extract) |
-| 9 | Investment governance rights | `governance` | fund system / manual | static (extract) |
-| + | CRREM stranding (transition risk) | `crrem` | `crrem` MCP | **LIVE** |
+| # | Input | Connector id | Produces (her fields) | Live source (target) | Demo binding | Fills a live gap? |
+|---|-------|--------------|------------------------|----------------------|--------------|-------------------|
+| 1 | Energy Star / energy | `energy` | EUI, carbon intensity, renewable %, % energy ratings | ESPM `citizen-energy` (US); EPC for EU | static (EU demo) | — |
+| 2 | Green Street | `green_street` | GreenStreet Sector Risk Rating | Green Street API (pending) | static | **yes — "not provided"** |
+| 3 | Physical climate risk | `physical_risk` | Physical impact rating (hazard) | `physrisk` MCP (First Street target) | **LIVE** | **yes — "not provided"** |
+| 4 | Building regulation monitoring | `bps` | Market regulation, fine exposure | `run_compliance_analysis` / browser-mcp | static-cached | — |
+| 5 | Sponsor questionnaire | `questionnaire` | **4 pillar scores + Total + all qual status** | Fabric or Cambio API (pending) | static (extract) | — |
+| 6 | Fund / asset-class / MIR averages | `peer_benchmark` | Fund/AssetClass/MIR/MIEPPI avgs | fund data + LPAC deck | static | — |
+| 7 | Materiality considerations | `materiality` | Market/asset-class materiality | reference library | static | — |
+| 8 | Basic investment info | `investment_info` | Asset class, location, size, exit date, standing/dev # | fund system / manual | static (extract) | — |
+| 9 | Governance rights | `governance` | 4 approval rights (budget/leasing/capex/contractor) | fund system / manual | static (extract) | — |
+| + | CRREM stranding | `crrem` | Stranding year, misalignment | `crrem` MCP | **LIVE** | **yes — "analysis underway, not yet provided"** |
 
-> Green Street + First Street API access is a Katie action item; until confirmed those stay
-> static. `physrisk` is the live physical-risk engine standing in for First Street; when
-> First Street access lands, only the `physical_risk` connector's live adapter changes.
+> **`questionnaire` is the core connector** — it produces the 4-pillar ESG scorecard (Policy
+> & Strategy, Governance & Resourcing, Portfolio Management, Monitoring & Reporting → Total)
+> plus the qualitative status the profile narrates. Today it's questionnaire PDFs; the live
+> target is Fabric/Cambio.
+>
+> **The demo's headline:** CRREM + physical_risk + green_street are the three fields Katie's
+> team leaves blank. Running them **live on stage** turns "not provided" into real values —
+> the profile does something her current manual process cannot.
+>
+> **EU context:** the demo sponsor is Spain-based residential/BTR. ESPM (US) does not apply;
+> EU energy performance is EPC-based. The `energy` connector's adapter is region-aware
+> (ESPM for US, EPC for EU) — another reason the connector abstraction matters.
 
 ---
 
-## 4. Report sections
+## 4. Report sections (from Template v3 — now obtained)
 
-Reconciled against Katie's `ESG Profile Template v3.pptx` at build time (see §9 Open items).
-Derived from her 9 inputs + stated business purpose:
+Katie's template has **two content layouts** plus two static boilerplate pages. The
+`esg-profile` template reproduces these; PPTX export maps to them 1:1.
 
-1. **Cover / investment identity** — anonymized sponsor, fund, asset, period
-2. **ESG snapshot** — headline posture, key flags
-3. **Energy performance** — EUI, ENERGY STAR score, **kWh + kWh/m² only, ≤2 sig figs**
-4. **Carbon trajectory + CRREM stranding** — stranding year, misalignment
-5. **Physical climate risk** — hazard exposure (physrisk / First Street)
-6. **Regulatory / BPS exposure** — applicable BPS, fine-risk timeline
-7. **Peer benchmark** — vs **BPD peer set / fund averages (never national median)**
-8. **Materiality** — market-, asset-class-, investment-specific
-9. **Governance rights** — investor influence levers
-10. **Risk monitoring & Q4 budget recommendations** — the "so what": prioritized actions
+### 4A. Fund ESG Overview (fund scope)
+- **Fund overview** — asset classes, locations, total size, standing/dev #, scorecard
+  response rate, YoY ESG scorecard performance, **avg CRREM stranding year**, fine exposure
+- **Sponsor ESG metrics matrix** — each sponsor × {green cert %, energy rating %, GRESB,
+  Net Zero policy, energy data coverage, renewable %} with MIEPPI + MIR columns
+- **Sponsor ESG ranking** — scorecard score, YoY change, vs MIEPPI, vs MIR (fund + MIR avg rows)
+- **Underperformers** — sponsors below fund/MIR avg → **identified risk → mitigation measure**
 
-Applies the standing **Analytics Standards** (kWh + kWh/m²; ≤2 sig figs; BPD peers, not
-national median; IRR = incremental cost + landlord-share savings + conditional exit value).
+### 4B. Sponsor ESG Profile (sponsor scope — the primary deliverable)
+- **Investment overview** — asset class, location, size, projected exit, standing/dev #
+- **Risk profile**
+  - *Transition:* GreenStreet Sector Risk Rating, **CRREM stranding year**, market
+    regulation, estimated fine exposure
+  - *Physical:* physical impact rating (hazard)
+- **ESG scorecard** — 4 pillars (Policy & Strategy, Governance & Resourcing, Portfolio
+  Management, Monitoring & Reporting) → Total, **YoY trend**, and **regression flags**
+- **Initiatives timeline** — Completed / In Progress (+budget) / Planned (+budget), with
+  **regression markers ⚠️** on backslidden items
+- **ESG governance approval rights** — annual budget, leasing, capex variance, contractor
+- **ESG metrics benchmark** — sponsor vs **MIEPPI / Asset-Class / MIR** (never national median)
+
+### 4C. Glossary + 4D. Endnotes/Methodology
+Reusable static boilerplate (BREEAM, EPC, GRESB, LEED, CRREM, physical/transition risk
+definitions; asset-class grouping + metric methodology). Lifted from her deck; template-owned.
+
+### Distinctive analytics this template demands (design must implement)
+1. **4-pillar scorecard + Total** from the questionnaire, with **year-over-year trend**.
+2. **Regression detection** — items present/better in a prior year now absent/flat/worse
+   (Net Zero, green lease, embodied carbon, employee engagement). A first-class output.
+3. **Reconciliation from conflict notes** — the extract ships explicit `notes_conflicts`
+   (DISCREPANCY entries) + a source-precedence rule ("official scorecard PDF authoritative",
+   "LPAC slide authoritative"). This maps directly onto our decarb-plan reconciliation
+   hierarchy + Verifier findings ledger (§5).
+
+Applies the standing **Analytics Standards** (kWh + kWh/m²; ≤2 sig figs; peer/fund/MIR
+benchmarks, never national median). **Unit normalization required:** her data is in
+kBTU/sq ft and mixes lb/kg CO₂/sq ft across years — the `energy` connector normalizes to
+kWh/m² and standardizes carbon units (a flagged discrepancy in her own notes).
 
 ---
 
@@ -143,15 +185,20 @@ ProvenancedValue = {
 
 ### 5.2 Workflow phases (state machine)
 
-Durable state at `projects/<asset-key>/esg-profile.json` (resumable, per decarb-plan). JSON
-schema at `skills/esg-profile/state-schema.json`.
+Durable state at `projects/<fund>/<sponsor>/esg-profile.json` (resumable, per decarb-plan).
+JSON schema at `skills/esg-profile/state-schema.json`.
 
-1. **kickoff** — scope: which fund/investment, connector bindings, `anonymize` flag.
+1. **kickoff** — scope: which fund + sponsor (or fund-rollup), connector bindings,
+   `anonymize` flag, reporting year.
 2. **collect** — for each `source_id`, call `Connector.resolve`; record ProvenancedValue +
-   `mode` into state. **This is the visible tool-streaming phase for the demo.**
-3. **reconcile** — assemble the profile data object; apply Analytics Standards; compute only
-   via engines/tools (CRREM pathway from `crrem` MCP; BPS fines from compliance analysis).
-   No LLM arithmetic.
+   `mode` into state. **This is the visible tool-streaming phase for the demo** — and where
+   CRREM / physical_risk fill the fields her data leaves blank.
+3. **reconcile** — assemble the profile data object; apply Analytics Standards + unit
+   normalization; compute only via engines/tools (CRREM pathway from `crrem` MCP; BPS fines
+   from compliance analysis). No LLM arithmetic. **Apply the source-precedence hierarchy to
+   conflicting inputs** (official scorecard/measured > authoritative slide > extract >
+   estimate); every conflict becomes a **Verifier finding** with the suggested resolution —
+   never silently auto-resolved. Also run **regression detection** across reporting years.
 4. **verify** — batch-adapted Verifier/Retrofit pass; findings logged to the ledger
    (`verifier__*`), not human-gated mid-run.
 5. **render** — **hard, fail-closed, asset-scoped render gate**: block only on open-high
@@ -172,21 +219,22 @@ exposure) computed by the same engines, never by the LLM.
 
 ```jsonc
 {
-  "scope": "investment",              // or "fund"
-  "fund": "Fund IV",
-  "investment": "azora-asset-001",
-  "anonymize": true,                  // sponsor name scrubbed everywhere
+  "scope": "sponsor",                 // or "fund"
+  "fund": "Fund VII",
+  "sponsor": "sponsor-pseudonym-01",  // NEVER the real name; scrubbed
+  "reporting_year": 2025,
+  "anonymize": true,                  // sponsor name + PII scrubbed everywhere
   "connectors": {
-    "espm":            { "kind": "mcp",  "tool": "citizen-energy get_benchmarking" },
+    "energy":          { "kind": "file", "region": "EU", "path": "static/extract.xlsx" },
     "physical_risk":   { "kind": "mcp",  "tool": "physrisk get_hazard_exposure" },
     "crrem":           { "kind": "mcp",  "tool": "crrem get_pathway" },
-    "green_street":    { "kind": "file", "path": "static/Azora_ESG_Structured_Extract_2025.xlsx", "sheet": "GreenStreet" },
-    "questionnaire":   { "kind": "file", "path": "static/Azora_ESG_Engagement_Notes_2025.docx" },
-    "bps":             { "kind": "file", "path": "static/bps_cache.json" },
-    "peer_benchmark":  { "kind": "file", "path": "static/Azora_ESG_Structured_Extract_2025.xlsx", "sheet": "Peers" },
+    "questionnaire":   { "kind": "file", "path": "static/extract.xlsx", "sheet": "30_input_qualitative" },
+    "green_street":    { "kind": "file", "path": "static/extract.xlsx", "sheet": "30_input_qualitative" },
+    "bps":             { "kind": "file", "path": "static/extract.xlsx", "sheet": "30_input_qualitative" },
+    "peer_benchmark":  { "kind": "file", "path": "static/extract.xlsx", "sheet": "30_input_qualitative" },
     "materiality":     { "kind": "file", "path": "reference/materiality.json" },
-    "investment_info": { "kind": "file", "path": "static/Azora_ESG_Structured_Extract_2025.xlsx", "sheet": "Investment" },
-    "governance":      { "kind": "file", "path": "static/Azora_ESG_Engagement_Notes_2025.docx" }
+    "investment_info": { "kind": "file", "path": "static/notes_scrubbed.docx" },
+    "governance":      { "kind": "file", "path": "static/extract.xlsx", "sheet": "30_input_qualitative" }
   }
 }
 ```
@@ -221,16 +269,29 @@ PPTX her team actually uses" (PPTX export to Template v3). No live Q&A dependenc
 
 ## 9. Open items / risks
 
-1. **Template v3 fidelity.** `ESG Profile Template v3.pptx` + the two extract files are Gmail
-   attachments the Gmail MCP cannot extract as binary. **Superhuman MCP installed for this
-   purpose** — pending one-time OAuth. Obtain and reconcile §4 sections + the PPTX export map
-   against her real layout before finalizing the template.
-2. **Green Street / First Street API access** — Katie action item; static until confirmed.
-3. **Fabric / Cambio questionnaire API** — future live binding for `questionnaire`.
-4. **physrisk latency** — RSRA has seen ~45-min runs; for the demo, scope the physical-risk
-   call tightly (single asset, cached where possible) to protect the 60-second beat.
-5. **Anonymization completeness** — verify sponsor name is absent from extract file *contents*
-   (not just filenames) before the static repo is loaded.
+1. **Template v3 fidelity.** ✓ **Obtained** via the Superhuman MCP and reverse-engineered
+   (§4 now reflects the real 2-layout + glossary + endnotes structure and field list).
+   Remaining build task: pixel-match the PPTX export to her master layout.
+2. **⚠️ Anonymization is NOT actually done in Katie's files.** Despite her note, the extract +
+   notes leak the real sponsor: **Azora / Nestar / (formerly Lazora)**, contact names + emails
+   (`@azora.com`), and specific Spanish cities. **Before anything goes on stage or into the
+   static repo, run a scrub pass** (sponsor→pseudonym, strip PII/contacts/locations). This
+   validates the `anonymize` requirement — and is a concrete pre-demo checklist item. Flag to
+   Katie that her "anonymized" files still contain the real identity.
+3. **Green Street / First Street API access** — Katie action item; static until confirmed.
+   Note these + CRREM are exactly the fields blank in her data (the demo gap-fillers).
+4. **Fabric / Cambio questionnaire API** — future live binding for the core `questionnaire`
+   connector (today: questionnaire PDFs).
+5. **physrisk latency** — RSRA has seen ~45-min runs; for the demo scope the physical-risk
+   call tightly (single sponsor location, cached where possible) to protect the 60-second beat.
+6. **Unit normalization** — her data mixes kBTU/sq ft and lb vs kg CO₂/sq ft across years
+   (her own flagged discrepancy). The `energy` connector must normalize to kWh/m² and a single
+   carbon unit.
+7. **EU applicability** — ESPM is US-only; the demo sponsor is Spain. `energy` connector must
+   be region-aware (EPC for EU). Do not promise live ESPM for this specific demo sponsor.
+
+**Extracted source artifacts** (for the build) are in the session scratchpad:
+`katie/{template.pptx, extract.xlsx, notes.docx}` + this reverse-engineered structure.
 
 ---
 

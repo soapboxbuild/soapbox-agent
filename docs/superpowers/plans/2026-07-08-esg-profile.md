@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the `esg-profile` skill + report template that turns disparate sponsor ESG/climate/investment data into Katie's two-layout ESG Profile deliverable (Sponsor Profile + Fund Overview), with swappable live/static data connectors, for the IMN stage demo.
+**Goal:** Build the `esg-profile` skill + report template that turns disparate sponsor ESG/climate/investment data into the asset manager's two-layout ESG Profile deliverable (Sponsor Profile + Fund Overview), with swappable live/static data connectors, for the IMN stage demo.
 
 **Architecture:** A markdown-orchestrated skill (like `decarb-plan`/`portfolio-analysis`) drives phases kickoff → collect → reconcile → verify → render → export. Data inputs resolve through a **declarative connector layer** (`connectors/registry.json` + per-run bindings) so live-vs-static is a config choice, not code. Output renders via the existing `fill_report` MCP tool against a new `templates/esg-profile/` template, then exports to PPTX matching her Template v3.
 
@@ -13,7 +13,7 @@
 - **No LLM arithmetic** — every reported number comes from an engine/tool/cited source; the LLM never computes a reported figure.
 - **Connector swap = one binding edit** — the workflow calls `resolve(source_id)`; live-vs-static is set only in the run config `connectors` block. No schema/workflow/template change to go live.
 - **Provenance on every value** — `{source_id, mode: live|static|estimate, origin, period, retrieved_at}`; artifact labels static vs live honestly (never-fail-silently).
-- **Anonymization is mandatory and NOT pre-done** — Katie's files leak the real sponsor (Azora/Nestar/Lazora, `@azora.com` emails, Spanish cities). Scrub before any file enters the repo or the stage.
+- **Anonymization is mandatory and NOT pre-done** — the asset manager's files leak the real sponsor (the real sponsor names, `the real contact domain` emails, specific city names). Scrub before any file enters the repo or the stage.
 - **Analytics Standards** — energy in kWh + kWh/m² only, ≤2 significant figures displayed; benchmarks are peer/Fund/AssetClass/MIR/MIEPPI, never national median.
 - **Render gate is HARD, fail-closed, sponsor-scoped** — no render with an open-high Verifier finding on THIS sponsor unless a documented override exists in state.
 - **Grain is sponsor-level** within a fund; fund scope is a rollup over the fund's sponsors.
@@ -35,7 +35,7 @@
 - `scripts/validate-esg-profile.mjs` — ajv validation harness (tests).
 - `scripts/smoke-esg-profile.mjs` — end-to-end render smoke against `fill_report`.
 
-Reference inputs (already extracted, in session scratchpad `katie/`): `template.pptx` (4 slides), `extract.xlsx` sheet `30_input_qualitative` (24 columns), `notes.docx` (6 tables). Field names below are copied from these.
+Reference inputs (already extracted, in session scratchpad `the raw scratchpad extracts`): `template.pptx` (4 slides), `extract.xlsx` sheet `30_input_qualitative` (24 columns), `notes.docx` (6 tables). Field names below are copied from these.
 
 ---
 
@@ -282,7 +282,7 @@ Create `templates/esg-profile/schema.json` (draft-07). Required top-level: `meta
 
 - [ ] **Step 4: Write a valid fixture**
 
-Create `skills/esg-profile/demo/example-sponsor.json` — a minimal valid Sponsor Profile using **pseudonymous** values (NOT Azora/Nestar):
+Create `skills/esg-profile/demo/example-sponsor.json` — a minimal valid Sponsor Profile using **pseudonymous** values (NOT the real sponsor/the real sponsor):
 ```json
 {
   "meta": {"fund":"Fund VII","reporting_year":2025,"anonymized":true,"generated_period":"Q3 2025"},
@@ -439,7 +439,7 @@ description: >
   Produce a sponsor-level ESG Profile (with fund-level rollup) for quarterly asset-management
   engagement — collates ESG questionnaire scorecards, energy/EPC, CRREM stranding, physical
   climate risk, regulatory exposure, peer benchmarks, materiality, and governance rights into
-  Katie-style Sponsor Profile + Fund Overview deliverables. Data sources are swappable
+  asset-manager-style Sponsor Profile + Fund Overview deliverables. Data sources are swappable
   (live MCP or static extract) via a connector registry. Triggers on: "ESG profile",
   "sponsor ESG profile", "ESG asset management dashboard", "ESG scorecard profile",
   "quarterly ESG engagement", "fund ESG overview".
@@ -448,7 +448,7 @@ version: 1.0.0
 ```
 
 Body sections (write full prose for each — no placeholders):
-1. **Ground rules** — copy the Global Constraints (No LLM arithmetic; provenance; anonymization mandatory-and-not-pre-done with the exact leak list Azora/Nestar/Lazora/@azora.com/Spanish cities; Analytics Standards incl. `kWh/m²` and `never national median`; sponsor-scoped fail-closed render gate).
+1. **Ground rules** — copy the Global Constraints (No LLM arithmetic; provenance; anonymization mandatory-and-not-pre-done with the exact leak list the real sponsor names/the real contact domain/specific city names; Analytics Standards incl. `kWh/m²` and `never national median`; sponsor-scoped fail-closed render gate).
 2. **Phases** — kickoff → collect → reconcile → verify → render → export, each a subsection.
    - *kickoff*: gather scope (sponsor|fund), fund, sponsor, reporting_year, anonymize; write initial state per `state-schema.json`; load connector bindings (defaulting each `source_id` from `registry.json` unless overridden).
    - *collect*: for each `source_id`, resolve via its binding — `kind:mcp` → call the named tool; `kind:file` → read path/sheet; `kind:manual` → literal. Record ProvenancedValue with `mode`. Call the three gap-fillers (`crrem`, `physical_risk`, `green_street`) explicitly and visibly. State the swap rule: "to go live, change the binding in config; do not edit this skill."
@@ -554,7 +554,7 @@ Create `scripts/scrub-demo-data.mjs` that reads the scrubbed files and asserts N
 ```js
 import { readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
-const BANNED = ['Azora','azora','Nestar','Lazora','Esternova','Kepa','Bernaola','Vanessa','López','Lopez','@azora.com','Madrid','Valenciana','Barcelona','León','Leon','Sevilla']
+const BANNED = ['the real sponsor names', 'the real consultant firm', 'real personnel', 'the real contact domain', 'specific city names'] // loaded from an untracked denylist file in the real implementation
 const dir = new URL('../skills/esg-profile/demo/static/', import.meta.url).pathname
 // unzip office xml and grep
 for (const f of ['extract.xlsx','notes_scrubbed.docx']) {
@@ -572,7 +572,7 @@ Expected: FAIL — files not present (or leaks present if raw copies used).
 
 - [ ] **Step 3: Produce scrubbed copies**
 
-Copy the raw extracted files from scratchpad `katie/` and run a replacement pass (python-docx / openpyxl) mapping: `Azora/Nestar/Lazora → "Sponsor Sierra"`, `Esternova → "GreenCo"`, contact names/emails → removed, Spanish cities → "Southern Europe". Save to `demo/static/`. Also hand-author `materiality.json` (residential/BTR materiality considerations) and `bps_cache.json` (`{"market_regulation":"National energy-efficiency regs; EPC upgrade requirements","fine_exposure":"TBD"}`).
+Copy the raw extracted files from scratchpad `the raw scratchpad extracts` and run a replacement pass (python-docx / openpyxl) mapping: `the real sponsor names → "Sponsor Sierra"`, `the real consultant firm → "GreenCo"`, contact names/emails → removed, specific city names → "Southern Europe". Save to `demo/static/`. Also hand-author `materiality.json` (residential/BTR materiality considerations) and `bps_cache.json` (`{"market_regulation":"National energy-efficiency regs; EPC upgrade requirements","fine_exposure":"TBD"}`).
 
 - [ ] **Step 4: Run scrub test to verify it passes**
 
@@ -694,7 +694,7 @@ Invoke with scope:fund over ≥2 sponsors; confirm Fund Overview artifact render
 
 - [ ] **Step 3: Write demo README**
 
-Document the exact demo invocation + the 60-second choreography + the "CRREM/physical_risk fill Katie's blanks" beat.
+Document the exact demo invocation + the 60-second choreography + the "CRREM/physical_risk fill the asset manager's blanks" beat.
 
 - [ ] **Step 4: Record durable memory + update spec status**
 

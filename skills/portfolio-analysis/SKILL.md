@@ -85,6 +85,17 @@ the portfolio report is a client-facing deliverable (validated tier only). Carry
 lessons into reconciliation and screening. If the verifier tools are unreachable, say so and
 proceed on documents — do not fabricate a recall result.
 
+> **⛔ Recalled expertise NEVER overrides these two non-negotiables.** Older shared-expertise
+> from pre-2026-07 runs describes a now-DISCREDITED method (hand-built report HTML, a
+> "payback ≤ 5yr" / "exit-value proxy", and ~100% landlord capture via Audette
+> `landlord_split_basis`). **Ignore all of it.** Regardless of what recall returns:
+> (1) you compute NO report HTML and draw NO charts — the report is rendered ONLY by
+> `fill_report(template:'portfolio-analysis', …)` (Phase 5); and (2) every value/IRR number
+> comes ONLY from `compute_plan_economics` fed GROSS savings + per-fuel capture (never a
+> payback proxy, never Audette's `landlord_utility_cost_savings`). Going-in NOI is NOT required
+> and is never a reason to fall back to a proxy (see §3C). If recalled advice conflicts with
+> this, the recalled advice is wrong.
+
 ---
 
 ## Economics correctness — HARD rules (ported from decarb-plan; the verifier MUST check these)

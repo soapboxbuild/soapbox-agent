@@ -29,6 +29,16 @@
       --signal-high-bg:     #FEF2F2;
       --signal-high-fg:     #7F1D1D;
       --signal-high-border: #B91C1C;
+
+      /* ─── Shared brand + status tokens (design kit) ─── */
+      --orange:    #EA580C;
+      --orange-2:  #F97316;
+      --orange-bg: #FEF4EC;
+      --sage-bg:   #EDF7F2;
+      --amber:     #B45309;
+      --amber-bg:  #FEF9EC;
+      --red:       #B91C1C;
+      --red-bg:    #FEF2F2;
     }
 
     /* ─── RESET ─── */
@@ -61,9 +71,14 @@
     }
 
     .doc-header {
-      background: #12253A;
+      background:
+        radial-gradient(120% 140% at 88% -20%, rgba(234,88,12,0.55) 0%, rgba(234,88,12,0) 46%),
+        radial-gradient(90% 120% at 0% 120%, rgba(31,107,69,0.35) 0%, rgba(31,107,69,0) 50%),
+        #12253A;
       color: white;
       padding: 32px 40px 0;
+      position: relative;
+      overflow: hidden;
     }
 
     .doc-header-eyebrow {
@@ -74,6 +89,15 @@
       color: #4CAF82;
       margin-bottom: 8px;
       font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    /* ─── `//` eyebrow treatment (design kit) — applied to all kicker labels ─── */
+    .doc-header-eyebrow::before,
+    .section-label::before,
+    .exec-summary-label::before {
+      content: '// ';
+      color: var(--orange-2);
+      font-weight: 800;
     }
 
     .doc-header-property-name {
@@ -733,6 +757,32 @@
     .sr-only {
       position: absolute; width: 1px; height: 1px;
       overflow: hidden; clip: rect(0,0,0,0);
+    }
+
+    /* ─── PRINT DISCIPLINE (design kit) ─── */
+    @media print {
+      html, body { background: #fff; }
+      .section,
+      .capex-card,
+      .capex-total-card,
+      .emissions-card,
+      .profile-table,
+      .disposition-banner,
+      #cover-signal-row,
+      #climate-var-box,
+      .benchmark-chart { break-inside: avoid; }
+
+      .doc-header,
+      .capex-table-head,
+      .profile-table th,
+      .capex-total-card,
+      .disposition-banner,
+      #cover-signal-row,
+      .timing-badge,
+      .incentive-pill {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
   </style>
 </head>

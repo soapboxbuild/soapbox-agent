@@ -963,7 +963,7 @@
            Single-plan payloads use `planned` and these stay absent. */
         { key: 'planned_1',    label: (tgt.plan1_label || 'Plan 1 — Capital-Light'), color: '#1F6B45', dash: '' },
         { key: 'planned_2',    label: (tgt.plan2_label || 'Plan 2 — Deep Decarbonization'), color: '#0E7490', dash: '' },
-        { key: 'bps_target',   label: 'BPS compliance target (fines)', color: '#12253A', dash: '6,4', step: true }
+        { key: 'bps_target',   label: (tgt.bps_label || 'BPS compliance target'), color: '#12253A', dash: '6,4', step: true }
         /* NOTE: the legacy inline `crrem_target` series is RETIRED — it was an ungated,
            fabrication-prone backdoor (values hand-entered per trajectory point). The CRREM
            1.5°C pathway is drawn ONLY from `targets.crrem_pathway` (real crrem__get_pathway
@@ -1082,6 +1082,9 @@
         if (meta.property_type) metaBits.push(meta.property_type);
         if (meta.scenario) metaBits.push(meta.scenario + ' scenario');
         notes += '<div class="chart-source">CRREM pathway: ' + esc(metaBits.join(' · ')) + '. All series in kgCO₂e·m⁻²·yr⁻¹ (site GHGI converted where sourced per-ft²). BPS target drives fines; the CRREM pathway drives stranding — they are different objects.</div>';
+      }
+      if (tgt.bps_source && pts.some(function(p){ return p.bps_target != null; })) {
+        notes += '<div class="chart-source">' + esc(tgt.bps_label || 'BPS target') + ' source: ' + esc(tgt.bps_source) + '</div>';
       }
       setHtml('trajectory-chart', '<div class="chart-title">Carbon Intensity — with-plan vs. BAU vs. targets (kgCO₂e·m⁻²·yr⁻¹)</div>' + svg + '<div class="chart-legend" id="trajectory-legend">'+leg+'</div>' + notes);
 

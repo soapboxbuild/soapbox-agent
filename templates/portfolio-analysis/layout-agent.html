@@ -161,6 +161,7 @@
   .leg { display: flex; align-items: center; gap: 6px; }
   .leg-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
   .leg-line { width: 24px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+.chart-tip { position: absolute; pointer-events: none; z-index: 10; background: #0F172A; color: #fff; font-size: 11px; line-height: 1.45; padding: 7px 10px; border-radius: 6px; box-shadow: 0 4px 14px rgba(15,23,42,0.22); white-space: nowrap; }
 
   /* ─── Measure-category bar cell ─── */
   .catbar-track { background: #EEF2F6; border-radius: 2px; height: 12px; width: 100%; min-width: 60px; overflow: hidden; }
@@ -359,12 +360,12 @@
     ════════════════════════════════ */
     var kpiBar = document.getElementById('kpi-bar');
     var hasKpis = kpis.total_capex_net != null || kpis.value_creation != null ||
-                  kpis.emissions_reduction_tco2 != null || kpis.assets_above_hurdle != null;
+                  kpis.emissions_reduction_tco2 != null || kpis.ghgi_reduction_pct != null || kpis.assets_above_hurdle != null;
     if (kpiBar && hasKpis) {
       var tiles = '';
       tiles += kpiTile('Total CapEx (Net)', kpis.total_capex_net != null ? fmtCurrency(Number(kpis.total_capex_net)) : '—', 'after incentives', false);
       tiles += kpiTile('Value Creation', kpis.value_creation != null ? fmtCurrency(Number(kpis.value_creation)) : '—', 'at exit cap, NOI uplift', true);
-      tiles += kpiTile('Emissions Reduction', kpis.emissions_reduction_tco2 != null ? (fmt2sig(Number(kpis.emissions_reduction_tco2)) + ' tCO₂e') : '—', 'reduction potential', false);
+      tiles += kpiTile('Emissions Reduction', kpis.ghgi_reduction_pct != null ? fmtPct(Number(kpis.ghgi_reduction_pct)) : (kpis.emissions_reduction_tco2 != null ? (fmt2sig(Number(kpis.emissions_reduction_tco2)) + ' tCO₂e') : '—'), (kpis.ghgi_reduction_year != null ? ('GHGI reduction by ' + kpis.ghgi_reduction_year) : 'reduction potential'), false);
       var ah = kpis.assets_above_hurdle != null ? String(kpis.assets_above_hurdle) : '—';
       var at = kpis.assets_total != null ? kpis.assets_total : (assets.length || null);
       var ahVal = ah + (at != null ? ' <span style="font-size:14px;font-weight:400;color:#64748B">/ ' + at + '</span>' : '');
@@ -462,7 +463,7 @@
         var x = px(xv[i]), y = py(ys[i]), rad = radius(sizeVals[i]);
         var above = (r.above_hurdle === true) || (r.above_hurdle == null && num(r.irr) != null && num(params.irr_hurdle) != null && num(r.irr) >= normHurdle(params.irr_hurdle));
         var fill = above ? '#1F6B45' : '#94A3B8';
-        dots += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + fill + '" fill-opacity="0.72" stroke="#fff" stroke-width="1"/>';
+        dots += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad.toFixed(1) + '" fill="' + fill + '" fill-opacity="0.72" stroke="#fff" stroke-width="1" data-name="' + esc(String(r.asset || '')) + '" data-vc="' + (num(r.value_creation) || 0) + '" data-pr="' + (num(r.pct_reduction) || 0) + '" data-rp="' + (num(r.reduction_potential_tco2e) || 0) + '" data-ah="' + (above ? '1' : '0') + '"/>';
         if (labelNames[r.asset]) { labs += '<text x="' + x.toFixed(1) + '" y="' + (y - rad - 3).toFixed(1) + '" font-size="8" fill="#334155" text-anchor="middle">' + esc(shortName(r.asset)) + '</text>'; }
       });
 
@@ -481,7 +482,30 @@
       setHtml('quadrant-chart',
         '<div class="chart-title">Outcome-focused prioritization — returns vs. reduction potential</div>' +
         svg + '<div class="chart-legend">' + leg + '</div>' +
-        '<div class="chart-source">Dashed lines mark the portfolio medians, splitting assets into four action quadrants. ' + pts.length + ' of ' + prio.length + ' assets plotted (rows missing value or reduction data are omitted); the highest-value assets are labeled to reduce clutter.</div>');
+        '<div class="chart-source">Dashed lines mark the portfolio medians, splitting assets into four action quadrants. All ' + pts.length + ' of ' + prio.length + ' assets are plotted' + (pts.length < prio.length ? ' (rows missing value or reduction data are omitted)' : '') + '; the ' + labelSet.length + ' highest-value are labeled — hover any bubble for the rest.</div>');
+      (function(){
+        var wrap = document.getElementById('quadrant-chart'); if (!wrap) return;
+        wrap.style.position = 'relative';
+        var tip = document.createElement('div'); tip.className = 'chart-tip'; tip.style.display = 'none'; wrap.appendChild(tip);
+        wrap.querySelectorAll('svg circle[data-name]').forEach(function(c){
+          c.style.cursor = 'pointer';
+          c.addEventListener('mouseenter', function(){
+            var vc = Number(c.getAttribute('data-vc')), pr = Number(c.getAttribute('data-pr')), rp = Number(c.getAttribute('data-rp')), ah = c.getAttribute('data-ah') === '1';
+            tip.innerHTML = '<strong>' + esc(c.getAttribute('data-name')) + '</strong>'
+              + '<br>Value creation: ' + fmtSignedCurrency(vc)
+              + '<br>Reduction potential: ' + fmtPct(pr) + ' (' + fmt2sig(rp) + ' tCO₂e)'
+              + '<br>' + (ah ? '≥ 15% hurdle' : 'below hurdle');
+            tip.style.display = 'block';
+          });
+          c.addEventListener('mousemove', function(e){
+            var rb = wrap.getBoundingClientRect();
+            var lx = e.clientX - rb.left + 14, ty = e.clientY - rb.top + 14;
+            if (lx > wrap.clientWidth - 160) lx = e.clientX - rb.left - 150;
+            tip.style.left = lx + 'px'; tip.style.top = ty + 'px';
+          });
+          c.addEventListener('mouseleave', function(){ tip.style.display = 'none'; });
+        });
+      })();
     }
 
     /* ════════════════════════════════

@@ -528,7 +528,7 @@ pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`), zero Paged.
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
-  .report{max-width:960px;margin:0 auto;padding:40px 0 80px}
+  .report{max-width:960px;margin:0 auto;padding:0 0 80px}
   .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
   .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
   .port-name{font-size:28px;font-weight:700;margin:8px 0 4px}

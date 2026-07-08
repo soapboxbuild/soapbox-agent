@@ -4,7 +4,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { z } from 'zod'
 
 const REPO = 'https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main'
-const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'portfolio-analysis', 'decarb', 'retrofit-advisor'] as const
+const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'portfolio-analysis', 'decarb', 'retrofit-advisor', 'esg-profile'] as const
 type ReportType = typeof KNOWN_TYPES[number]
 
 // In-memory cache with 5-minute TTL — re-fetches after template updates without requiring a redeploy
@@ -68,6 +68,18 @@ app.post('/mcp', async (req, res) => {
         }
         if (!d.ghg_scoping) {
           warnings.push('⚠️ MISSING ghg_scoping: GHG scope section will be hidden.')
+        }
+      }
+      if (report_type === 'esg-profile') {
+        const d = data as Record<string, unknown>
+        if (!d.sponsor && !d.fund_overview) {
+          warnings.push('⚠️ MISSING sponsor and fund_overview: provide one of the two layout roots.')
+        }
+        if (d.sponsor && !(d.sponsor as Record<string, unknown>).scorecard) {
+          warnings.push('⚠️ MISSING sponsor.scorecard: the 4-pillar scorecard + YoY trend will be hidden.')
+        }
+        if (d.sponsor && !(d.sponsor as Record<string, unknown>).risk_profile) {
+          warnings.push('⚠️ MISSING sponsor.risk_profile: transition/physical risk table will be hidden.')
         }
       }
 

@@ -529,10 +529,10 @@ pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`), zero Paged.
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
   .report{max-width:960px;margin:0 auto;padding:0 0 80px}
-  .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+  .doc-header{background:#12253A;color:#fff;padding:32px 40px 24px}
   .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
   .port-name{font-size:28px;font-weight:700;margin:8px 0 4px}
-  .port-sub{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
+  .port-sub{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:0}
   .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
   .kpi-bar{display:flex;gap:2px;margin:2px 0}
   .kpi{flex:1;background:#fff;padding:14px 16px;border:1px solid #E2E8F0}

@@ -1145,7 +1145,7 @@
                    exempt:    ['#3730A3','#E0E7FF','Exempt'],
                    'non-compliant': ['#991B1B','#FEE2E2','Non-compliant'] };
       var rows = list.map(function(e){
-        var st = pill[e.status] || ['#334155', '#F1F5F9', esc(e.status || '—')];
+        var st = pill[e.status] || ['#334155', '#F1F5F9', (e.status || '—')];
         /* Bar scaled so the target sits at 100%; building marker is building/target. */
         var tgtV = Number(e.target_eui) || 1;
         var bldg = Number(e.building_eui);

@@ -784,19 +784,25 @@ def build_workbook(
     data: dict,
     brand: dict,
     output_path: str,
+    xlsx_spec_path: Optional[str] = None,
 ) -> None:
     """
     Build and save the Excel workbook.
 
     1. Ensure decarb_plan_total is computed.
-    2. Load xlsx.json if present alongside this script; otherwise auto-derive.
+    2. Load the xlsx.json spec (explicit --xlsx-spec, else templates/<template>/xlsx.json);
+       otherwise auto-derive.
     3. Build each sheet in order, skipping empty omit_if_empty sheets.
     4. Apply workbook-level style (tab colors, print settings).
     5. Save to output_path.
     """
     ensure_decarb_plan_total(data)
 
-    xlsx_spec_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), template, "xlsx.json")
+    # Spec lives under the repo's templates/<template>/xlsx.json (a sibling of scripts/),
+    # not alongside this script. An explicit --xlsx-spec path overrides the default.
+    if not xlsx_spec_path:
+        _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        xlsx_spec_path = os.path.join(_repo_root, "templates", template, "xlsx.json")
     if os.path.exists(xlsx_spec_path):
         with open(xlsx_spec_path, encoding="utf-8") as fh:
             xlsx_spec: dict = json.load(fh)
@@ -903,6 +909,11 @@ def main() -> None:
         help="Brand config as a JSON string (or path to JSON file if prefixed with @).",
     )
     parser.add_argument("--output", help="Output path for the .xlsx file.")
+    parser.add_argument(
+        "--xlsx-spec",
+        dest="xlsx_spec",
+        help="Path to the template's xlsx.json spec. Defaults to templates/<template>/xlsx.json.",
+    )
 
     args = parser.parse_args()
 
@@ -945,6 +956,7 @@ def main() -> None:
             data=data,
             brand=brand,
             output_path=output,
+            xlsx_spec_path=args.xlsx_spec or (cfg.get("xlsx_spec") if args.config else None),
         )
     except Exception as exc:
         import traceback

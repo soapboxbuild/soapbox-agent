@@ -103,6 +103,19 @@ single-asset gate.
    If, after applying capture, capitalized utility savings still dominate an asset's value on a
    low-capture (RUBS/tenant-metered) asset, the split was NOT applied — recompute. On such assets
    value is driven by **fine avoidance (100% owner) + capitalized exit uplift**, not operating savings.
+
+   **Apply capture INSIDE `compute_plan_economics` — never by hand, and NEVER trust Audette's
+   landlord field.** Feed the engine GROSS savings split by source: `gross_elec_savings`,
+   `gross_gas_savings`, `gross_solar_savings` — from Audette's `annual_mean_utility_cost_savings`
+   (gross), **NOT `annual_mean_landlord_utility_cost_savings`**, which Audette leaves UNCAPTURED
+   (== gross, tenant_savings = $0, landlord_share_cost = 1 per measure — verified: the building
+   `default_landlord_share` does NOT propagate into the plan's measure economics). Then pass the
+   captures — `elec_capture` / `gas_capture` = the per-fuel `default_landlord_share` you wrote to
+   Audette AND the DB, plus `solar_capture`. The engine returns owner savings = Σ capture×gross.
+   **Solar under BTM/VNM captures at 0.80** (the LL owns the array + allocates the credit): set
+   `solar_capture: 0.80` where VNM/export is permitted (rule 1b), else the displaced-load share.
+   Sub-metering/billing revenue and BPS fine avoidance stay 100% owner. Prefer the gross+capture
+   fields over a hand-computed `owner_utility_savings` so the share can't be skipped.
    - **VERIFY the RUBS and VNM legislation per jurisdiction — never assume it.** The ~10% RUBS
      capture and the 80% VNM solar credit are CONDITIONAL on the jurisdiction actually permitting
      them. For each asset's jurisdiction, check (reference library → `brave-search`/web + `web_fetch`

@@ -552,7 +552,7 @@
 
     /* Compliance status chip — state encoded in color (dq-dot palette) */
     .dash-chip {
-      display: inline-flex;
+      display: flex;
       align-items: flex-start;
       gap: 8px;
       padding: 8px 14px;
@@ -561,7 +561,9 @@
       font-weight: 700;
       letter-spacing: 0.02em;
       white-space: normal;      /* wrap long compliance messages instead of overflowing the page */
-      max-width: 360px;
+      width: 100%;
+      max-width: none;
+      box-sizing: border-box;
       text-align: left;
       line-height: 1.35;
     }
@@ -569,7 +571,7 @@
     .dash-chip.ok   { background: #EDF7F2; color: #0D5C39; border: 1px solid #A7D7BF; }
     .dash-chip.warn { background: #FFFBEB; color: #92400E; border: 1px solid #FCD34D; }
     .dash-chip.risk { background: #FEF2F2; color: #B42318; border: 1px solid #F3B4AE; }
-    .dash-chips { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+    .dash-chips { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
     .dash-chip-caption { font-size: 10px; color: #94A3B8; }
 
     /* Hero KPI tile grid — built on the .metric type scale */

@@ -5,13 +5,27 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>[[PROPERTY_NAME]] — Sustainability Passport</title>
 <style>
+:root{
+  --orange:#EA580C;--orange-2:#F97316;--orange-bg:#FEF4EC;
+  --sage:#1F6B45;--sage-bg:#EDF7F2;
+  --amber:#B45309;--amber-bg:#FEF9EC;
+  --red:#B91C1C;--red-bg:#FEF2F2;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
 .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
 
 /* Header */
-.doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
+.doc-header{
+  position:relative;overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 88% -20%, rgba(234,88,12,0.55) 0%, rgba(234,88,12,0) 46%),
+    radial-gradient(90% 120% at 0% 120%, rgba(31,107,69,0.35) 0%, rgba(31,107,69,0) 50%),
+    #12253A;
+  color:#fff;padding:32px 40px 0
+}
 .doc-header-eyebrow{font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
+.doc-header-eyebrow::before,.section-label::before{content:'// ';color:var(--orange-2);font-weight:800}
 .doc-header-property-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
 .doc-header-address{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
 .doc-header-meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.04em}
@@ -73,6 +87,15 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 .report-footer{padding:24px 40px;background:#F1F4F8;border-top:2px solid #E2E8F0;font-size:11px;color:#64748B;line-height:1.6}
 .footer-sources{font-weight:600;color:#475569;margin-bottom:4px}
 .footer-limitation{font-style:italic;color:#94A3B8;font-size:10px;margin-top:8px}
+
+/* Print */
+@media print {
+  html, body { background: #fff; }
+  .section, table, .chart-wrap, .cert-badge { break-inside: avoid; }
+  .doc-header, .doc-header-meta-strip, .cert-strip, .badge-green, .badge-amber, .badge-red, .badge-grey, .badge-blue {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+}
 </style>
 </head>
 <body>

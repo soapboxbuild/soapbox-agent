@@ -303,14 +303,14 @@ meanings from scratch on each run.
 | `pillar_governance_resourcing` | `questionnaire` | `sponsor.scorecard.pillars.governance_resourcing` |
 | `pillar_portfolio_management` | `questionnaire` | `sponsor.scorecard.pillars.portfolio_management` |
 | `pillar_monitoring_reporting` | `questionnaire` | `sponsor.scorecard.pillars.monitoring_reporting` |
-| `total_score` | `questionnaire` | `sponsor.scorecard.total` |
+| (derived from `pillar_*` — computed, not a column) | `questionnaire` | `sponsor.scorecard.total` |
 | `qual_summary` / prior-year totals | `questionnaire` | `sponsor.scorecard.trend[]` |
 | `initiatives_completed` | `questionnaire` | `sponsor.initiatives.completed[]` |
 | `initiatives_in_progress` | `questionnaire` | `sponsor.initiatives.in_progress[]` |
 | `initiatives_planned` | `questionnaire` | `sponsor.initiatives.planned[]` (+ `regression` flag from reconcile) |
-| `esg_risks` / `mitigation_actions` | `questionnaire` | feeds `fund_overview.underperformers[].identified_risk` / `.mitigation` on fund rollup |
+| `qual_esg_risks` / `qual_risk_mitigation_actions` | `questionnaire` | feeds `fund_overview.underperformers[].identified_risk` / `.mitigation` on fund rollup |
 | `market_regulation` | `bps` | `sponsor.risk_profile.transition.market_regulation` |
-| `fine_exposure` | `bps` | `sponsor.risk_profile.transition.fine_exposure` |
+| (not a sheet column — from `bps` connector) | `bps` | `sponsor.risk_profile.transition.fine_exposure` |
 | `physical_risk_rating` | `physical_risk` | `sponsor.risk_profile.physical.impact` |
 | `physical_risk_source` | `physical_risk` | `sponsor.risk_profile.physical.source` |
 | (hazards list) | `physical_risk` | `sponsor.risk_profile.physical.hazards[]` |
@@ -321,7 +321,8 @@ meanings from scratch on each run.
 | `carbon_intensity` | `energy` | `sponsor.energy.carbon_intensity` |
 | `renewable_pct` | `energy` | `sponsor.energy.renewable_pct` |
 | `energy_rating_pct` | `energy` | `sponsor.energy.energy_rating_pct` |
-| `fund_avg` / `asset_class_avg` / `mir_avg` / `mieppi_avg` | `peer_benchmark` | `sponsor.benchmark.metrics[]` (`mieppi`/`asset_class`/`mir` columns) and `fund_overview.ranking[].vs_mieppi`/`.vs_mir` |
+| `benchmark_fund_avg` / `benchmark_mir_avg` | `peer_benchmark` | `sponsor.benchmark.metrics[]` (`mieppi`/`asset_class`/`mir` columns) and `fund_overview.ranking[].vs_mieppi`/`.vs_mir` |
+| `asset_class_avg` / `mieppi_avg` (not sheet columns — from `peer_benchmark` connector) | `peer_benchmark` | `sponsor.benchmark.metrics[]` (`mieppi`/`asset_class`/`mir` columns) and `fund_overview.ranking[].vs_mieppi`/`.vs_mir` |
 | `asset_class` / `location` / `size` / `exit_date` / `standing_dev` | `investment_info` | `sponsor.investment_overview.*` |
 | `gov_annual_budget` | `governance` | `sponsor.governance_rights.annual_budget` |
 | `gov_leasing` | `governance` | `sponsor.governance_rights.leasing` |

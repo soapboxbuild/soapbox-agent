@@ -74,6 +74,29 @@ org memory, the reference library, and the `decarb` report template.
      rebuild the CRREM curve from saved state.** Stored state may predate the curve fix; the render
      gate now BLOCKS a decarb report whose crrem_meta is set but crrem_pathway is empty (it would
      otherwise silently drop the curve), so a from-state rebuild without a fresh fetch will fail.
+   - **Compliance overlays (CRREM + BPS).** Determine the asset's jurisdiction, then
+     **auto-include** every standard that applies there **plus** CRREM (e.g. an asset in Seattle
+     auto-gets Seattle BEPS + WSCBA + CRREM) — the user may override with an explicit instruction
+     ("show only WSCBA", "drop CRREM"). The two overlay families populate different fields and
+     must not be conflated:
+     - **Carbon standards** (Seattle BEPS, Boston BERDO, NYC LL97) are stepped GHGI targets: populate
+       per-year `targets.trajectory[].bps_target`, plus `targets.bps_label` (legend text, e.g.
+       "Seattle BEPS (GHGI target)") and `targets.bps_source` (citation for those values). CRREM is
+       unaffected by this and continues to flow through `targets.crrem_pathway` exactly as described
+       above — never merge a carbon BPS target into the CRREM series or vice versa.
+     - **Energy standards** (e.g. WA Clean Buildings Act / WSCBA) are EUI-based, not GHGI-based:
+       populate one entry per applicable standard in `targets.eui_compliance[]`
+       (`standard`, `unit`, `building_eui`, `target_eui`, optional `compliance_year`, `status`,
+       `source`). Never route an energy standard's target through `bps_target` — WSCBA has no
+       stepped carbon trajectory value.
+     - **Every value is sourced, never fabricated.** Pull BPS target numbers from the
+       `bps-compliance` skill's reference tables (BERDO/DC BEPS/WSCBA/LL97) and verify against the
+       official jurisdiction portal before use. Every `targets.eui_compliance[]` entry carries a
+       `source` citation; any trajectory year that sets `bps_target` requires `targets.bps_source`.
+       If a value can't be sourced, do not guess it — say so and stop.
+     - **Exempt is still shown.** A standard the asset is exempt from (e.g. below a size/age
+       threshold) still gets an `eui_compliance[]` entry with `status: "exempt"` rather than being
+       omitted — the exemption itself is the useful signal to the reader.
    - **RE-RENDER = REGENERATE, never re-render a stored data object verbatim.** A stored/previously-
      rendered `data` object (e.g. embedded in a prior report HTML or a saved "vN" state) may PREDATE
      template/schema/content changes. On any revision or re-render you MUST rebuild the full `data`

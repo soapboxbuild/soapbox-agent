@@ -84,9 +84,9 @@ All RSRA HTML output must conform to these rules. Claude must apply them on ever
 - External `<img src="https://...">` — all images must be inline SVG or data URIs
 
 **Artifact output rules**
-- Two-phase output: Phase 1 = loading skeleton (immediate UX), Phase 2 = call `get_report_resources` and fill in data
-- Both phases use the **identical** file path — one artifact, updated in place
-- Never save the Phase 1 skeleton to asset documents — only the completed report
+- The report artifact is produced **ONLY** by `fill_report(template:'rsra', data)` (Phase 10). You author NO report HTML and edit NO HTML — ever. There is no hand-written artifact and nothing to "update in place".
+- Do NOT emit a loading skeleton or any placeholder HTML. While you work, show progress by narrating in chat (the run streams your steps); the FIRST and ONLY artifact you create is the completed `fill_report` render.
+- On any revision, recompute the data object and call `fill_report` again — never edit HTML.
 - Numeric precision: 2 significant figures (`$1.4M` not `$1,427,000`; `42 kgCO₂e` not `41.7`)
 - Mark all benchmark-derived estimates inline with `(est.)`
 
@@ -679,94 +679,13 @@ Choose one:
 
 ## Phase 10: Report Output
 
-Two-phase output: (1) emit loading skeleton + fetch template simultaneously at startup, (2) fill the fetched template with your computed data.
+The report artifact is produced **solely** by `fill_report(template:'rsra', data)`. You author NO report HTML and edit NO HTML — ever.
 
-### Phase 1 — Loading Skeleton + Template Fetch (do BOTH before any research)
+### No loading skeleton — narrate progress in chat
 
-**Before running any searches or reading any documents**, do both of the following simultaneously:
+Do **not** emit a loading skeleton or any hand-written HTML before (or instead of) the final report. Announce in chat that the assessment is starting and stream your progress there as you work Phases 1–9. **The only artifact you ever create is the final report, and it is produced solely by `fill_report(template:'rsra', data)`** — there is no skeleton to fill in, no file to update in place, and nothing to fetch and "fill by hand." (Authoring HTML by hand is the #1 cause of a broken, off-template deliverable and is prohibited — `fill_report` fetches the template server-side and injects your data.)
 
-**A) Emit the skeleton artifact** at `{property-slug}-rsra.html` using exactly the HTML below. Substitute only [PROPERTY NAME], [FULL ADDRESS], and the org name in the meta-strip:
-
-**B) Call `get_report_resources` with `{"template": "rsra"}`** — fire this alongside the skeleton so the template HTML is in context before research begins. You will fill it in Phase 2.
-
-```html
-<!doctype html>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
-  .report{max-width:860px;margin:0 auto;padding:40px 0 80px}
-  .doc-header{background:#12253A;color:#fff;padding:32px 40px 0}
-  .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
-  .prop-name{font-size:28px;font-weight:700;margin:8px 0 4px;line-height:1.2}
-  .prop-addr{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:24px}
-  .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
-  .meta-bar{display:flex;gap:32px;padding:14px 40px;background:#F1F4F8;border-top:1px solid #CBD5E1}
-  .meta-item{display:flex;flex-direction:column;gap:2px}
-  .meta-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B}
-  .shimmer{background:linear-gradient(90deg,#e2e8ef 25%,#f1f5f9 50%,#e2e8ef 75%);background-size:200% 100%;animation:sh 1.4s infinite;border-radius:3px;display:block}
-  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
-  .section{padding:32px 40px;background:#fff;margin-bottom:2px}
-  .section-label,.sec-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#1F6B45;margin-bottom:4px}
-  .section-title,.sec-title{font-size:18px;font-weight:700;color:#12253A;border-bottom:1.5px solid #12253A;padding-bottom:8px;margin-bottom:16px}
-  .status{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:12px;color:#64748B;font-weight:500}
-  .dot{width:6px;height:6px;border-radius:50%;background:#4CAF82;animation:pu 1.2s ease-in-out infinite;flex-shrink:0}
-  .dot:nth-child(2){animation-delay:.4s}.dot:nth-child(3){animation-delay:.8s}
-  @keyframes pu{0%,100%{opacity:.25}50%{opacity:1}}
-</style>
-<div class="report">
-  <div class="doc-header">
-    <div class="eyebrow">Pre-Underwriting Sustainability Analysis</div>
-    <div class="prop-name">[PROPERTY NAME]</div>
-    <div class="prop-addr">[FULL ADDRESS]</div>
-  </div>
-  <div class="meta-strip"><span>[ORG] · Soapbox Sustainability Intelligence</span><span>CONFIDENTIAL</span></div>
-  <div class="meta-bar">
-    <div class="meta-item"><span class="meta-lbl">Asset Type</span><span class="shimmer" style="width:80px;height:14px;margin-top:2px"></span></div>
-    <div class="meta-item"><span class="meta-lbl">Size</span><span class="shimmer" style="width:70px;height:14px;margin-top:2px"></span></div>
-    <div class="meta-item"><span class="meta-lbl">Year Built</span><span class="shimmer" style="width:50px;height:14px;margin-top:2px"></span></div>
-    <div class="meta-item"><span class="meta-lbl">Est. CapEx / Unit</span><span class="shimmer" style="width:60px;height:14px;margin-top:2px"></span></div>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Deal Signal</div>
-    <div class="status"><span class="dot"></span><span class="dot"></span><span class="dot"></span>Gathering data…</div>
-    <span class="shimmer" style="width:55%;height:20px;margin-bottom:12px"></span>
-    <span class="shimmer" style="width:100%;height:12px;margin-bottom:7px"></span>
-    <span class="shimmer" style="width:85%;height:12px;margin-bottom:7px"></span>
-    <span class="shimmer" style="width:40%;height:12px"></span>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Capital Planning</div>
-    <div class="sec-title">Decarbonization Opportunities</div>
-    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:38px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:38px"></span>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Carbon Characterization</div>
-    <div class="sec-title">Emissions Profile</div>
-    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:30px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:30px"></span>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Federal Programs</div>
-    <div class="sec-title">Incentives</div>
-    <span class="shimmer" style="width:100%;height:28px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:28px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:80%;height:28px"></span>
-  </div>
-  <div class="section">
-    <div class="sec-lbl">Compliance</div>
-    <div class="sec-title">Regulatory Scan</div>
-    <span class="shimmer" style="width:100%;height:24px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:90%;height:24px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:70%;height:24px"></span>
-  </div>
-</div>
-```
-
-### Phase 2 — Fill Template and Emit Final Artifact
+### Fill the template and emit the artifact
 
 ⛔ **DO NOT write your own HTML.** The template contains all CSS, layout, and JavaScript rendering. Your only job is to compute the data object and call `fill_report`.
 

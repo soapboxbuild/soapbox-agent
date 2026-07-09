@@ -40,8 +40,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "headline": { "type": "string", "description": "Bold one-line takeaway." },
-            "narrative": { "type": "string", "description": "3-4 sentence summary: portfolio scope, primary opportunity, headline CapEx and value creation." }
+            "headline": { "type": "string", "description": "One-line factual takeaway. State magnitudes with numbers; NO hyperbolic/marketing adjectives ('massive', 'huge', 'game-changing', 'transformative')." },
+            "narrative": { "type": "string", "description": "Summary written as SEVERAL SHORT PARAGRAPHS separated by blank lines (\\n\\n) — one distinct point per paragraph (e.g. ¶ scope + headline economics, ¶ CRREM/carbon position, ¶ where the value vs the carbon sits, ¶ regulatory exposure, ¶ org-goal gap). Do NOT write one dense block. Plain, factual tone — no hyperbole. Define every acronym on first use, e.g. 'retro-commissioning (RCx)', 'gross floor area (GFA)', 'behind-the-meter (BTM)', 'building performance standard (BPS)'." }
           }
         }
       ]

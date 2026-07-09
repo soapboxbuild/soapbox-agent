@@ -1338,6 +1338,11 @@ These render as the "Portfolio-Scale Program & Economies of Scale" section (hidd
 2. **Call `fill_report(template:'portfolio-analysis', data:<object>, title:"<Client> — Portfolio Decarbonization Analysis")`.** It returns the rendered artifact in the preview pane. On revisions, recompute the data and call `fill_report` again — never edit HTML.
 3. 2 significant figures throughout; the template enforces sans-serif/no-web-fonts and safe citation links.
 
+**Writing standards for every prose field (executive summary, findings, methodology, barriers, reasons):**
+- **No hyperbole / marketing language.** Ban "massive", "huge", "game-changing", "transformative", "unlock", "supercharge". State magnitudes with numbers ("$16.3M across 13 GEdR assets"), not adjectives. This is an IC-grade document, not a pitch.
+- **Short paragraphs, one point each.** Never write a single dense block. The `executive_summary.narrative` in particular MUST be several paragraphs separated by blank lines (`\n\n`) — one distinct idea per paragraph. Same for any multi-point narrative field.
+- **Define every acronym on first use**, then reuse the short form: retro-commissioning (RCx), gross floor area (GFA), behind-the-meter (BTM), virtual net metering (VNM), building performance standard (BPS), air-source heat pump (ASHP), domestic hot water (DHW), net operating income (NOI). Applies across the whole document, per field.
+
 The template renders these sections (reference — this is the template's contract, not something you build): Document Header, Executive Summary, Portfolio KPIs, Asset-Prioritization Quadrant, Fund-Level Summary, Top Assets by Value Creation, Emissions Trajectory (if include_crrem), CRREM Pathway (if include_crrem), BPS Exposure (if include_bps), Measure Category Summary, Asset-by-Asset Detail, Below-Hurdle, Deferred, Data Quality & Verification, Methodology & Sources.
 
 <details><summary>Legacy structure reference (the template implements this — kept for data-shape context)</summary>

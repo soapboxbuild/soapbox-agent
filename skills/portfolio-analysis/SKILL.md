@@ -44,9 +44,18 @@ to `decarb-plan`; this is the screening-scale product.
 
 **Ground rules — hold them on every asset:**
 
-1. **No LLM arithmetic on reported numbers.** Every economic figure comes from the
-   `compute_plan_economics` cashflow engine, an Audette model, or a cited source. You never
-   compute a reported number yourself.
+1. **No LLM arithmetic on reported numbers — and NEVER reimplement the engine.** Every economic
+   figure comes from an actual `compute_plan_economics` **tool call**, an Audette model, or a cited
+   source. You never compute a reported number yourself. ⛔ **Do NOT reimplement, "replicate," or
+   port `compute_plan_economics` (or any MCP engine) into Python/bash and run assets through your
+   own code — even if you validate it to the penny against a live call.** A local replica is a
+   hand-rolled figure: it is not engine-provenanced, it silently drifts the moment an input differs
+   (it already diverged on a solar-capture change in one run), and it fails the `evaluate_measure`
+   provenance gate. Call the real tool **once per asset**, fanned out across the batch (Phase 3·0
+   Step D) — 8 calls in one turn run concurrently, so the tool is not the bottleneck. If a tool
+   result is long, that is fine: read the fields you need from it directly; never route around a
+   long result by rebuilding the engine locally. Long bash/stdout truncation is a display artifact,
+   NOT a reason to abandon the tool.
 2. **`compute_plan_economics` owns the economics; the retrofit agent owns discipline + building
    science + the register.** ⚠️ **Do NOT call `run_dcf`, `run_intervention_irr`, `get_ll_capture`,
    or `screen_measure_portfolio`** — those four cashflow-MCP tools execute Python scripts that are
@@ -533,13 +542,22 @@ prohibited.)
 
 **Audette is the mandatory primary data source. Call it for EVERY linked asset. Do not skip Audette and proceed on docs alone — if Audette is skipped, the analysis is incomplete and must say so.**
 
-Process assets in sequence, streaming one progress line per asset as it completes.
-Stream to the conversation: `✓ Landmark at Colony Park (7/39) — 4 measures above hurdle, $2.1M CapEx, +$1.4M value`
+**Do NOT process assets one-at-a-time.** The runtime executes many tool calls issued in a
+single turn concurrently, so within a batch you **fan out each phase across all assets at once**:
+issue the same step's tool call for every asset in the batch in ONE message, read the whole set
+of results, then move to the next step. The dependency is **step → step, not asset → asset**
+(e.g. `get_building_model_details` needs the `find_buildings` result, but asset B's
+`find_buildings` does not need asset A's). Serial per-asset processing is the #1 cause of a
+39-asset run grinding for an hour and never reaching `fill_report` — one `compute_plan_economics`
+per turn means ~200 serial round-trips. Fanning out collapses that to a handful of turns per batch.
 
-**Progress lines are mandatory, not optional.** During any fan-out longer than ~5 assets
-(pulling models, decarb plans, running DCF), emit a short text line at least every 5
-assets — e.g. `Pulled decarb plans 15/39…`. Never go more than ~10 tool calls without
-a visible line of text; a silent multi-minute tool storm looks like a hang to the user.
+After each fan-out step, stream a progress line as the set completes:
+`✓ Batch 1 economics: 8/8 assets — 31 measures above hurdle` (not one line per asset).
+
+**Progress lines are mandatory, not optional.** After each fan-out step (find_buildings,
+decarb plans, ll_capture, compute_plan_economics), emit a short text line — e.g.
+`Pulled decarb plans 8/8 in batch 2 (16/39 total)…`. Never go more than one fan-out step
+without a visible line of text; a silent multi-minute tool storm looks like a hang to the user.
 
 ### 3·0 — BATCHED EXECUTION (required for portfolios > ~8 assets — this is how the run converges to a render)
 
@@ -551,8 +569,21 @@ turn reads small saved summaries, not the raw data.**
 
 Protocol:
 1. **Batch size ≤ 8 assets.** Split the analysis-ready set into batches of at most 8.
-2. **Per asset, run 3A–3D, then PERSIST a compact `pa_result` and DROP the raw data.** After you
-   finish an asset, write its result via `update_asset_metadata(asset_id, {pa_result: {...}})` and
+2. **Run 3A–3D as PARALLEL FAN-OUT STEPS over the batch, then PERSIST a compact `pa_result` per
+   asset and DROP the raw data.** Do not walk the batch asset-by-asset. Instead sweep the batch
+   step-by-step, issuing every asset's call for that step in ONE message:
+   - **Step A (fan out):** `find_buildings` for all 8 assets in one message → read all → then
+     `get_building_model_details` for all resolved building models in one message.
+   - **Step B (fan out):** `get_reported_carbon_reduction_plan` (+ any doc `search_portfolio`) for
+     all 8 in one message.
+   - **Step C (reason, no tool):** for each asset determine the per-fuel LL capture map **inline**
+     from correctness rules 1–2 (RUBS/VNM/master-meter) — do **NOT** call `get_ll_capture` (broken
+     in prod); assemble each asset's owner-share `flows`.
+   - **Step D (fan out):** `compute_plan_economics` for all 8 assets in one message — one call per
+     asset, all in the same turn. (It is one-plan-per-call, but 8 calls in one turn run
+     concurrently; never emit them one turn at a time.)
+   Then, once the batch's economics return, write each asset's result via
+   `update_asset_metadata(asset_id, {pa_result: {...}})` and
    do NOT carry that asset's raw Audette/CRREM/legislation payloads forward into the next batch.
    The `pa_result` is the ONLY thing that must survive to Phase 4. Compact shape:
    ```

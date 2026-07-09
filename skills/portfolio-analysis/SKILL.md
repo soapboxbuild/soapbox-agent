@@ -56,19 +56,19 @@ to `decarb-plan`; this is the screening-scale product.
    result is long, that is fine: read the fields you need from it directly; never route around a
    long result by rebuilding the engine locally. Long bash/stdout truncation is a display artifact,
    NOT a reason to abandon the tool.
-2. **`compute_plan_economics` owns the economics; the retrofit agent owns discipline + building
+2. **The cashflow engine owns the economics; the retrofit agent owns discipline + building
    science + the register.** ⚠️ **Do NOT call `run_dcf`, `run_intervention_irr`, `get_ll_capture`,
-   or `screen_measure_portfolio`** — those four cashflow-MCP tools execute Python scripts that are
-   NOT deployed in prod (`execFileSync python3` → ENOENT); they fail every time. The ONLY working
-   economics tool is **`compute_plan_economics`** (pure TypeScript, deterministic) — it takes
-   per-year owner-share cash flows and returns `irr_incremental` + the value-creation waterfall
-   (capitalized owner savings/ancillary ÷ exit cap, PV of fine avoidance, net value creation,
-   terminal exit-value delta). Determine the LL/TT split inline (Step 1 below), build each asset's
-   per-year owner-share flows, and call `compute_plan_economics`. Feed its outputs *into*
-   `retrofit__evaluate_measure` as `engine: "compute_plan_economics"`-provenanced fields; the
-   provenance gate passes real numbers and rejects fabricated ones. The register's server-computed
-   `exit_value_delta` (NOI÷cap) is a screening proxy — report **value creation** always comes from
-   `compute_plan_economics`, never the register.
+   or `screen_measure_portfolio`** — those four cashflow-MCP tools execute Python scripts NOT
+   deployed in prod (`execFileSync python3` → ENOENT); they fail every time. **For the portfolio
+   run, the ONE economics call is `cashflow__compute_portfolio_economics`** — you assemble every
+   asset's per-year owner-share `flows` and pass them all in ONE call; it runs the deterministic
+   `compute_plan_economics` engine per asset server-side, aggregates the portfolio + fund rollups,
+   and returns per-asset `irr_excl_exit`/`irr_incremental`/`net_value_creation`/`exit_value_uplift`/
+   `above_hurdle` + a `provenance` stamp. Report those numbers verbatim. (Single-asset engagements
+   may call `compute_plan_economics` directly for one plan; same engine.) Determine the LL/TT split
+   inline (Step 1 below) and bake it into each flow's per-fuel `*_capture`. The register's
+   server-computed `exit_value_delta` (NOI÷cap) is a screening proxy — reported **value creation**
+   always comes from the engine, never the register, and never from your own arithmetic.
 3. **Recommended = screen AND hurdle.** A measure is *recommended in the report* iff
    `retrofit__screen_measures` labels it `recommended` **AND** its DCF IRR ≥ `irr_hurdle`.
    Screen-recommended but IRR-missing → below-hurdle. Screen `defensive` → defensive. Screen
@@ -581,11 +581,15 @@ Protocol:
    - **Step C (reason, no tool):** for each asset determine the per-fuel LL capture map **inline**
      from correctness rules 1–2 (RUBS/VNM/master-meter) — do **NOT** call `get_ll_capture` (broken
      in prod); assemble each asset's owner-share `flows`.
-   - **Step D (burst):** `compute_plan_economics` for the ≤6 assets in one message — one call per
-     asset, all in the same turn. (It is one-plan-per-call, but ≤6 calls in one turn run
-     concurrently; never emit them one turn at a time.)
-   Then, once the batch's economics return, write each asset's result via
-   `update_asset_metadata(asset_id, {pa_result: {...}})` and
+   - **Step D (ASSEMBLE flows — do NOT compute economics here):** for each asset build its per-year
+     owner-share `flows` array (`year` 2026…exit_year, each with `incremental_capex`,
+     `gross_elec_savings`/`gross_gas_savings`/`gross_solar_savings` + `elec_capture`/`gas_capture`/
+     `solar_capture`, `ancillary_revenue`, `bps_fine_avoidance`) and store it in `pa_result.flows`.
+     **Do NOT call `compute_plan_economics` per asset, and NEVER compute or aggregate IRR / value /
+     capitalization yourself (no bash, no Python, no spreadsheet).** The deterministic engine runs
+     exactly ONCE for the whole portfolio in Phase 4 via `cashflow__compute_portfolio_economics` —
+     that single call, and its `provenance` stamp, is the ONLY valid source of every economic number.
+   Then write each asset's result via `update_asset_metadata(asset_id, {pa_result: {...}})` and
    do NOT carry that asset's raw Audette/CRREM/legislation payloads forward into the next batch.
    The `pa_result` is the ONLY thing that must survive to Phase 4. Compact shape:
    ```
@@ -594,21 +598,29 @@ Protocol:
      rubs_status, vnm_status, capture_map_summary,          // cited determinations (rule 1b)
      crrem_meta, crrem_points: [{year, target}],            // GFA-weight in Phase 4
      bps: {liable, governing_metric, annual_fine_by_year},
-     measures: [{ name, family, install_year, annual_tco2e_reduction, capex_net,
-                  irr_excl_exit, irr_incremental, irr_2040, capture_pct, value_creation,
-                  screen: recommended|below|defensive|needs-data }],
+     flows: [{ year, incremental_capex, gross_elec_savings, gross_gas_savings, gross_solar_savings,
+               elec_capture, gas_capture, solar_capture, ancillary_revenue, bps_fine_avoidance }],
+     measures: [{ name, family, install_year, annual_tco2e_reduction, capex_net, capture_pct,
+                  screen: recommended|below|defensive|needs-data }],  // economics FILLED by the Phase-4 engine call, not here
      exit_year, exit_cap_rate, data_confidence
    }
    ```
    (The retrofit register already persists the measures durably; `pa_result` is the compact
-   analysis rollup the render reads.)
+   analysis rollup — its `flows` feed the Phase-4 engine call.)
 3. **Between batches, emit a progress line** (`Batch 3/5 complete — 24/39 analyzed`) and keep only
    `pa_result`s in context.
-4. **Phase 4 aggregates from the persisted `pa_result`s, NOT by re-pulling Audette.** Read all
-   assets' `pa_result` (one `query_portfolio_data` / per-asset read), then compute portfolio KPIs,
-   the A/B/C/D year-by-year trajectory (cheap arithmetic from each asset's measures + baseline +
-   GFA-weighted crrem_points), measure categories, top assets, the scale program, and
-   exit-price-protection. The render turn must hold only these compact rollups.
+4. **Phase 4 computes ALL economics via ONE `cashflow__compute_portfolio_economics` call — never in code.**
+   Read all assets' persisted `pa_result` (NOT by re-pulling Audette), then call
+   `cashflow__compute_portfolio_economics(assets: [{asset_id, asset_name, fund, flows, exit_cap_rate,
+   exit_year}, …], irr_hurdle)` **ONCE** with every analysis-ready asset. Use its output **verbatim**:
+   per-asset `irr_excl_exit` / `irr_incremental` / `net_value_creation` / `exit_value_uplift` /
+   `above_hurdle`, and the portfolio + fund aggregates (`assets_above_hurdle`, `total_value_creation`,
+   `total_incremental_capex`). ⛔ **Do NOT compute or aggregate any IRR, value creation, capitalization,
+   or hurdle count in bash / Python / spreadsheet** — the tool's returned numbers + its `provenance`
+   stamp are the ONLY valid economics. Only the **non-economic** rollups are assembled in code: the
+   A/B/C/D emissions trajectory (from each asset's measure tCO2 + baseline + GFA-weighted
+   `crrem_points`), measure categories, and the CRREM overlay. Feed the engine's per-asset + portfolio
+   numbers straight into `fill_report`. The render turn holds only these compact rollups.
 5. **If a batch errors or an asset is unready**, persist a `pa_result` with `data_confidence:
    "unavailable"` + the reason and move on — never let one asset block the batch or the render.
 

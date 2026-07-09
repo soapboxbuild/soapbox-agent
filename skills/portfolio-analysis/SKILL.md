@@ -603,7 +603,7 @@ Protocol:
    pa_result = {
      baseline_ghgi_kg_m2, baseline_tco2e, gfa_m2, jurisdiction, fund,
      rubs_status, vnm_status, capture_map_summary,          // cited determinations (rule 1b)
-     crrem_meta, crrem_points: [{year, target}],            // per-asset annual get_pathway curve, VERBATIM — the engine GFA-blends it (never hand-blend)
+     crrem_meta,                                            // MUST include the resolved CRREM region code + country + property_type — Phase 4 passes {region, gfa_m2} to get_portfolio_pathway (do NOT fetch a full per-asset curve in Phase 3)
      scope2_fraction, grid_ef_annual: [{year, factor}],     // BAU grid decay (crrem get_emission_factors)
      bps: {liable, governing_metric, annual_fine_by_year},
      measures: [{ name, family, install_year, annual_tco2e_reduction, capex_net, capture_pct,
@@ -620,21 +620,24 @@ Protocol:
 3. **Between batches, emit a progress line** (`Batch 3/5 complete — 24/39 analyzed`) and keep only
    `pa_result`s in context.
 4. **Phase 4 computes ALL economics AND the emissions trajectory via ONE `cashflow__compute_portfolio_economics` call — never in code.**
-   Read all assets' persisted `pa_result` (NOT by re-pulling Audette), then call
-   `cashflow__compute_portfolio_economics(assets: [{asset_id, asset_name, fund, exit_cap_rate,
-   exit_year, gfa_m2, baseline_intensity_2025, scope2_fraction, grid_ef_annual, crrem_annual,
-   measures: [{install_year, annual_tco2e_reduction, is_solar, compliance_required, flows}]}, …],
-   irr_hurdle, d_exit_year: 2040)` **ONCE** with every analysis-ready asset — pass `measures[]` (the
-   tool sums them), NOT an asset-level `flows` aggregate; pass `crrem_annual` verbatim from each
-   asset's `crrem_points`. Use its output **verbatim**: per-asset `irr_excl_exit` / `irr_incremental` /
+   Read all assets' persisted `pa_result` (NOT by re-pulling Audette). First call
+   `crrem__get_portfolio_pathway(country, propertyType, assets:[{region, gfa_m2}])` ONCE to get the
+   blended `blended_pathway`. Then call
+   `cashflow__compute_portfolio_economics(crrem_target_annual: <blended_pathway>, irr_hurdle,
+   d_exit_year: 2040, assets: [{asset_id, asset_name, fund, exit_cap_rate, exit_year, gfa_m2,
+   baseline_intensity_2025, scope2_fraction, grid_ef_annual,
+   measures: [{install_year, annual_tco2e_reduction, is_solar, compliance_required, flows}]}, …])`
+   **ONCE** with every analysis-ready asset — pass `measures[]` (the tool sums them), NOT an
+   asset-level `flows` aggregate; pass the blended CRREM curve as the top-level `crrem_target_annual`
+   (do NOT hand in per-asset `crrem_annual`). Use its output **verbatim**: per-asset `irr_excl_exit` / `irr_incremental` /
    `net_value_creation` / `exit_value_uplift` / `above_hurdle`, the portfolio + fund aggregates, AND
    `trajectory.emissions_trajectory` + `trajectory.crrem_trajectory` → copy these straight into the
    report data object's `emissions_trajectory` and `crrem_trajectory` keys. ⛔ **Do NOT compute or
    aggregate ANY IRR, value, capitalization, hurdle count, scenario curve, or CRREM blend in bash /
    Python / spreadsheet, and do NOT hand-build the A/B/C/D or CRREM-target series** — the tool's arrays
    + its `provenance` stamp are the ONLY valid economics AND trajectory. (Hand-blending the CRREM curve
-   is exactly what produced the fabricated one-year cliffs; the engine GFA-blends the per-asset
-   `crrem_annual` and screens the scenarios deterministically.) The only rollup still assembled in code
+   is exactly what produced the fabricated one-year cliffs; `get_portfolio_pathway` blends the curve
+   server-side and the engine screens the scenarios deterministically.) The only rollup still assembled in code
    is the non-numeric `measure_categories` grouping. Feed everything straight into `fill_report`. The
    render turn holds only these compact rollups.
 5. **If a batch errors or an asset is unready**, persist a `pa_result` with `data_confidence:
@@ -1230,20 +1233,23 @@ The ONLY capitalized/monetary downside in the report is **actual BPS fine avoida
 fines from the fines engine / BPS data). If an asset faces no actual fines, there is no capitalized
 downside — do not invent one from stranding.
 
-**CRREM overlay — tool-fetched, never hand-built (economics correctness rule 4):** fetch each
-asset's pathway from the **`crrem` MCP `get_pathway`** (omit `year` to get the full annual
-`allYears` curve) for its actual country/property-type/region, store it VERBATIM in `crrem_points`
-(set `crrem_meta` per asset), and pass it as `crrem_annual`. **The `compute_portfolio_economics`
-engine GFA-blends the per-asset curves into the portfolio target — you do NOT.** Do NOT reuse an
-Audette `crrem_pathway_target_*` field, do NOT interpolate, sample at target years, or eyeball the
-intervening annual points (that is exactly what produced fabricated one-year cliffs). If `crrem` is
-unreachable, say so and omit the CRREM overlay — never fabricate it.
+**CRREM overlay — server-side blended, never hand-built (economics correctness rule 4):** make ONE
+call to **`crrem` MCP `get_portfolio_pathway(country, propertyType, assets:[{region, gfa_m2}])`** — pass
+one entry per asset (its `crrem_meta` region + `gfa_m2`); the tool fetches each region's pathway and
+returns a single GFA-weighted `blended_pathway` (`[{year, target}]`). Pass that array VERBATIM to
+`compute_portfolio_economics` as `crrem_target_annual`. **Do NOT fetch per-asset `get_pathway`
+`allYears` curves and hand them in one-by-one** — at portfolio scale those payloads are large and
+stall the run; `get_portfolio_pathway` does the fetch+blend server-side and returns a tiny curve. Do
+NOT reuse an Audette `crrem_pathway_target_*` field, interpolate, sample at target years, or eyeball
+the annual points (that produced fabricated one-year cliffs). If `crrem` is unreachable, say so and
+omit the CRREM overlay — never fabricate it. (`get_pathway` per asset is still fine for single-asset
+CRREM detail; for the PORTFOLIO curve use `get_portfolio_pathway`.)
 
 **The scenario curves + CRREM overlay are computed by the engine, not by hand.** The A/B/C/D
 definitions above are what the engine implements; you do NOT build the year-by-year series. Supply
-each asset's inputs to `compute_portfolio_economics` — `measures[]` (each with `flows`, `install_year`,
-`annual_tco2e_reduction`, `is_solar`, `compliance_required`), `baseline_intensity_2025`, `gfa_m2`,
-`scope2_fraction`, `grid_ef_annual`, `crrem_annual` — and it returns `trajectory.emissions_trajectory`
+`compute_portfolio_economics` the top-level `crrem_target_annual` (the blended curve above) plus each
+asset's `measures[]` (each with `flows`, `install_year`, `annual_tco2e_reduction`, `is_solar`,
+`compliance_required`), `baseline_intensity_2025`, `gfa_m2`, `scope2_fraction`, `grid_ef_annual` — and it returns `trajectory.emissions_trajectory`
 (`{year, bau, scenario_a..d, crrem_target}` for 2025–2050) and `trajectory.crrem_trajectory`. It
 screens each measure from its own flows (A=`irr_excl_exit≥hurdle`, B=`+irr_incremental≥hurdle`,
 C=`+all solar`, D=`+screen re-run at d_exit_year=2040`) as cumulative unions (A⊆B⊆C⊆D by

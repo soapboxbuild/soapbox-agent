@@ -443,9 +443,13 @@
     function drawQuadrant(rows) {
       var xs = rows.map(function(r){ return num(r.pct_reduction); });
       var ys = rows.map(function(r){ return num(r.value_creation); });
-      /* X is a fraction if all ≤ 1; scale to percent for display. */
-      var xIsFrac = xs.every(function(v){ return Math.abs(v) <= 1; });
-      var xv = xs.map(function(v){ return xIsFrac ? v * 100 : v; });
+      /* X is `pct_reduction` — the fraction of the asset's OWN baseline emissions cut
+         by its in-hold measures. It is ALWAYS a fraction (0–1); we render it as a percent.
+         A building cannot cut more than it emits, so clamp to [0,100%]: this keeps the axis
+         a genuine %-savings scale and prevents one malformed value (e.g. a bad
+         reduction_potential/emissions ratio > 1) from stretching the whole axis and
+         crushing every legitimate asset into the left margin. */
+      var xv = xs.map(function(v){ return v == null ? 0 : Math.max(0, Math.min(100, v * 100)); });
 
       var xMin = Math.min.apply(null, xv), xMax = Math.max.apply(null, xv);
       var yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);

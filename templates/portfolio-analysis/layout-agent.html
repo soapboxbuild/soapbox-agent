@@ -377,7 +377,12 @@
     else if (funds.length) subBits.push(funds.map(function(f){ return f.fund; }).filter(Boolean).join(' · '));
     setText('hdr-sub', subBits.length ? subBits.join('  ·  ') : '—');
     setText('hdr-date', data.report_date ? ('Prepared: ' + data.report_date) : '');
-    setText('hdr-by', data.prepared_by ? ('Prepared by: ' + data.prepared_by) : '');
+    /* Attribute to the human preparer (Soapbox), never the AI persona. Every Soapbox
+       deliverable is prepared BY Soapbox FOR the client (client_name / prepared_for),
+       so default here and treat the retired 'Aris (Soapbox AI)' persona as unset. */
+    var preparedBy = data.prepared_by;
+    if (!preparedBy || /\baris\b|soapbox ai/i.test(String(preparedBy))) preparedBy = 'Christopher Naismith, Soapbox';
+    setText('hdr-by', 'Prepared by: ' + preparedBy);
 
     /* ════════════════════════════════
        2. EXECUTIVE SUMMARY

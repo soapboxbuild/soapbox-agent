@@ -11,7 +11,7 @@
     "client_name": { "type": "string", "description": "Client name. Renders the header title as '<client_name> Portfolio'." },
     "portfolio_id": { "type": "string", "description": "Soapbox portfolio ID or name (identification only; not displayed)." },
     "report_date": { "type": "string", "description": "Report date string (e.g. '2026-06-18'). Renders in the meta strip." },
-    "prepared_by": { "type": "string", "description": "Preparer label for the meta strip. Defaults to 'Aris (Soapbox AI)' if omitted." },
+    "prepared_by": { "type": "string", "description": "Human preparer for the meta strip — 'Christopher Naismith, Soapbox' (default if omitted). NEVER an AI persona ('Aris', 'Soapbox AI'); these deliverables are attributed to the human/firm." },
     "prepared_for": { "type": "string", "description": "Optional 'prepared for' org label." },
     "fund_list": { "type": "string", "description": "Optional human-readable fund list for the header subline. If omitted, derived from fund_summary[].fund." },
 

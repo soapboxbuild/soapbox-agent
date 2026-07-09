@@ -800,7 +800,7 @@
       /* Exit-price-protection callout — the seller's payoff on a short hold (avoided price chip). */
       if (epp) {
         var eppRows = '';
-        if (epp.compliance_discount_avoided != null) eppRows += '<tr><td>Compliance / brown-discount avoided</td><td class="num">' + esc(typeof epp.compliance_discount_avoided === 'number' ? fmtCurrency(Number(epp.compliance_discount_avoided)) : String(epp.compliance_discount_avoided)) + '</td></tr>';
+        if (epp.compliance_discount_avoided != null) eppRows += '<tr><td>BPS fine exposure avoided</td><td class="num">' + esc(typeof epp.compliance_discount_avoided === 'number' ? fmtCurrency(Number(epp.compliance_discount_avoided)) : String(epp.compliance_discount_avoided)) + '</td></tr>';
         if (epp.electrification_reserve_avoided != null) eppRows += '<tr><td>Electrification deferred-retrofit reserve avoided</td><td class="num">' + esc(typeof epp.electrification_reserve_avoided === 'number' ? fmtCurrency(Number(epp.electrification_reserve_avoided)) : String(epp.electrification_reserve_avoided)) + '</td></tr>';
         if (epp.total != null) eppRows += '<tr class="totals-row"><td>Total exit-price protection</td><td class="num">' + esc(typeof epp.total === 'number' ? fmtCurrency(Number(epp.total)) : String(epp.total)) + '</td></tr>';
         var eppHtml = '<div class="section-label" style="margin-top:4px">Exit-Price Protection — Next Owner\'s Perspective</div>'

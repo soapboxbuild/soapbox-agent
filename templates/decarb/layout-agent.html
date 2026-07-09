@@ -868,7 +868,7 @@
         tiles += dashTile(gLbl, (gp > 0 ? '+' : gp < 0 ? '−' : '') + fmtPct(Math.abs(gp)), 'vs baseline year', false, gp < 0);
       }
       if (d.downside_avoided != null) {
-        tiles += dashTile('Downside Avoided', fmtCurrency(Number(d.downside_avoided)), 'PV of fines + stranding risk', false, false);
+        tiles += dashTile('Downside Avoided', fmtCurrency(Number(d.downside_avoided)), 'PV of avoided BPS fines', false, false);
       }
       if (d.cf_positive_year != null) {
         tiles += dashTile('Cashflow Turns Positive', esc(String(d.cf_positive_year)), 'annual unlevered incremental CF', false, false);

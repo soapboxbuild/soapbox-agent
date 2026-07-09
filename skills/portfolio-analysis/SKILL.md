@@ -1145,11 +1145,19 @@ measures are in all four.
 
 **Exit-price protection (the seller's payoff on a short hold — populate `exit_price_protection`).**
 Scenario D matters to a 2031 seller because the buyer **chips the bid** for what D would fix. Quantify
-the avoided chip, grounded + cited: (a) **compliance/brown discount** — the cap-rate expansion or $
-haircut a buyer applies to a CRREM-stranded / BPS-fine-exposed asset (state the bps or % assumption);
+the avoided chip, grounded + cited: (a) **BPS fine exposure** — the cap-rate expansion or $
+haircut a buyer applies for ACTUAL jurisdiction BPS fines they would inherit (state the bps or %
+assumption, tied to the real-fine basis). This is $0 unless the asset faces actual fines — do NOT
+manufacture a chip from CRREM stranding or a generic "brown discount"; stranding is never monetized;
 (b) **electrification deferred-retrofit reserve** — the future gas→electric capex + policy risk a buyer
 deducts from their bid. Decarbing toward D removes both, so a short-hold owner captures the value **at
 the closing table**, not the meter. This is the report's punchline — surface it in the executive summary.
+
+**CRREM stranding is timing-only, never monetized.** Report CRREM stranding as the stranding year /
+pathway alignment ONLY — never as a dollar, PV, capitalized value, cap-rate expansion, or brown-discount.
+The ONLY capitalized/monetary downside in the report is **actual BPS fine avoidance** (real jurisdiction
+fines from the fines engine / BPS data). If an asset faces no actual fines, there is no capitalized
+downside — do not invent one from stranding.
 
 **CRREM overlay — tool-fetched, never hand-built (economics correctness rule 4):** fetch each
 asset's pathway from the **`crrem` MCP `get_pathway`** for its actual country/property-type/region

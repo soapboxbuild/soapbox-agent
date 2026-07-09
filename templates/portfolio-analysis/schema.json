@@ -211,8 +211,8 @@
       "description": "The seller's payoff on a short hold (Phase 4G / Scenario D): the buyer price chip that decarb avoids at the 2031 exit. Renders as a callout in the Portfolio-Scale section. Values may be $ (number → formatted) or a string (e.g. '25-50 bps'). Every figure needs a cited basis — do not invent.",
       "additionalProperties": true,
       "properties": {
-        "headline": { "type": "string", "description": "1-2 sentence framing — decarb protects the exit price by removing the buyer's compliance + electrification price-chip levers." },
-        "compliance_discount_avoided": { "description": "Cap-rate expansion / brown-discount a buyer would apply to a CRREM-stranded / BPS-exposed asset, avoided by decarb. Number (USD) or string (e.g. '25 bps cap-rate')." },
+        "headline": { "type": "string", "description": "1-2 sentence framing — decarb protects the exit price by removing the buyer's ACTUAL-BPS-fine and electrification price-chip levers. Do NOT claim a stranding/'brown-discount' price chip: CRREM stranding is a timing signal, never a capitalized haircut." },
+        "compliance_discount_avoided": { "description": "The exit-price chip a buyer would apply for ACTUAL BPS fine exposure they would inherit (real jurisdiction fines), avoided by decarb. This is NOT driven by CRREM stranding or a generic 'brown discount' — stranding is never monetized. $0 unless the asset faces real fines. Number (USD) or string (e.g. '25 bps cap-rate') tied to the actual-fine basis." },
         "electrification_reserve_avoided": { "description": "Deferred gas→electric retrofit reserve a buyer would deduct from their bid, avoided. Number (USD) or string." },
         "total": { "description": "Total exit-price protection. Number (USD) or string." },
         "basis": { "type": "string", "description": "The cited assumption/source behind the figures (discount bps, reserve $/unit, comparable, etc.)." }

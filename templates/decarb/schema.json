@@ -167,7 +167,7 @@
         },
         "downside_avoided": {
           "type": "number",
-          "description": "Tile: PV of avoided downside (fines + stranding-risk value) in USD.",
+          "description": "Tile: PV of avoided BPS fines ONLY (actual jurisdiction fine avoidance) in USD. CRREM stranding is NOT monetized — never add a stranding-risk dollar value. 0 (or omit the tile) if the asset faces no actual fines.",
           "minimum": 0
         },
         "cf_positive_year": {

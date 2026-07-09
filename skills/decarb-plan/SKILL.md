@@ -769,6 +769,13 @@ gate (resume may have skipped P4's check).
    and annotates the stranding year. All trajectory series are kgCO₂e·m⁻²·yr⁻¹; convert
    per-ft² GHGI values before filling.
 
+   **CRREM stranding is timing-only, never monetized.** Report stranding as the stranding YEAR /
+   pathway alignment ONLY — never as a dollar, PV, capitalized value, cap-rate expansion, or
+   brown-discount. `dashboard.downside_avoided` is the **PV of ACTUAL BPS fine avoidance ONLY**
+   (real jurisdiction fines from `state.targets` fine exposure / the fines engine) — do NOT add a
+   stranding-risk dollar value to it. If the asset faces no actual fines, there is no capitalized
+   downside — set `downside_avoided` to 0 (or omit the tile); do not invent one from stranding.
+
    **Baseline/BAU carbon curve:** use the **actual Audette-modeled baseline carbon curve**
    (`state.targets` trajectory from Audette engine outputs, including grid-factor drift)
    for `bau`/`planned` wherever available — never a fabricated flat line.

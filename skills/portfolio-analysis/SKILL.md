@@ -542,22 +542,23 @@ prohibited.)
 
 **Audette is the mandatory primary data source. Call it for EVERY linked asset. Do not skip Audette and proceed on docs alone — if Audette is skipped, the analysis is incomplete and must say so.**
 
-**Do NOT process assets one-at-a-time.** The runtime executes many tool calls issued in a
-single turn concurrently, so within a batch you **fan out each phase across all assets at once**:
-issue the same step's tool call for every asset in the batch in ONE message, read the whole set
-of results, then move to the next step. The dependency is **step → step, not asset → asset**
+**Do NOT process assets one-at-a-time — but do NOT fan out more than 6 tool calls in a single
+turn either.** Issue the same step's tool call for a group of assets in ONE message (a "burst"),
+read the whole set of results, then move on. The dependency is **step → step, not asset → asset**
 (e.g. `get_building_model_details` needs the `find_buildings` result, but asset B's
-`find_buildings` does not need asset A's). Serial per-asset processing is the #1 cause of a
-39-asset run grinding for an hour and never reaching `fill_report` — one `compute_plan_economics`
-per turn means ~200 serial round-trips. Fanning out collapses that to a handful of turns per batch.
+`find_buildings` does not need asset A's), so grouping is safe.
+⚠️ **Hard cap: ≤ 6 tool calls per turn.** The managed-agents runtime drains a turn's parallel
+tool calls through a one-at-a-time `requires_action` handshake; bursts larger than ~6 churn badly
+and can stall the run before it ever renders. So a burst of 6 is the sweet spot: it kills the
+~200-serial-round-trip problem of one-call-per-turn WITHOUT tripping the runtime's churn. If a
+batch has more than 6 assets, split the step into back-to-back 6-call bursts.
 
-After each fan-out step, stream a progress line as the set completes:
-`✓ Batch 1 economics: 8/8 assets — 31 measures above hurdle` (not one line per asset).
+After each burst, stream a progress line as the set completes:
+`✓ Batch 1 economics: 6/6 assets — 24 measures above hurdle` (not one line per asset).
 
-**Progress lines are mandatory, not optional.** After each fan-out step (find_buildings,
-decarb plans, ll_capture, compute_plan_economics), emit a short text line — e.g.
-`Pulled decarb plans 8/8 in batch 2 (16/39 total)…`. Never go more than one fan-out step
-without a visible line of text; a silent multi-minute tool storm looks like a hang to the user.
+**Progress lines are mandatory, not optional.** After each burst (find_buildings, decarb plans,
+compute_plan_economics), emit a short text line — e.g. `Pulled decarb plans 6/6 (12/39 total)…`.
+Never go more than one burst without a visible line of text; a silent tool storm looks like a hang.
 
 ### 3·0 — BATCHED EXECUTION (required for portfolios > ~8 assets — this is how the run converges to a render)
 
@@ -568,19 +569,20 @@ rendering. **Process assets in BATCHES and persist a compact result per asset, s
 turn reads small saved summaries, not the raw data.**
 
 Protocol:
-1. **Batch size ≤ 8 assets.** Split the analysis-ready set into batches of at most 8.
-2. **Run 3A–3D as PARALLEL FAN-OUT STEPS over the batch, then PERSIST a compact `pa_result` per
+1. **Batch size ≤ 6 assets.** Split the analysis-ready set into batches of at most 6, so each
+   fan-out step is a single ≤6-call burst (matches the runtime's clean drain size).
+2. **Run 3A–3D as ≤6-CALL BURSTS over the batch, then PERSIST a compact `pa_result` per
    asset and DROP the raw data.** Do not walk the batch asset-by-asset. Instead sweep the batch
-   step-by-step, issuing every asset's call for that step in ONE message:
-   - **Step A (fan out):** `find_buildings` for all 8 assets in one message → read all → then
-     `get_building_model_details` for all resolved building models in one message.
-   - **Step B (fan out):** `get_reported_carbon_reduction_plan` (+ any doc `search_portfolio`) for
-     all 8 in one message.
+   step-by-step, issuing that step's call for the (≤6) assets in ONE message:
+   - **Step A (burst):** `find_buildings` for the ≤6 assets in one message → read all → then
+     `get_building_model_details` for the resolved building models (again ≤6 per turn).
+   - **Step B (burst):** `get_reported_carbon_reduction_plan` (+ any doc `search_portfolio`) for
+     the ≤6 in one message.
    - **Step C (reason, no tool):** for each asset determine the per-fuel LL capture map **inline**
      from correctness rules 1–2 (RUBS/VNM/master-meter) — do **NOT** call `get_ll_capture` (broken
      in prod); assemble each asset's owner-share `flows`.
-   - **Step D (fan out):** `compute_plan_economics` for all 8 assets in one message — one call per
-     asset, all in the same turn. (It is one-plan-per-call, but 8 calls in one turn run
+   - **Step D (burst):** `compute_plan_economics` for the ≤6 assets in one message — one call per
+     asset, all in the same turn. (It is one-plan-per-call, but ≤6 calls in one turn run
      concurrently; never emit them one turn at a time.)
    Then, once the batch's economics return, write each asset's result via
    `update_asset_metadata(asset_id, {pa_result: {...}})` and

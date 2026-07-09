@@ -852,6 +852,16 @@ are tracked separately and do NOT enter the value bridge.
 - Compliance-required measures: never defer regardless of hold period
 - Controls/LED/commissioning: 3–6 months — feasible for any hold period
 
+**Resequencing Audette's install years — bounded, and disclosed.** Audette often schedules
+measures past the exit year, which understates in-hold value. You MAY pull a measure's install
+year earlier than Audette's schedule **only** if its lead time fits before the exit
+(controls/LED/commissioning: any hold; HVAC/electrification/envelope/solar: only if ≥18 months
+remain to exit). **Never** front-load a long-lead measure into a window it cannot physically be
+permitted and built in just to book its exit-year uplift — that fabricates value. When you do
+resequence, say so in the report's methodology (`"install years accelerated within feasible lead
+times to reflect a value-maximizing owner"`), and keep the max-decarb/full-roadmap flow on
+Audette's original schedule so the two views are honestly distinguishable.
+
 **Step 3 — Value-inclusive IRR + value bridge (call `compute_plan_economics`):**
 
 Build the per-year owner-share flow schedule for the measure (or, for the asset roll-up, all

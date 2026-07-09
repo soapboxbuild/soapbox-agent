@@ -28,7 +28,12 @@ org memory, the reference library, and the `decarb` report template.
    comes from an engine, Audette analysis, or a cited source. CRREM pathway points come from
    crrem tooling; BPS milestones and fine exposure come from engines/Audette compliance
    analysis (`run_compliance_analysis`); simple percent-reduction math may use the
-   cashflow/DCF engines. You never compute a reported number yourself.
+   cashflow/DCF engines. You never compute a reported number yourself. ⛔ **NEVER reimplement,
+   "replicate," or port `compute_plan_economics` (or any MCP engine) into Python/bash and run the
+   plan through your own code — even validated to the penny against a live call.** A local replica
+   is a hand-rolled, non-provenanced figure that silently drifts when an input differs and fails
+   the `evaluate_measure` provenance gate. Call the real tool; if its result is long, read the
+   fields you need directly — long output is a display artifact, not a reason to route around it.
 2. **The hierarchy is suggestion-only.** The reconciliation precedence — **measured
    utility/ESPM actuals > audit-reported 12-mo > Audette modeled > estimates** — produces the
    *suggested* resolution for each conflict. The human adjudicates ALL conflicts at Gate 1.

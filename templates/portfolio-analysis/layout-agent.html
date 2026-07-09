@@ -983,7 +983,7 @@
     var methodology = data.methodology;
     var srcs = data.sources || [];
     if (methodSection && (methodology || srcs.length > 0)) {
-      if (methodology) { setHtml('methodology-intro', esc(methodology)); showEl('methodology-intro'); }
+      if (methodology) { setHtml('methodology-intro', String(methodology).split(/\n\n+/).map(function(pp){ return '<p style="margin:0 0 8px">' + esc(pp) + '</p>'; }).join('')); showEl('methodology-intro'); }
       if (srcs.length > 0) {
         var srcHtml = '';
         srcs.forEach(function(s, i) {
@@ -1298,7 +1298,7 @@
   <div id="methodology-section" class="section" style="display:none">
     <div class="section-label">Appendix</div>
     <h2 class="section-title">Methodology &amp; Sources</h2>
-    <p class="section-intro" id="methodology-intro" style="display:none"></p>
+    <div class="section-intro" id="methodology-intro" style="display:none"></div>
     <div id="sources-block" style="display:none">
       <details>
         <summary>Sources &amp; Citations</summary>

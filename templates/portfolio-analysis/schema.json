@@ -341,7 +341,7 @@
       }
     },
 
-    "methodology": { "type": "string", "description": "Methodology prose for the appendix. Section hides if this and sources are both absent." },
+    "methodology": { "type": "string", "description": "Methodology prose for the appendix, written as SEVERAL SHORT PARAGRAPHS separated by blank lines (\\n\\n) — group by topic (e.g. ¶ data sources, ¶ LL/TT capture, ¶ economics engine, ¶ CRREM, ¶ BPS, ¶ escalation & uncertainty). Not one dense block. Plain factual tone, no hyperbole; define acronyms on first use. Section hides if this and sources are both absent." },
 
     "sources": {
       "type": "array",

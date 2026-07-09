@@ -78,7 +78,7 @@
     },
     "prepared_by": {
       "type": "string",
-      "description": "Name/team that produced this plan (e.g. 'Aris / Soapbox Sustainability Intelligence')."
+      "description": "Human preparer who produced this plan. Default 'Christopher Naismith, Soapbox'. Never an AI persona (e.g. not 'Aris' or 'Soapbox AI')."
     },
     "prepared_for": {
       "type": "string",

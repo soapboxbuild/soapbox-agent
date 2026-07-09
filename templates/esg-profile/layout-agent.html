@@ -109,6 +109,14 @@
       background: rgba(234,88,12,0.12);
     }
 
+    /* dual Soapbox + Audette logo block (last child of .doc-header) */
+    .doc-header-logos {
+      display: flex; align-items: center; gap: 22px;
+      padding: 6px 0 26px;
+    }
+    .doc-header-logos svg, .doc-header-logos img { display: block; }
+    .doc-header-logos .logo-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.22); }
+
     /* meta strip beneath header */
     .doc-meta-strip {
       background: var(--navy-2);
@@ -321,11 +329,32 @@
     <h1 class="doc-title" id="hdr-title">ESG Profile</h1>
     <div class="doc-subtitle" id="hdr-subtitle"></div>
     <span class="anon-badge" id="hdr-anon" style="display:none">Anonymized — sponsor identities pseudonymized</span>
+    <div class="doc-header-logos">
+      <svg width="109" height="22" viewBox="0 0 178 36" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Soapbox">
+        <defs>
+          <linearGradient id="sbx-tile" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#1aa863"></stop>
+            <stop offset="1" stop-color="#0c6c3d"></stop>
+          </linearGradient>
+          <linearGradient id="sbx-sheen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"></stop>
+            <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"></stop>
+          </linearGradient>
+        </defs>
+        <rect x="2" y="2" width="32" height="32" rx="8.5" fill="url(#sbx-tile)"></rect>
+        <rect x="2" y="2" width="32" height="32" rx="8.5" fill="url(#sbx-sheen)"></rect>
+        <text x="18" y="25.5" text-anchor="middle" font-family="'Bricolage Grotesque',-apple-system,'Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="20" fill="#ffffff">S</text>
+        <text x="45" y="26" font-family="'Bricolage Grotesque',-apple-system,'Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="27" letter-spacing="-0.6" fill="#ffffff">Soapbox<tspan fill="#f0652c">.</tspan></text>
+      </svg>
+      <div class="logo-divider"></div>
+      <svg width="27" height="22" viewBox="0 0 74 61" role="img" aria-label="Audette" style="display:block"><rect fill="#eb02ad" x="41.18" y="0.26" width="6.56" height="19.05"/><circle fill="#eb02ad" cx="62.48" cy="9.78" r="9.52"/><path fill="#eb02ad" d="M19.65,9.78.12,59.94h9l4.67-12.59H35l4.74,12.59H49L29.48,9.78ZM16.74,39.49,24.38,19,32,39.49Z"/></svg>
+    </div>
   </div>
   <div class="doc-meta-strip">
     <span id="hdr-fund"></span>
     <span id="hdr-year"></span>
     <span id="hdr-period"></span>
+    <span id="hdr-by"></span>
     <span class="confidential">CONFIDENTIAL</span>
   </div>
 
@@ -372,7 +401,7 @@
   <!-- FOOTER -->
   <div class="report-footer">
     <div class="src">Data sources: ESG Questionnaire · CRREM 2024 · Green Street · physrisk (OS-Climate) · GRESB · Soapbox Sustainability Intelligence</div>
-    <div id="footer-preparer">Prepared by Soapbox AI</div>
+    <div id="footer-preparer"></div>
     <div class="disclaimer">Prepared for information purposes only. Benchmarks are peer / Fund / MIR comparisons and are not national medians. Scorecard, CRREM and physical-risk figures reflect the stated reporting period and carry material uncertainty at the single-sponsor level. Regulatory and fine-exposure estimates are preliminary — engage qualified counsel before reliance.</div>
   </div>
 
@@ -404,6 +433,11 @@
     setText('hdr-fund', 'Fund: ' + safe(meta.fund));
     setText('hdr-year', 'Reporting year: ' + safe(meta.reporting_year));
     setText('hdr-period', meta.generated_period ? 'Generated: ' + meta.generated_period : '');
+    // Attribute to the human preparer (Soapbox), never the AI persona.
+    var preparedBy = data.prepared_by;
+    if (!preparedBy || /\baris\b|soapbox ai/i.test(String(preparedBy))) preparedBy = 'Christopher Naismith, Soapbox';
+    setText('hdr-by', 'Prepared by: ' + preparedBy);
+    setText('footer-preparer', 'Prepared by ' + preparedBy);
 
     /* ── Sponsor pages — independently guarded ── */
     if (data.sponsor) {

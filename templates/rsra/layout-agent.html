@@ -116,6 +116,14 @@
       margin-bottom: 24px;
     }
 
+    /* ─── Dual brand logo lockup (canonical header treatment) ─── */
+    .doc-header-logos {
+      display: flex; align-items: center; gap: 22px;
+      padding: 6px 0 26px;
+    }
+    .doc-header-logos svg, .doc-header-logos img { display: block; }
+    .doc-header-logos .logo-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.22); }
+
     /* ─── Meta bar (light strip at base of header) ─── */
     .meta-bar {
       display: flex;
@@ -893,7 +901,11 @@
     setText('cover-meta-units', prop.units ? prop.units + ' units' : (prop.gfa_sqft ? fmtSqft(prop.gfa_sqft) : '—'));
     setText('cover-meta-built', prop.year_built ? String(prop.year_built) : '—');
     setText('cover-meta-for',   safe(data.prepared_for));
-    setText('cover-meta-by',    safe(data.prepared_by));
+    /* Attribute to the human preparer (Soapbox), never the AI persona.
+       The static HTML already carries the "Prepared by:" label — set the bare name. */
+    var preparedBy = data.prepared_by;
+    if (!preparedBy || /\baris\b|soapbox ai/i.test(String(preparedBy))) preparedBy = 'Christopher Naismith, Soapbox';
+    setText('cover-meta-by',    preparedBy);
 
     /* CapEx per unit for meta bar */
     var isMF = prop.type === 'multifamily' || prop.type === 'senior-living' || prop.type === 'student-housing';
@@ -1478,6 +1490,30 @@
       <div class="doc-header-eyebrow">Pre-Underwriting Sustainability Analysis</div>
       <div class="doc-header-property-name" id="cover-property-name">Property Name</div>
       <div class="doc-header-address" id="cover-property-address">Address</div>
+
+      <!-- Brand logos (bottom-left of cover). Both are the canonical assets from the
+           Soapbox Design System (Soapbox reversed wordmark + the Audette brand mark),
+           embedded inline — no external images per template rules. -->
+      <div class="doc-header-logos">
+        <svg width="109" height="22" viewBox="0 0 178 36" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Soapbox">
+          <defs>
+            <linearGradient id="sbx-tile" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#1aa863"></stop>
+              <stop offset="1" stop-color="#0c6c3d"></stop>
+            </linearGradient>
+            <linearGradient id="sbx-sheen" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"></stop>
+              <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"></stop>
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="32" height="32" rx="8.5" fill="url(#sbx-tile)"></rect>
+          <rect x="2" y="2" width="32" height="32" rx="8.5" fill="url(#sbx-sheen)"></rect>
+          <text x="18" y="25.5" text-anchor="middle" font-family="'Bricolage Grotesque',-apple-system,'Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="20" fill="#ffffff">S</text>
+          <text x="45" y="26" font-family="'Bricolage Grotesque',-apple-system,'Helvetica Neue',Arial,sans-serif" font-weight="800" font-size="27" letter-spacing="-0.6" fill="#ffffff">Soapbox<tspan fill="#f0652c">.</tspan></text>
+        </svg>
+        <div class="logo-divider"></div>
+        <svg width="27" height="22" viewBox="0 0 74 61" role="img" aria-label="Audette" style="display:block"><rect fill="#eb02ad" x="41.18" y="0.26" width="6.56" height="19.05"/><circle fill="#eb02ad" cx="62.48" cy="9.78" r="9.52"/><path fill="#eb02ad" d="M19.65,9.78.12,59.94h9l4.67-12.59H35l4.74,12.59H49L29.48,9.78ZM16.74,39.49,24.38,19,32,39.49Z"/></svg>
+      </div>
 
       <!-- Prepared-for strip inside the navy header -->
       <div class="doc-header-meta-strip">

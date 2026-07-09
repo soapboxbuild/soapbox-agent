@@ -308,7 +308,7 @@
 
     "prepared_by": {
       "type": "string",
-      "description": "Name or team that produced this assessment (e.g., 'Aris / Audette Sustainability Intelligence')."
+      "description": "Human preparer who produced this assessment. Defaults to 'Christopher Naismith, Soapbox'. Never an AI persona."
     },
 
     "prepared_for": {

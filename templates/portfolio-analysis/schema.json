@@ -248,8 +248,9 @@
           "fund": { "type": "string" },
           "jurisdiction": { "type": "string" },
           "status": { "type": "string", "enum": ["liable", "not liable", "not-liable", "unknown"], "description": "Renders a colored badge." },
-          "annual_fine": { "type": "number", "description": "Projected annual fine if no action, USD." },
-          "fine_avoidance": { "type": "number", "description": "Fine avoidance captured by measures, USD." }
+          "basis": { "type": "string", "enum": ["carbon", "eui", "benchmarking"], "description": "Penalty basis from the Regulations & Fines connector. 'eui' (DC BEPS, Denver) rows with a null annual_fine render as 'liable · unquantified' (need an EUI target), NOT $0. Omit and the renderer infers 'eui' from the jurisdiction name." },
+          "annual_fine": { "type": ["number", "null"], "description": "Projected annual fine if no action, USD. Use null (not 0) when liable but not yet quantified — e.g. an EUI-based standard with no EUI target supplied — so it renders 'needs EUI target' rather than a misleading $0. 0 means liable-but-currently-compliant." },
+          "fine_avoidance": { "type": ["number", "null"], "description": "Fine avoidance captured by measures, USD (100% landlord). null when unquantified." }
         }
       }
     },

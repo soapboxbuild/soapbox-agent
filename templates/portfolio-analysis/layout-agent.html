@@ -759,26 +759,50 @@
     ════════════════════════════════ */
     var bpsSection = document.getElementById('bps-section');
     if (bpsSection && bps.length > 0) {
-      var liable = bps.filter(function(b){ return String(b.status).toLowerCase() === 'liable'; }).length;
-      var totalFine = bps.reduce(function(s,b){ return s + (Number(b.annual_fine) || 0); }, 0);
-      if (totalFine > 0) {
-        setHtml('bps-callout-value', fmtCurrency(totalFine));
-        setText('bps-callout-count', String(liable));
+      /* A liable asset has one of three states, and they must NOT all read as "$0":
+         (1) quantified exposure (annual_fine > 0), (2) currently compliant (annual_fine === 0),
+         (3) unquantified — EUI-based (DC BEPS / Denver) with no fine computed yet (annual_fine == null).
+         An EUI-basis row is inferred from an explicit `basis:'eui'` OR the jurisdiction name. */
+      function isLiable(b){ var s = String(b.status||'').toLowerCase(); return s === 'liable'; }
+      function isEuiBasis(b){ return String(b.basis||'').toLowerCase() === 'eui' || /beps|denver|energize/i.test(String(b.jurisdiction||'')); }
+      function fineState(b){
+        if (!isLiable(b)) return 'not-liable';
+        if (b.annual_fine == null) return 'unquantified';
+        return Number(b.annual_fine) > 0 ? 'fined' : 'compliant';
+      }
+      var liableRows = bps.filter(isLiable);
+      var finedRows = liableRows.filter(function(b){ return fineState(b) === 'fined'; });
+      var unquantRows = liableRows.filter(function(b){ return fineState(b) === 'unquantified'; });
+      var compliantRows = liableRows.filter(function(b){ return fineState(b) === 'compliant'; });
+      var quantifiedTotal = finedRows.reduce(function(s,b){ return s + (Number(b.annual_fine) || 0); }, 0);
+      if (liableRows.length > 0) {
+        setHtml('bps-callout-value', quantifiedTotal > 0 ? fmtCurrency(quantifiedTotal) + '/yr' : 'See below');
+        var parts = [];
+        parts.push('<strong>' + finedRows.length + '</strong> asset' + (finedRows.length === 1 ? '' : 's') + ' with quantified annual fine exposure' + (quantifiedTotal > 0 ? ' (' + fmtCurrency(quantifiedTotal) + '/yr)' : ''));
+        if (unquantRows.length) parts.push('<strong>' + unquantRows.length + '</strong> EUI-based (DC / Denver) liable but <em>not yet quantified</em> — require an EUI target to compute');
+        if (compliantRows.length) parts.push('<strong>' + compliantRows.length + '</strong> liable but currently compliant ($0)');
+        setHtml('bps-callout-text', parts.join(' · ') + '. Fine avoidance is captured as a measure benefit in IRR where a fine is quantified.');
         showEl('bps-callout');
       }
       var bHtml = '';
       bps.forEach(function(b) {
-        var st = String(b.status || '').toLowerCase();
-        var badge = st === 'liable' ? '<span class="badge badge-red">liable</span>'
-                  : (st === 'not liable' || st === 'not-liable') ? '<span class="badge badge-green">not liable</span>'
+        var state = fineState(b);
+        var badge = state === 'fined' ? '<span class="badge badge-red">liable · fine</span>'
+                  : state === 'unquantified' ? '<span class="badge badge-amber">liable · unquantified</span>'
+                  : state === 'compliant' ? '<span class="badge badge-grey">liable · compliant</span>'
+                  : (String(b.status||'').toLowerCase().replace(' ','-') === 'not-liable') ? '<span class="badge badge-green">not liable</span>'
                   : '<span class="badge badge-grey">unknown</span>';
+        var fineCell = state === 'unquantified' ? '<span style="color:#B45309">needs EUI target</span>'
+                     : (b.annual_fine != null ? fmtCurrency(Number(b.annual_fine)) : '—');
+        var avoidCell = state === 'unquantified' ? '—'
+                      : (b.fine_avoidance != null ? fmtCurrency(Number(b.fine_avoidance)) : '—');
         bHtml += '<tr>';
         bHtml += '<td><strong>' + esc(b.asset) + '</strong></td>';
         bHtml += '<td>' + esc(b.fund) + '</td>';
         bHtml += '<td>' + esc(b.jurisdiction) + '</td>';
         bHtml += '<td>' + badge + '</td>';
-        bHtml += '<td class="num">' + (b.annual_fine != null ? fmtCurrency(Number(b.annual_fine)) : '—') + '</td>';
-        bHtml += '<td class="num pos">' + (b.fine_avoidance != null ? fmtCurrency(Number(b.fine_avoidance)) : '—') + '</td>';
+        bHtml += '<td class="num">' + fineCell + '</td>';
+        bHtml += '<td class="num pos">' + avoidCell + '</td>';
         bHtml += '</tr>';
       });
       setHtml('bps-tbody', bHtml);
@@ -1130,7 +1154,7 @@
     <h2 class="section-title">Building Performance Standards Exposure</h2>
     <div class="callout callout-warn" id="bps-callout" style="display:none">
       <div class="callout-value" id="bps-callout-value">—</div>
-      <div class="callout-text">Projected total BPS fines across <span id="bps-callout-count">—</span> liable assets if no action is taken. Fine avoidance is captured as a measure benefit in IRR calculations where applicable.</div>
+      <div class="callout-text" id="bps-callout-text">—</div>
     </div>
     <div style="overflow-x:auto;margin-top:16px">
       <table class="profile-table">
@@ -1172,7 +1196,7 @@
     <h2 class="section-title">Portfolio-Scale Program &amp; Economies of Scale</h2>
     <p class="section-intro" id="scale-thesis">The measures above, executed programmatically across the portfolio rather than asset-by-asset, unlock procurement, financing, and mobilization efficiencies. The sequenced program and the scale levers below are derived from the aggregated results — same measures, executed at portfolio scale.</p>
     <div id="exit-price-protection"><!-- JS: exit-price-protection callout --></div>
-    <div class="sub-heading">Sequenced portfolio program</div>
+    <div class="section-label">Sequenced portfolio program</div>
     <div style="overflow-x:auto">
       <table class="profile-table">
         <thead><tr>
@@ -1186,7 +1210,7 @@
         <tbody id="scale-prog-tbody"><!-- JS --></tbody>
       </table>
     </div>
-    <div class="sub-heading">Economies of scale</div>
+    <div class="section-label">Economies of scale</div>
     <div style="overflow-x:auto">
       <table class="profile-table">
         <thead><tr>
@@ -1214,7 +1238,7 @@
           <th class="num">CapEx Net</th>
           <th class="num">Value Created</th>
           <th class="num">% Reduction</th>
-          <th class="num">Avg IRR</th>
+          <th class="num">IRR</th>
           <th id="asset-th-crrem" style="display:none">CRREM Status</th>
           <th class="num" id="asset-th-bps" style="display:none">BPS Exposure</th>
         </tr></thead>

@@ -226,9 +226,9 @@ All RSRA HTML output must conform to these rules. Claude must apply them on ever
 - External `<img src="https://...">` — all images must be inline SVG or data URIs
 
 **Artifact output rules**
-- Two-phase artifact: Phase 1 = loading skeleton, Phase 2 = full report
-- Both phases use the **identical** file path — one artifact, updated in place
-- Never save the Phase 1 skeleton to asset documents — only the completed Phase 2 report
+- The report artifact is produced **ONLY** by `fill_report(template:'portfolio-analysis', data)` (Phase 5). You author NO report HTML and edit NO HTML — ever. There is no hand-written artifact and nothing to "update in place".
+- Do NOT emit a loading skeleton or any placeholder HTML. While you work, show progress by narrating in chat (the run streams your steps); the FIRST and ONLY artifact you create is the completed `fill_report` render.
+- On any revision, recompute the data object and call `fill_report` again — never edit HTML.
 - Numeric precision: 2 significant figures (`$1.4M` not `$1,427,000`; `42 kgCO₂e` not `41.7`)
 - Mark all benchmark-derived estimates inline with `(est.)`
 - The portfolio **report is the design-forward deliverable** (Reports/, gate-only). All
@@ -518,58 +518,14 @@ lower confidence, clearly labeled.
 
 ---
 
-## Phase 2: Phase 1 Artifact — Loading Skeleton
+## Phase 2: Begin the analysis (NO loading artifact)
 
-**Emit the loading skeleton immediately** (before any per-asset processing begins) at file path
-`{client-slug}-portfolio-analysis.html`. Use the consulting aesthetic: navy `#12253A` header,
-pure sans-serif (`-apple-system,'Helvetica Neue',Arial,sans-serif`), zero Paged.js, zero CDN.
-
-```html
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#F8F9FB;color:#1A1A2E}
-  .report{max-width:960px;margin:0 auto;padding:0 0 80px}
-  .doc-header{background:#12253A;color:#fff;padding:32px 40px 24px}
-  .eyebrow{font-size:8px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#4CAF82;margin-bottom:8px}
-  .port-name{font-size:28px;font-weight:700;margin:8px 0 4px}
-  .port-sub{font-size:13px;font-weight:300;color:rgba(255,255,255,.65);margin-bottom:0}
-  .meta-strip{background:#1A3550;padding:8px 40px;display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.5)}
-  .kpi-bar{display:flex;gap:2px;margin:2px 0}
-  .kpi{flex:1;background:#fff;padding:14px 16px;border:1px solid #E2E8F0}
-  .kpi-lbl{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#64748B}
-  .shimmer{background:linear-gradient(90deg,#e2e8ef 25%,#f1f5f9 50%,#e2e8ef 75%);background-size:200% 100%;animation:sh 1.4s infinite;border-radius:3px;display:block}
-  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
-  .section{padding:32px 40px;background:#fff;margin-bottom:2px}
-  .status{display:flex;align-items:center;gap:8px;font-size:12px;color:#64748B;margin-bottom:16px}
-  .dot{width:6px;height:6px;border-radius:50%;background:#4CAF82;animation:pu 1.2s ease-in-out infinite;flex-shrink:0}
-  .dot:nth-child(2){animation-delay:.4s}.dot:nth-child(3){animation-delay:.8s}
-  @keyframes pu{0%,100%{opacity:.25}50%{opacity:1}}
-</style>
-<div class="report">
-  <div class="doc-header">
-    <div class="eyebrow">Portfolio Decarbonization Analysis</div>
-    <div class="port-name">[CLIENT NAME] Portfolio</div>
-    <div class="port-sub">[N] assets · [FUND LIST]</div>
-  </div>
-  <div class="meta-strip">
-    <span>Soapbox Sustainability Intelligence</span>
-    <span>CONFIDENTIAL · [DATE]</span>
-  </div>
-  <div class="kpi-bar">
-    <div class="kpi"><div class="kpi-lbl">Total CapEx (mid)</div><div class="shimmer" style="width:80px;height:22px;margin-top:6px"></div></div>
-    <div class="kpi"><div class="kpi-lbl">Value Creation</div><div class="shimmer" style="width:80px;height:22px;margin-top:6px"></div></div>
-    <div class="kpi"><div class="kpi-lbl">Emissions Reduction</div><div class="shimmer" style="width:80px;height:22px;margin-top:6px"></div></div>
-    <div class="kpi"><div class="kpi-lbl">Assets Above Hurdle</div><div class="shimmer" style="width:60px;height:22px;margin-top:6px"></div></div>
-  </div>
-  <div class="section">
-    <div class="status"><span class="dot"></span><span class="dot"></span><span class="dot"></span>Running analysis across [N] assets…</div>
-    <span class="shimmer" style="width:100%;height:40px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:40px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:40px;margin-bottom:2px"></span>
-    <span class="shimmer" style="width:100%;height:40px"></span>
-  </div>
-</div>
-```
+Do **not** emit a loading skeleton or any hand-written HTML. Announce in chat that the analysis is
+starting and stream your progress there as you work the phases. **The only artifact you ever create
+is the final report, and it is produced solely by `fill_report(template:'portfolio-analysis', data)`
+in Phase 5.** You never author or edit report HTML — there is no skeleton to fill in, no file to
+update in place. (Authoring HTML by hand is the #1 cause of a broken, off-template deliverable and is
+prohibited.)
 
 ---
 

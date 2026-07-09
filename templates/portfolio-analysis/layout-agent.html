@@ -565,14 +565,13 @@
         fHtml += '<td class="num">' + (f.capex_net != null ? fmtCurrency(Number(f.capex_net)) : '—') + '</td>';
         fHtml += '<td class="num">' + (f.value_creation != null ? fmtCurrency(Number(f.value_creation)) : '—') + '</td>';
         fHtml += '<td class="num">' + (f.emissions_reduction_tco2 != null ? (fmt2sig(Number(f.emissions_reduction_tco2)) + ' tCO₂e') : '—') + '</td>';
-        fHtml += '<td class="num">' + (f.avg_irr != null ? fmtPct(Number(f.avg_irr)) : '—') + '</td>';
         fHtml += '</tr>';
         tA += Number(f.assets) || 0; tCx += Number(f.capex_net) || 0; tVc += Number(f.value_creation) || 0; tEm += Number(f.emissions_reduction_tco2) || 0;
       });
       if (funds.length > 1) {
         fHtml += '<tr class="totals-row"><td>Portfolio</td><td class="num">' + tA + '</td>' +
                  '<td class="num">' + fmtCurrency(tCx) + '</td><td class="num">' + fmtCurrency(tVc) + '</td>' +
-                 '<td class="num">' + fmt2sig(tEm) + ' tCO₂e</td><td class="num"></td></tr>';
+                 '<td class="num">' + fmt2sig(tEm) + ' tCO₂e</td></tr>';
       }
       setHtml('fund-tbody', fHtml);
       fundSection.style.display = '';
@@ -1040,7 +1039,6 @@
           <th class="num">CapEx Net</th>
           <th class="num">Value Creation</th>
           <th class="num">Emissions Reduction</th>
-          <th class="num">Avg IRR</th>
         </tr></thead>
         <tbody id="fund-tbody"><!-- JS --></tbody>
       </table>

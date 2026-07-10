@@ -295,9 +295,9 @@ cd soapbox-costing && git add .claude-plugin/plugin.json .mcp.json README.md LIC
 - [ ] **Step 1: Create the GitHub repo** under `soapboxbuild` and push `main`.
 
 ```bash
-cd soapbox-costing && gh repo create soapboxbuild/soapbox-costing --private --source=. --remote=origin --push
+cd soapbox-costing && gh repo create soapboxbuild/soapbox-costing --public --source=. --remote=origin --push
 ```
-Expected: repo created, `main` pushed. (Confirm private vs public with human — siblings like `crrem-skills` are public.)
+Expected: repo created (public, matching the `crrem-*` siblings), `main` pushed.
 
 - [ ] **Step 2: Create a new service in the `soapbox-mcps` Railway project** from the repo, and deploy. Use the Railway MCP/CLI against project `soapbox-mcps` (do NOT create a new project). Set no env vars yet (none needed for the skeleton).
 

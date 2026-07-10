@@ -8,6 +8,9 @@ let failed = false
 for (const m of data.measures) {
   if (!validate(m)) { failed = true; console.error(`✗ ${m.measure_id}:`, ajv.errorsText(validate.errors)) }
   // Contract rules beyond JSON Schema:
+  if (m.cost.electrical_capacity && m.cost.electrical_capacity.service_capacity_known === false && m.cost.electrical_capacity.flag !== 'UNVERIFIED') {
+    failed = true; console.error(`✗ ${m.measure_id}: service_capacity_known=false requires flag=UNVERIFIED`)
+  }
   if (m.measure_kind === 'fuel_switch') {
     if (!m.cost.electrical_capacity) { failed = true; console.error(`✗ ${m.measure_id}: fuel_switch missing electrical_capacity`) }
     else if (m.cost.electrical_capacity.flag === 'UNVERIFIED' && m.cost.electrical_capacity.upgrade_cost.low === m.cost.electrical_capacity.upgrade_cost.high) {

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "measure-cost.schema.json",
   "type": "object",
-  "required": ["measure_id", "cost"],
+  "required": ["measure_id", "measure_kind", "cost"],
   "properties": {
     "measure_id": { "type": "string" },
     "measure_kind": { "type": "string", "enum": ["fuel_switch", "efficiency", "envelope", "controls", "other"] },

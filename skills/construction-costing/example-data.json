@@ -1,0 +1,31 @@
+{
+  "measures": [
+    {
+      "measure_id": "central-ashp",
+      "measure_kind": "fuel_switch",
+      "cost": {
+        "capex": { "low": 1400000, "base": 2100000, "high": 3200000 },
+        "opex_delta_yr": 48000,
+        "electrical_capacity": {
+          "demand_increase_kw": 420,
+          "service_capacity_known": false,
+          "upgrade_cost": { "low": 0, "high": 1800000 },
+          "flag": "UNVERIFIED"
+        },
+        "efficiency_alternative": {
+          "measure": "high-efficiency condensing boiler replacement",
+          "capex": 520000,
+          "opex_delta_yr": -14000
+        }
+      }
+    },
+    {
+      "measure_id": "led-upgrade",
+      "measure_kind": "efficiency",
+      "cost": { "capex": { "low": 60000, "base": 78000, "high": 95000 }, "opex_delta_yr": -12000 }
+    }
+  ],
+  "screened_out": [
+    { "measure_id": "lab-envelope-sealant", "reason": "lab envelope air-sealing excluded by default — no site-observed exterior leakage basis (see archetypes/lab.md)" }
+  ]
+}

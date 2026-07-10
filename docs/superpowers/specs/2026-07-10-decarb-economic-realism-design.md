@@ -88,8 +88,11 @@ Rules:
 **New `skills/decarb-plan/references/archetypes/lab.md`** (module):
 - Lab exhaust makeup air is drawn from the **corridor/positive-pressure zones, not the
   exterior**; labs are negatively pressurized relative to the corridor, not the envelope.
-  → Envelope air-sealing infiltration savings must be **bounded/trimmed** (the 245 First
-  $200K/$50K measure was overstated); only count exterior-leakage-adjacent savings.
+  → Envelope air-sealing / infiltration measures are **excluded by default** for labs: the
+  savings mechanism (exterior infiltration reduction) doesn't hold, so the measure is
+  screened out unless **site observation** confirms exterior-adjacent leakage — and then the
+  savings are bounded to that observed leakage path only. (The 245 First $200K/$50K measure
+  is excluded under this rule.)
 - Fume-hood VAV / occupancy setback; high ACH baseline.
 - Lab electrification routinely blocked by electrical service-capacity upgrade cost.
 - **Chiller-plant optimization > chiller VFDs** (VFDs were the prior-audit rec).
@@ -119,8 +122,9 @@ reading the `measure.cost` contract + archetype rules. **Tiered** (confirmed):
   or with `flag = UNVERIFIED` while presented as a firm recommendation (must surface the
   flag and the cost range instead).
 - A measure whose savings assume a **physical mechanism the building's config doesn't
-  support** — checked against archetype guidance (e.g. lab envelope-infiltration savings
-  when the leakage path is the corridor).
+  support** — checked against archetype guidance. Specifically, a **lab envelope
+  air-sealing / infiltration measure recommended without a site-observation basis** for
+  exterior leakage (these are default-excluded per `lab.md`) → BLOCK.
 
 **WARN (surfaced in the report, non-blocking — org-policy calls, not errors):**
 - A recommended measure **raises OpEx** (`opex_delta_yr > 0`) versus a pay-for-itself

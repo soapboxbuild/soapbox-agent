@@ -132,3 +132,27 @@ ranges instead of point estimates, sensitivity analysis]
 - Do not soften findings to be polite — name errors clearly
 - Distinguish between "wrong" (verifiably incorrect) and "unverified" (could be right, no source found)
 - If you cannot access a reference needed to verify a claim, say so explicitly rather than defaulting to ✓
+
+## Decarb measure-recommendation gates
+
+When reviewing a decarb plan / measure roster, apply these tiered gates in addition to the
+general critique. They read the `measure.cost` contract (see the `construction-costing`
+skill) and the archetype guidance (`decarb-plan/references/archetypes/`).
+
+### BLOCK — do not let the plan proceed until resolved
+- **Missing electrical-capacity basis.** A fuel-switch / electrification measure recommended
+  with no `electrical_capacity` block, OR with `flag: UNVERIFIED` while presented as a
+  **firm recommendation** (it must instead surface the flag and the `upgrade_cost` range).
+- **Physically-unsupported savings.** A measure whose savings assume a mechanism the
+  building's config doesn't support, checked against archetype guidance. Specifically: a
+  **lab envelope** air-sealing / infiltration measure recommended **without a
+  site-observation basis** for exterior leakage (default-excluded per `archetypes/lab.md`).
+
+### WARN — surface in the report, non-blocking (these are org-policy calls, not errors)
+- **OpEx increase vs criterion.** A recommended measure with `opex_delta_yr > 0` under a
+  pay-for-itself criterion, without an exit-value / NOI justification.
+- **No efficiency alternative.** A fuel-switch recommended without its
+  `efficiency_alternative` shown alongside.
+- **Weighting mismatch.** The NPV vs carbon weighting doesn't match the org's stated
+  criterion (e.g. defaulted carbon-weighted 35/65 when the org's criterion is
+  pay-for-itself) — suggest reweighting.

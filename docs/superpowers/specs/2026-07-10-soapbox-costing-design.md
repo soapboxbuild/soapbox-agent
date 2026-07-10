@@ -92,6 +92,13 @@ object; consumers **validate on receipt**. The plugin carries **no copy** of the
 drift). If a future need forces the persona to self-validate standalone, only then vendor a copy —
 and add a drift assertion test against the canonical file.
 
+**Additive contract extension (backward-compatible):** to carry contingency and labour detail,
+the canonical `measure.cost.cost` object gains optional fields — `contingency_pct`,
+`cost_breakdown { material, labour, equipment }`, and an `escalation { index, index_vintage,
+escalated_to, base_year }` stamp. These are additive (existing objects stay valid); the schema +
+validator update is a small task in the rewiring plan, and `quality-review` gains a WARN if a
+CapEx figure lacks an escalation stamp (stale-cost guard, enforcing the ≤ 1-year policy).
+
 ### Data-layer split (static vs live vs computed)
 
 - **CapEx → static curated store.** An offline **ETL pipeline** ingests Scout JSON, DEER
@@ -136,7 +143,9 @@ parametric / tuned-base / low-confidence path and surface that plainly.
 1. **`list_measures()` / `describe_measure(measure)`** — taxonomy discovery; returns each
    measure's source, confidence, unit basis, and coverage caveats.
 2. **`get_measure_capex(measure, archetype, region, size)`** → `{ low, base, high, unit_basis,
-   source, base_year, confidence }` from the curated store, escalated + regionalized.
+   cost_breakdown: { material, labour, equipment }, contingency_pct, source, base_year,
+   escalation: { index, index_vintage, escalated_to }, labour_factor, confidence, references[] }`
+   from the curated store, escalated + regionalized (labour factor applied to the labour share).
 3. **`get_energy_prices(region, sector, fuel)`** → EIA retail price series (¢/kWh, $/Mcf) by
    state × sector.
 4. **`get_tariff(utility_or_zip, sector)`** → URDB tariff structure incl. demand charges (for a
@@ -145,8 +154,9 @@ parametric / tuned-base / low-confidence path and surface that plainly.
    for PV / storage / GHP.
 6. **`estimate_service_upgrade(demand_increase_kw | target_amperage, phase, service_type,
    sector, region)`** → `{ low, base, high, flag: "UNVERIFIED" }` parametric model (§ below).
-7. **`get_regional_factor(region)`** → cost multiplier used to regionalize national CapEx (RSMeans
-   City Cost Index substitute).
+7. **`get_regional_factor(region)`** → **separate labour and material** cost multipliers used to
+   regionalize national CapEx (RSMeans City Cost Index substitute); the labour multiplier is
+   applied to the labour share of `cost_breakdown`.
 8. **`get_references(measure | system_type)`** → the vetted citations backing a measure's cost
    (from the register), so every estimate can surface its evidence.
 9. **`add_reference(...)`** (build/ops) → ingest a new market survey into the register + memory
@@ -163,12 +173,36 @@ provenance through to the object.
 
 ## Supporting layers
 
-- **Base-year escalation:** a BLS Producer Price Index (construction) escalation layer brings all
-  sources (Scout often 2013$, TRMs vary) to a common current-year basis. Escalation factors are
-  data, versioned in the curated store.
-- **Regionalization:** without RSMeans City Cost Indexes, use a regional-factor table (BLS
-  regional PPI or Census-division factors); DEER values (CA baseline) are regionalized before use
-  elsewhere.
+- **Freshness / currency policy (≤ 1 year — required):** every cost figure served must reflect
+  **current-year dollars, current within one year.** A source with an older base year is only
+  admissible after escalation to the current year using an index that is itself **< 1 year old**
+  (ENR Construction Cost Index or BLS PPI for construction). Every figure carries an
+  **escalation stamp** (`base_year`, `index`, `index_vintage`, `escalated_to`). Sources with an
+  annual refresh cadence (utility TRMs, CalNEXT) are preferred over multi-year-cycle surveys for
+  measures where both exist. A raw, un-escalated older figure is **non-compliant** and must not be
+  surfaced.
+- **Base-year escalation:** the escalation layer (above) brings all sources (Scout often 2013$,
+  EIA equipment study 2022$, TRMs vary) to the common current-year basis. Escalation factors are
+  data, versioned in the curated store with their vintage.
+- **Contingency (explicit, never hidden):** each CapEx estimate carries an explicit
+  `contingency_pct` uplift reflecting design maturity / estimate class (screening-level estimates
+  warrant higher contingency than a designed scope). Contingency is reported **as its own field**
+  and its effect on the total is transparent — it is not silently folded into `base`. Default
+  contingency by estimate class is a versioned parameter in the curated store, tunable by
+  Christopher.
+- **Labour factors + cost breakdown:** CapEx is decomposed into **material / labour / equipment**
+  where the source supports it, so that:
+  - **Regionalization applies a labour-rate factor to the labour portion** (prevailing-wage /
+    union / local-market variation) rather than one blanket multiplier on the whole cost — the
+    labour share is what actually varies most by region.
+  - The material portion takes a separate (smaller) regional/freight factor.
+  A `labour_factor(region)` table (seeded from BLS Occupational Employment & Wage Statistics for
+  construction trades, or a TRM/RSMeans-substitute regional labour index) drives this. Where a
+  source gives only a blended installed cost, apply a default labour-share assumption per measure
+  class (versioned, flagged lower-confidence).
+- **Regionalization:** without RSMeans City Cost Indexes, use regional-factor tables — **separate
+  labour and material factors** (above) at Census-division granularity for v1; DEER values (CA
+  baseline) are regionalized before use elsewhere.
 - **Uncertainty (low/base/high):** native where the source provides distributions (Scout, REMDB);
   otherwise derived from multiple baselines (DEER), historical volatility (EIA), or applied ±
   factors keyed to the measure's confidence tier. Escalation and regionalization widen the band.
@@ -269,6 +303,13 @@ against the primary source:
 - **References:** every high/medium-confidence measure resolves to ≥1 register reference, and
   `get_measure_capex` surfaces them; `add_reference` round-trips (ingest → register + bank →
   recall).
+- **Freshness/currency:** every CapEx figure carries an escalation stamp with an index vintage
+  < 1 year old and `escalated_to` = current year; a fixture with a stale index fails the
+  curated-store integrity check; `quality-review` WARNs on a missing stamp.
+- **Contingency & labour:** `get_measure_capex` returns an explicit `contingency_pct` and a
+  `cost_breakdown` summing to the pre-contingency base; the regional labour factor is applied to
+  the labour share only (verify a high-labour region moves labour, not material, and the total
+  reflects it).
 - **Regression (245 First):** the lab-envelope measure stays excluded; a boiler-vs-ASHP screen
   surfaces both options with sourced capex + opex delta and an honest electrical-capacity range.
 - Plugin/skill lint mirrors existing `scripts/lint-skill-*` conventions.

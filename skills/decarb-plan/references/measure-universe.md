@@ -49,3 +49,24 @@ economics (per-end-use capture — see the 2C capture map), carbon, feasibility,
 - Modeled savings are provisional until measured (baseline-discipline playbook).
 - Sequence by decarb logic + RUL (staging playbook), not independent IRR.
 - Record each category's disposition so the roster is demonstrably screened from a complete set.
+
+## Cross-archetype economic-realism rules (apply to every building)
+
+These three rules are portfolio-general (they apply to most cold-climate buildings, not
+just labs). Enforced by the construction-costing skill and the quality-review verifier.
+
+1. **electrical service capacity is a first-class cost and feasibility gate — not a
+   contingency line.** Any fuel-switch / electrification measure MUST carry an
+   `electrical_capacity` block (`demand_increase_kw`, `service_capacity_known`,
+   `upgrade_cost {low,high}`, `flag`). At portfolio screening the service capacity is
+   usually unknown → `flag: UNVERIFIED` and a cost **range**, never a false point estimate.
+   Historically, electrification of substantial heating plant repeatedly blows the budget on
+   the service upgrade; make that visible up front.
+2. **always pair a fuel-switch with its efficiency-upgrade alternative.** Whenever an
+   electrification/fuel-switch measure is on the table (e.g. ASHP for a failing boiler),
+   also present the standard high-efficiency non-switching option (e.g. condensing boiler),
+   each with its own capex and `opex_delta_yr`, so the decision is explicit.
+3. **OpEx-viability caveat.** In high-electricity-cost markets, electrification frequently
+   *raises* OpEx even when capex pencils. Surface `opex_delta_yr` against the org's
+   investment criterion (pay-for-itself vs. carbon-weighted). A measure that raises OpEx is
+   not automatically wrong — but it must be flagged, not hidden.

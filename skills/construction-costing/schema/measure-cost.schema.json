@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "measure-cost.schema.json",
+  "type": "object",
+  "required": ["measure_id", "measure_kind", "cost"],
+  "properties": {
+    "measure_id": { "type": "string" },
+    "measure_kind": { "type": "string", "enum": ["fuel_switch", "efficiency", "envelope", "controls", "other"] },
+    "cost": {
+      "type": "object",
+      "required": ["capex", "opex_delta_yr"],
+      "additionalProperties": false,
+      "properties": {
+        "capex": {
+          "type": "object",
+          "required": ["low", "base", "high"],
+          "additionalProperties": false,
+          "properties": {
+            "low": { "type": "number" },
+            "base": { "type": "number" },
+            "high": { "type": "number" }
+          }
+        },
+        "opex_delta_yr": { "type": "number", "description": "Annual OpEx change USD; POSITIVE = OpEx rises" },
+        "electrical_capacity": {
+          "type": "object",
+          "required": ["demand_increase_kw", "service_capacity_known", "upgrade_cost", "flag"],
+          "additionalProperties": false,
+          "properties": {
+            "demand_increase_kw": { "type": "number" },
+            "service_capacity_known": { "type": "boolean" },
+            "upgrade_cost": {
+              "type": "object",
+              "required": ["low", "high"],
+              "additionalProperties": false,
+              "properties": { "low": { "type": "number" }, "high": { "type": "number" } }
+            },
+            "flag": { "type": "string", "enum": ["VERIFIED", "UNVERIFIED"] }
+          }
+        },
+        "efficiency_alternative": {
+          "type": "object",
+          "required": ["measure", "capex", "opex_delta_yr"],
+          "additionalProperties": false,
+          "properties": {
+            "measure": { "type": "string" },
+            "capex": { "type": "number" },
+            "opex_delta_yr": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -8,4 +8,13 @@ const mustUniverse = [
 ]
 const miss = mustUniverse.filter(s => !u.includes(s))
 if (miss.length) throw new Error('measure-universe.md missing cross-archetype rules: ' + miss.join(', '))
-console.log('archetype-guidance lint OK (universe)')
+
+const lab = readFileSync(new URL('../skills/decarb-plan/references/archetypes/lab.md', import.meta.url), 'utf8')
+const mustLab = [
+  'excluded by default', 'site observation', 'corridor', 'negatively pressurized',
+  'makeup air', 'Fume-hood', 'Chiller-plant optimization', 'VFD',
+  'exhaust heat recovery', 'only if observed', 'electrical service capacity'
+]
+const missLab = mustLab.filter(s => !lab.includes(s))
+if (missLab.length) throw new Error('lab.md missing: ' + missLab.join(', '))
+console.log('archetype-guidance lint OK (lab)')

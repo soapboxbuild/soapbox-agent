@@ -17,4 +17,9 @@ const mustLab = [
 ]
 const missLab = mustLab.filter(s => !lab.includes(s))
 if (missLab.length) throw new Error('lab.md missing: ' + missLab.join(', '))
-console.log('archetype-guidance lint OK (lab)')
+
+const log = readFileSync(new URL('../skills/decarb-plan/references/archetypes/logistics.md', import.meta.url), 'utf8')
+const mustLog = ['rooftop solar', 'cool-roof', 'High-bay', 'LED', 'Low process load', 'minimal HVAC', 'electrical service capacity']
+const missLog = mustLog.filter(s => !log.includes(s))
+if (missLog.length) throw new Error('logistics.md missing: ' + missLog.join(', '))
+console.log('archetype-guidance lint OK (all)')

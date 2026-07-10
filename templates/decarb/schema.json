@@ -356,6 +356,28 @@
                 "type": "number",
                 "description": "The standard's EUI target (EUIt) for this property type in `unit`."
               },
+              "projected_eui": {
+                "type": "number",
+                "description": "The building's projected EUI AFTER the plan's measures, in `unit` (the 'after'). Optional; when present, the panel shows current → target → after so the reader sees the plan clear the line."
+              },
+              "annual_fine_avoided": {
+                "type": "number",
+                "description": "Stabilized annual BPS fine avoided (USD/yr) once the plan brings the building into compliance — the recurring penalty eliminated. Owner-borne (fines are never rebilled to tenants). Omit if no fine regime applies."
+              },
+              "fine_schedule": {
+                "type": "array",
+                "description": "Annual fine ($/yr) over time, driving the fine-avoidance area chart: the BAU (no-action) fine vs the with-plan fine, which drops to $0 once the plan brings EUI under target. Omit to fall back to the compact current-vs-target bar. Every dollar figure must trace to the fine formula in `source` — never fabricate.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["year", "bau_fine", "plan_fine"],
+                  "properties": {
+                    "year": { "type": "integer", "description": "Calendar year." },
+                    "bau_fine": { "type": "number", "description": "Annual fine (USD/yr) with no action — building EUI stays above target as the target tightens (phased). Stepped up at each compliance milestone." },
+                    "plan_fine": { "type": "number", "description": "Annual fine (USD/yr) with the plan in place — trends to 0 in the year the plan's projected EUI drops under the then-current target." }
+                  }
+                }
+              },
               "compliance_year": {
                 "type": "integer",
                 "description": "First compliance deadline year. Optional."

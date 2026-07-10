@@ -412,6 +412,7 @@
     .eui-bar { position: relative; height: 10px; background: #F1F5F9; border-radius: 6px; margin: 6px 0 4px; }
     .eui-fill { position: absolute; left: 0; top: 0; height: 100%; background: #0E7490; border-radius: 6px; }
     .eui-target { position: absolute; left: 100%; top: -3px; width: 2px; height: 16px; background: #12253A; transform: translateX(-1px); }
+    .eui-after { position: absolute; top: -3px; width: 2px; height: 16px; background: #059669; transform: translateX(-1px); }
     .eui-nums { font-size: 12px; color: #334155; }
 
     /* ─── Waterfall per-plan block ─── */
@@ -1190,23 +1191,75 @@
                    'non-compliant': ['#991B1B','#FEE2E2','Non-compliant'] };
       var rows = list.map(function(e){
         var st = pill[e.status] || ['#334155', '#F1F5F9', (e.status || '—')];
-        /* Bar scaled so the target sits at 100%; building marker is building/target. */
-        var tgtV = Number(e.target_eui) || 1;
-        var bldg = Number(e.building_eui);
-        if (!isFinite(bldg)) bldg = 0;
-        var pct = Math.max(0, Math.min(100, (bldg / tgtV) * 100));
         var deadline = e.compliance_year ? ' · by ' + esc(String(e.compliance_year)) : '';
-        return ''
-          + '<div class="eui-row">'
-          +   '<div class="eui-head"><span class="eui-std">' + esc(e.standard) + '</span>'
-          +     '<span class="eui-pill" style="color:'+st[0]+';background:'+st[1]+'">' + esc(st[2]) + deadline + '</span></div>'
-          +   '<div class="eui-bar"><div class="eui-fill" style="width:'+pct.toFixed(0)+'%"></div>'
-          +     '<div class="eui-target" title="Target"></div></div>'
-          +   '<div class="eui-nums"><strong>' + esc(String(e.building_eui)) + '</strong> vs target ' + esc(String(e.target_eui)) + ' ' + esc(e.unit) + '</div>'
-          +   '<div class="chart-source">' + esc(e.standard) + ' target source: ' + esc(e.source) + '</div>'
-          + '</div>';
+        var head = '<div class="eui-head"><span class="eui-std">' + esc(e.standard) + '</span>'
+                 + '<span class="eui-pill" style="color:'+st[0]+';background:'+st[1]+'">' + esc(st[2]) + deadline + '</span></div>';
+
+        /* Preferred view: an AREA chart of the annual fine ($/yr) over time — the BAU
+           (no-action) fine vs the with-plan fine, which drops to $0 once the plan brings
+           EUI under target. The red BAU area eliminated above the green with-plan area IS
+           the fine avoided. Falls back to the compact current→after→target bar when no
+           fine_schedule is supplied. */
+        var fs = Array.isArray(e.fine_schedule)
+          ? e.fine_schedule.filter(function(p){ return p && p.year != null; }).sort(function(a,b){ return a.year - b.year; })
+          : [];
+        var body;
+        if (fs.length >= 2) {
+          var X1=54, X2=540, Y1=14, Y2=150, W=X2-X1, H=Y2-Y1;
+          var yMin=fs[0].year, yMax=fs[fs.length-1].year;
+          var vMax = Math.max.apply(null, fs.map(function(p){ return Math.max(Number(p.bau_fine)||0, Number(p.plan_fine)||0); })) * 1.15 || 1;
+          var px=function(yr){ return X1 + (yMax===yMin?0:(yr-yMin)/(yMax-yMin))*W; };
+          var py=function(v){ return Y2 - (v/vMax)*H; };
+          var grid='', yLabs='', xLabs='';
+          for (var i=0;i<=3;i++){ var gv=vMax*i/3, gy=py(gv);
+            grid+='<line x1="'+X1+'" y1="'+gy.toFixed(1)+'" x2="'+X2+'" y2="'+gy.toFixed(1)+'" stroke="#F1F4F8" stroke-width="1"/>';
+            yLabs+='<text x="'+(X1-6)+'" y="'+(gy+3).toFixed(1)+'" font-size="9" fill="#94A3B8" text-anchor="end">'+fmtCurrency(gv)+'</text>'; }
+          var skip = fs.length>10?2:1;
+          fs.forEach(function(p,idx){ if (idx%skip!==0 && p.year!==yMax) return;
+            xLabs+='<text x="'+px(p.year).toFixed(1)+'" y="'+(Y2+14)+'" font-size="9" fill="#94A3B8" text-anchor="middle">'+esc(String(p.year))+'</text>'; });
+          var areaFor=function(key, fill, stroke, dash){
+            var top = fs.map(function(p){ return px(p.year).toFixed(1)+','+py(Number(p[key])||0).toFixed(1); });
+            var path = 'M'+px(fs[0].year).toFixed(1)+','+Y2.toFixed(1)+' L'+top.join(' L')+' L'+px(fs[fs.length-1].year).toFixed(1)+','+Y2.toFixed(1)+' Z';
+            return '<path d="'+path+'" fill="'+fill+'"/><polyline points="'+top.join(' ')+'" fill="none" stroke="'+stroke+'" stroke-width="2"'+(dash?' stroke-dasharray="'+dash+'"':'')+'/>';
+          };
+          var svg = '<svg viewBox="0 0 560 172" width="100%" style="display:block;overflow:visible" aria-label="Annual BPS fine — no-action vs with-plan">'
+            + grid + yLabs + xLabs
+            + areaFor('bau_fine', 'rgba(185,28,28,0.15)', '#B91C1C', '5,4')
+            + areaFor('plan_fine', 'rgba(5,150,105,0.22)', '#059669', null)
+            + '<line x1="'+X1+'" y1="'+Y2+'" x2="'+X2+'" y2="'+Y2+'" stroke="#E2E8F0" stroke-width="1"/>'
+            + '<text x="12" y="'+((Y1+Y2)/2).toFixed(0)+'" font-size="9" fill="#64748B" text-anchor="middle" transform="rotate(-90,12,'+((Y1+Y2)/2).toFixed(0)+')">Annual fine ($/yr)</text>'
+            + '</svg>';
+          var leg = '<div class="chart-legend">'
+            + '<div class="leg"><div class="leg-line" style="background:repeating-linear-gradient(90deg,#B91C1C 0 5px,transparent 5px 9px)"></div>Fine if no action</div>'
+            + '<div class="leg"><div class="leg-line" style="background:#059669"></div>Fine with plan</div></div>';
+          var summary = e.projected_eui != null
+            ? '<div class="eui-nums">Projected EUI <strong style="color:#059669">' + esc(String(e.projected_eui)) + '</strong> vs target ' + esc(String(e.target_eui)) + ' ' + esc(e.unit) + ' (from ' + esc(String(e.building_eui)) + ' today)</div>'
+            : '<div class="eui-nums"><strong>' + esc(String(e.building_eui)) + '</strong> vs target ' + esc(String(e.target_eui)) + ' ' + esc(e.unit) + '</div>';
+          var afa = e.annual_fine_avoided != null
+            ? '<div class="chart-source"><strong>Annual fine avoided: ' + fmtCurrency(Number(e.annual_fine_avoided)) + '/yr</strong>' + (e.compliance_year ? ' once compliant (' + esc(String(e.compliance_year)) + ')' : '') + ' — owner-borne, not rebillable to tenants.</div>'
+            : '';
+          body = svg + leg + summary + afa + '<div class="chart-source">' + esc(e.standard) + ' fine basis: ' + esc(e.source) + '</div>';
+        } else {
+          var tgtV = Number(e.target_eui) || 1;
+          var bldg = Number(e.building_eui); if (!isFinite(bldg)) bldg = 0;
+          var pct = Math.max(0, Math.min(100, (bldg / tgtV) * 100));
+          var afterMark='', nums;
+          if (e.projected_eui != null) {
+            var apct = Math.max(0, Math.min(100, (Number(e.projected_eui)/tgtV)*100));
+            afterMark = '<div class="eui-after" style="left:'+apct.toFixed(0)+'%" title="After plan"></div>';
+            nums = '<strong>'+esc(String(e.building_eui))+'</strong> → <strong style="color:#059669">'+esc(String(e.projected_eui))+' after plan</strong> vs target '+esc(String(e.target_eui))+' '+esc(e.unit);
+          } else {
+            nums = '<strong>'+esc(String(e.building_eui))+'</strong> vs target '+esc(String(e.target_eui))+' '+esc(e.unit);
+          }
+          var afa2 = e.annual_fine_avoided != null
+            ? '<div class="chart-source"><strong>Annual fine avoided: '+fmtCurrency(Number(e.annual_fine_avoided))+'/yr</strong> — owner-borne.</div>' : '';
+          body = '<div class="eui-bar"><div class="eui-fill" style="width:'+pct.toFixed(0)+'%"></div><div class="eui-target" title="Target"></div>'+afterMark+'</div>'
+               + '<div class="eui-nums">'+nums+'</div>' + afa2
+               + '<div class="chart-source">' + esc(e.standard) + ' target source: ' + esc(e.source) + '</div>';
+        }
+        return '<div class="eui-row">' + head + body + '</div>';
       }).join('');
-      setHtml('eui-compliance-block', '<div class="chart-title">Energy Use Intensity vs. compliance target</div>' + rows);
+      setHtml('eui-compliance-block', '<div class="chart-title">BPS fine avoidance — annual fine vs. compliance target</div>' + rows);
     }
 
     /* ════════════════════════════════

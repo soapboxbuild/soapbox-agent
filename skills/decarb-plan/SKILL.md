@@ -89,11 +89,22 @@ org memory, the reference library, and the `decarb` report template.
        "Seattle BEPS (GHGI target)") and `targets.bps_source` (citation for those values). CRREM is
        unaffected by this and continues to flow through `targets.crrem_pathway` exactly as described
        above — never merge a carbon BPS target into the CRREM series or vice versa.
-     - **Energy standards** (e.g. WA Clean Buildings Act / WSCBA) are EUI-based, not GHGI-based:
-       populate one entry per applicable standard in `targets.eui_compliance[]`
+     - **Energy standards** (e.g. WA Clean Buildings Act / WSCBA, Energize Denver) are EUI-based,
+       not GHGI-based: populate one entry per applicable standard in `targets.eui_compliance[]`
        (`standard`, `unit`, `building_eui`, `target_eui`, optional `compliance_year`, `status`,
        `source`). Never route an energy standard's target through `bps_target` — WSCBA has no
        stepped carbon trajectory value.
+     - **When a fine regime applies, show the AFTER and the annual fine — not just current vs
+       target.** On any `eui_compliance[]` entry with `status: "non-compliant"`, ALSO populate:
+       (a) `projected_eui` — the building's post-plan EUI (the "after", in `unit`), so the panel
+       shows current → target → after; and (b) `annual_fine_avoided` — the stabilized owner-borne
+       fine ($/yr) the plan eliminates; and (c) `fine_schedule[]` = `{year, bau_fine, plan_fine}`
+       per year across the compliance horizon, which renders the fine-avoidance **area chart**
+       (BAU fine vs with-plan fine trending to $0 once the plan's `projected_eui` drops under the
+       then-current target — step `bau_fine` up at each phased milestone, e.g. Energize Denver
+       interim/final). Every dollar figure traces to the jurisdiction's fine formula cited in
+       `source` — never fabricate. Fines are owner-borne (never rebilled to tenants), so the
+       avoided fine flows 100% to the landlord in the value bridge (`pv_bps_fine_avoidance`).
      - **Every value is sourced, never fabricated.** Pull BPS target numbers from the
        `bps-compliance` skill's reference tables (BERDO/DC BEPS/WSCBA/LL97) and verify against the
        official jurisdiction portal before use. Every `targets.eui_compliance[]` entry carries a

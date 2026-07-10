@@ -82,13 +82,27 @@
     "bps_source": "Seattle OSE Director's Rule — office GHGI targets (verify at seattle.gov/ose)",
     "eui_compliance": [
       {
-        "standard": "WA Clean Buildings Act (WSCBA)",
+        "standard": "Energize Denver — interim 2028 / final 2032",
         "unit": "kBtu/sf/yr",
-        "building_eui": 33.5,
-        "target_eui": 60.9,
-        "compliance_year": 2027,
-        "status": "compliant",
-        "source": "WAC 194-50-150 — office EUIt"
+        "building_eui": 52.4,
+        "target_eui": 44.2,
+        "projected_eui": 40.1,
+        "annual_fine_avoided": 205000,
+        "compliance_year": 2028,
+        "status": "non-compliant",
+        "source": "energizedenver.com Performance Requirements Look-Up (Building ID example); fine = $0.30/kBtu over target × GFA per Denver DPHE penalty schedule.",
+        "fine_schedule": [
+          { "year": 2026, "bau_fine": 0, "plan_fine": 0 },
+          { "year": 2027, "bau_fine": 0, "plan_fine": 0 },
+          { "year": 2028, "bau_fine": 118000, "plan_fine": 118000 },
+          { "year": 2029, "bau_fine": 118000, "plan_fine": 45000 },
+          { "year": 2030, "bau_fine": 118000, "plan_fine": 0 },
+          { "year": 2031, "bau_fine": 118000, "plan_fine": 0 },
+          { "year": 2032, "bau_fine": 205000, "plan_fine": 0 },
+          { "year": 2033, "bau_fine": 205000, "plan_fine": 0 },
+          { "year": 2034, "bau_fine": 205000, "plan_fine": 0 },
+          { "year": 2035, "bau_fine": 205000, "plan_fine": 0 }
+        ]
       }
     ],
     "crrem_stranding_year": 2031,

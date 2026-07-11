@@ -5,3 +5,8 @@ __pycache__/
 node_modules/
 skills/esg-profile/demo/.scrub-denylist.json
 skills/esg-profile/demo/madison/.scrub-denylist.json
+skills/rsra/demo/.venv/
+
+# demo private pseudonym maps (real names — never commit)
+skills/*/demo/.pseudonym-map.md
+skills/*/demo/**/.pseudonym-map.md

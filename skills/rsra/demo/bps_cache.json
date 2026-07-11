@@ -1,0 +1,68 @@
+{
+  "_document_type": "Jurisdiction regulatory lookup cache — staged so the Phase 3 jurisdiction scan resolves instantly for the demo asset",
+  "_note": "Figures below are illustrative and rounded for demo purposes (dates, thresholds and the general penalty mechanism reflect the real Energize Denver ordinance structure; do not cite the exact per-sqft penalty rate to a client without confirming the current year's published schedule).",
+  "jurisdiction": {
+    "name": "City and County of Denver, Colorado",
+    "property_address": "4400 Prairie Crossing, Denver, CO 80238",
+    "climate_zone": "ASHRAE 5B",
+    "generated_at": "2026-07-10T16:32:00Z"
+  },
+  "applicable_regulations": [
+    {
+      "regulation": "Energize Denver Building Performance Ordinance",
+      "level": "Municipal",
+      "scope": "Existing commercial and multifamily buildings > 25,000 sqft",
+      "size_threshold_sqft": 25000,
+      "subject_building_gfa_sqft": 232360,
+      "subject_to_ordinance": true,
+      "mechanism": "Building-specific EUI (kBtu/sqft/yr) targets set on a declining schedule toward a 2030 final target; annual benchmarking required via Denver's Energize Denver portal (Energy Star Portfolio Manager feed).",
+      "target_schedule": [
+        {"year": 2024, "milestone": "Baseline benchmarking due", "status": "Reported"},
+        {"year": 2027, "milestone": "Interim EUI target", "target_eui_kbtu": 51, "subject_property_est_eui_kbtu": 58, "status": "At risk — ~14% above interim target absent DHW electrification"},
+        {"year": 2030, "milestone": "Final EUI target", "target_eui_kbtu": 44, "subject_property_est_eui_kbtu": 58, "status": "At risk — Phase 1+2 decarb plan required to close gap"}
+      ],
+      "penalty_structure": {
+        "mechanism": "Escalating per-sqft annual penalty for each year a covered building exceeds its target EUI, assessed retroactively to the compliance year",
+        "illustrative_rate_usd_per_sqft_year": 0.30,
+        "illustrative_annual_exposure_if_noncompliant_2027": 25850,
+        "compliance_pathway": "Timeline Extension or Alternative Compliance Plan available if a capital improvement plan (e.g., the Phase 1+2 decarb measures) is filed with the city before the target year"
+      },
+      "current_status": "Compliant with 2024 benchmarking requirement; 2027 interim target at risk without the DHW electrification measure in the decarb plan",
+      "risk_2027": "Moderate-High",
+      "risk_2030": "Moderate",
+      "risk_2035": "Low (assuming Phase 1+2 executed)"
+    },
+    {
+      "regulation": "Colorado HB21-1286 — Building Energy Performance for large buildings",
+      "level": "State",
+      "scope": "Statewide benchmarking + performance standard for buildings > 50,000 sqft; supplements/aligns with Energize Denver for covered properties",
+      "size_threshold_sqft": 50000,
+      "subject_to_ordinance": true,
+      "current_status": "Compliant — covered by Energize Denver benchmarking submission, which satisfies the state's reporting requirement for buildings within Denver city limits",
+      "risk_2030": "Low"
+    },
+    {
+      "regulation": "IRA — Inflation Reduction Act clean energy provisions",
+      "level": "Federal",
+      "scope": "Applies nationwide; relevant incentive pathways for this deal: §48E Investment Tax Credit (solar, heat pump water heater), MACRS accelerated depreciation",
+      "relevance": "Directly reduces net CapEx for the DHW electrification and solar measures in the decarb plan (~30% ITC)"
+    }
+  ],
+  "utility_incentive_programs": [
+    {
+      "provider": "Xcel Energy Colorado",
+      "program": "Multifamily Efficiency rebate",
+      "applies_to": ["LED lighting + smart thermostat retrofit", "Envelope air sealing + attic insulation"]
+    },
+    {
+      "provider": "Fannie Mae",
+      "program": "Green Rewards",
+      "requirement": "Projected >=25% reduction in combined energy and water consumption from planned capital measures",
+      "applies_to": ["Central DHW electrification", "Roof-mounted solar PV"]
+    }
+  ],
+  "sources": [
+    {"label": "Energize Denver program overview", "url": "https://www.denvergov.org/energizedenver"},
+    {"label": "Colorado HB21-1286 summary", "url": "https://energyoffice.colorado.gov/"}
+  ]
+}

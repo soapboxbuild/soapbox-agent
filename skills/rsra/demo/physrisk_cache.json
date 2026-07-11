@@ -1,0 +1,102 @@
+{
+  "_document_type": "physrisk MCP result cache — staged for demo so `assess_physical_risk` / `calculate_climate_var` lookups resolve instantly",
+  "_note": "In a live RSRA run, physrisk stays a LIVE call (see README). This file mirrors the exact shape those tools return so the demo can cite it without a network round-trip.",
+  "request": {
+    "address": "4400 Prairie Crossing, Denver, CO 80238",
+    "lat": 39.7702,
+    "lon": -104.8756,
+    "asset_value_usd": 64000000,
+    "hold_years": 5,
+    "scenario": "ssp245"
+  },
+  "generated_at": "2026-07-10T16:40:00Z",
+  "assess_physical_risk": {
+    "hazards": [
+      {
+        "hazard": "Severe convective storm / hail",
+        "hazard_key": "Hail",
+        "risk_2030": "Moderate",
+        "risk_2050": "High",
+        "score_2030": 2,
+        "score_2050": 3,
+        "impact_mean_2030": 0.006,
+        "impact_mean_2050": 0.011,
+        "finding": "Denver metro sits in 'Hail Alley' — front-range severe-hail frequency is projected to increase, shortening roof and HVAC condenser replacement cycles.",
+        "data_source": "physrisk (CMIP6 SSP2-4.5)"
+      },
+      {
+        "hazard": "Water stress / drought",
+        "hazard_key": "WaterStress",
+        "risk_2030": "Moderate",
+        "risk_2050": "Moderate",
+        "score_2030": 2,
+        "score_2050": 2,
+        "finding": "South Platte basin allocation tightening; landscaping and common-area water costs trending up.",
+        "data_source": "WRI Aqueduct via physrisk"
+      },
+      {
+        "hazard": "Extreme heat",
+        "hazard_key": "Heat",
+        "risk_2030": "Low",
+        "risk_2050": "Moderate",
+        "score_2030": 1,
+        "score_2050": 2,
+        "finding": "9 additional days above 95F by 2050 (NOAA); modest cooling-load increase for electric AC.",
+        "data_source": "physrisk (CMIP6 SSP2-4.5)"
+      },
+      {
+        "hazard": "Riverine / coastal flood",
+        "hazard_key": "RiverineInundation",
+        "risk_2030": "Low",
+        "risk_2050": "Low",
+        "score_2030": 0,
+        "score_2050": 1,
+        "finding": "FEMA Zone X — outside the 500-year floodplain; minimal exposure.",
+        "data_source": "physrisk FEMA NFIP overlay"
+      },
+      {
+        "hazard": "Wildfire (wildland-urban interface)",
+        "hazard_key": "Fire",
+        "risk_2030": "Low",
+        "risk_2050": "Low",
+        "score_2030": 1,
+        "score_2050": 1,
+        "finding": "Urban infill location, more than 8 miles from the nearest WUI boundary.",
+        "data_source": "physrisk / USFS WHP"
+      }
+    ],
+    "overall_risk_2050": "High",
+    "primary_hazard": "Severe convective storm / hail",
+    "scenario": "SSP2-4.5 (moderate emissions)"
+  },
+  "calculate_climate_var": {
+    "expected_annual_loss_pct_2030": "0.31%",
+    "expected_annual_loss_pct_exit": "0.44%",
+    "expected_annual_loss_usd_2030": 198400,
+    "expected_annual_loss_usd_exit": 281600,
+    "cumulative_var_npv_pct": "1.6%",
+    "cumulative_var_npv_usd": 1024000,
+    "primary_driver": "Severe convective storm / hail — roof & building envelope",
+    "covers": "Hail + Wind",
+    "excludes": "Flood (immaterial exposure — FEMA Zone X)",
+    "hold_period_years": 5,
+    "exit_year": 2031,
+    "asset_value_usd": 64000000,
+    "discount_rate": 0.08,
+    "scenario": "SSP2-4.5",
+    "methodology": "physrisk NGFS/IPCC hazard overlay applied to asset value; EAL discounted over hold period",
+    "confidence": "Medium"
+  },
+  "operational_risk": {
+    "heat_disruption_index_2030": 0.08,
+    "heat_disruption_index_2050": 0.14,
+    "water_disruption_index_2030": 0.11,
+    "water_disruption_index_2050": 0.15,
+    "note": "Operational indices are separate from the financial Climate VaR above — they describe likelihood of service disruption (cooling capacity strain, irrigation curtailment), not dollar loss."
+  },
+  "insurance_financing_implications": [
+    "Colorado front-range hail losses have driven several carriers to raise wind/hail deductibles (percentage-of-value rather than flat dollar) or non-renew garden-style multifamily with original 2006-era roofing.",
+    "No FEMA high-risk flood zone designation — Fannie Mae / Freddie Mac flood-exposure exclusions do not apply.",
+    "Flag current P&C policy's wind/hail deductible structure for broker review during due diligence."
+  ]
+}

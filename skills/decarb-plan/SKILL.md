@@ -671,82 +671,24 @@ Set `phase: "P3"` and save.
 
 ## P3 — Measure Plan
 
-1. `retrofit__propose_candidates` with the **real, adjudicated asset attributes** from
-   `state.baseline` (never pre-Gate-1 values).
-1a. **Completeness cross-check — screen DOWN from a full universe, not UP from the optimizer's
-   output.** `retrofit__propose_candidates` and Audette's optimizer return a *starting* set, not the
-   whole opportunity space. Before screening, reconcile the proposal against the standard candidate
-   library for THIS building's systems — read `references/measure-universe.md` and confirm every
-   applicable category was considered: envelope, HVAC plant + distribution, controls/retro-commissioning,
-   DHW, lighting + lighting controls, plug/appliance, **common-area/amenity loads** (elevators, garage
-   ventilation, spa/pool, common laundry), on-site generation/storage, EV, and procurement. Explicitly
-   note each category as evaluated / screened-out-with-reason / not-applicable. A GRESB or
-   portfolio deliverable that reaches the roster with only a handful of measures because the optimizer
-   returned few is a red flag — the Cortland Rosslyn roster sat at 2 measures until challenged, then
-   4+ real candidates surfaced (garage DCV, lighting controls, EV expansion, amenity HPHX).
-1b. **Source-audit cross-walk — every measure traces to the audit; nothing documented is dropped;
-   nothing is fabricated; capture is READ, not assumed.** BEFORE presenting the Gate-2 roster, walk
-   the asset's audit / PCA (`state.documents`) against the roster:
-   - **Nothing documented is dropped.** Every measure the audit/PCA *recommends* appears in the
-     roster or is explicitly screened-out with a reason — never silently omitted. (Cortland Village
-     dropped a ~$30K/yr showerhead measure plus in-unit LED and DHW-pipe insulation because the
-     roster was built from the optimizer, not the audit.)
-   - **Every roster measure cites its source line.** Each measure names the audit/PCA line (or the
-     register / Audette candidate) it came from. A measure NOT in any source — extrapolated beyond
-     the documents — must be labeled **"not in audit — extrapolated, feasibility study required"**
-     and never presented as audit-backed. (Cortland Village fabricated solar + EV the audit never
-     scoped; Congress Park sized solar ~6× too large with invented roof geometry, on roofs the audit
-     found were pitched shingle with ~1,700 SF usable → ~30 kW, not ~200 kW.)
-   - **Sizing traces to the documents.** Solar kW / usable roof area, fixture counts, unit counts,
-     equipment tons — from the audit / PCA / ALTA, never a generic per-SF assumption.
-   - **Read the audit's explicit Owner% / Tenant% (capture) columns** where present and reconcile
-     them against the 2C capture map BEFORE computing any capture-dependent value. (Cortland Village
-     reported $906K of value on a bundle the audit's own capture columns showed was **0% owner** —
-     a RUBS/master-meter split was assumed instead of read.)
-   A roster that reaches Gate 2 without an audit line (or an explicit "not in audit") beside every
-   measure — or with any capture-dependent number computed before the audit's capture columns were
-   read — is NOT ready. Do the cross-walk first.
-2. Pull all source candidates the proposal references (register, Audette available measures,
-   document-recommended measures).
-3. For candidates needing modeled physics (savings/carbon), run Audette
-   `run_measure_design_analysis`. Read `retrofit__get_retrofit_playbook('baseline-discipline')`
-   and **mark all modeled savings as provisional** per that playbook — modeled numbers are not
-   measured numbers and are labeled as such through to the report.
-3a. **CapEx source — Soapbox Costing.** Before economics, source each screened-in measure's
-   CapEx from the costing skill (Soapbox Costing MCP, `costing.mcp.soapbox.build`):
-   `get_measure_capex` → capex low/base/high + `cost_breakdown` + `contingency_pct` + `escalation`
-   + `references`; `estimate_service_upgrade` for any fuel-switch/electrification measure → the
-   `electrical_capacity` UNVERIFIED range (never collapse it to a point estimate); `get_der_economics`
-   for solar/storage/GHP; `get_energy_prices`/`get_tariff` for the OpEx delta feeding the same
-   measure. Use `cost-bases.md` / engine defaults ONLY where the costing MCP has no coverage for
-   that measure/market, and flag those cells low-confidence. This step SOURCES CapEx into
-   `measure.cost` — it does not replace the plan's economics (capture, NPV/IRR, exit), which
-   continue to consume these figures exactly as below. Surface the costing tool's `references`
-   (citations) alongside each measure's cost so provenance survives to the report.
-4. `retrofit__evaluate_measure` for **EVERY** candidate. Reminders:
-   - `asset_id` = the **Soapbox asset id** (`state.asset.id`) — not the Audette uid.
-   - `feasibility.score` is an **INTEGER 1–5**.
-   - Every economic field must be engine- or source-provenanced; the tool refuses
-     unprovenanced numbers — supply real sources, never fabricate provenance.
-   - Cap rate for exit math comes from `kickoff.cap_rate` **with its verbatim source string**.
-   - **Savings basis = the LOCKED per-end-use capture (from the 2C capture map, Gate 1).** A
-     measure's dollar savings accrue only to the share the owner actually BEARS for **that
-     end-use** — so a common-area or central-plant measure (elevators, garage ventilation, corridor
-     lighting, central heating/DHW) does NOT use the building's blended in-unit split, but takes the
-     end-use's **RUBS-recovery capture: ≈10% net owner where RUBS applies, ~100% only where the
-     owner absorbs the utility** (documented gross lease / no RUBS). Solar under VNM = 80% owner.
-     Never inherit Audette's 15% account-default, and never blanket a master-metered load to 100%.
-     Set Audette's landlord-share for the measure to the end-use's locked capture or modeled owner
-     savings are mis-priced. Do NOT re-derive or re-open the map here.
-   - Record returned measure ids in `state.measures.register_ids`.
-5. `retrofit__screen_measures` to produce the roster labels.
-6. **Roadmap phasing — sequence by decarb logic + equipment RUL, not independent IRR.** Read
+**Ideation is delegated.** Invoke the **retrofit-advisor** skill for this asset — it reads the
+Gate-1-adjudicated `state.baseline` and audit docs in `state.documents`, runs the full
+measure-universe + source-audit cross-walk with provenance + confidence, and persists to the
+Retrofit register. Do not re-derive measures here. When it returns, load the register with
+`retrofit__get_measure_state({asset_id})` and continue.
+
+P3 must have run the retrofit-advisor ideation (register non-empty) before building the roster —
+do not assemble the Gate-2 roster from an empty or partial register.
+
+1. Record the register's returned measure ids in `state.measures.register_ids`.
+2. `retrofit__screen_measures` to produce the roster labels.
+3. **Roadmap phasing — sequence by decarb logic + equipment RUL, not independent IRR.** Read
    `retrofit__get_retrofit_playbook('staging')`. Order measures as: load-reduction / controls &
    retro-commissioning FIRST, then electrification of heating/DHW **timed to each system's RUL**
    (from the 2D equipment inventory) and to `kickoff.capital_events`, then supply (solar/storage)
    aligned to roof life. Screen by IRR ≥ hurdle *within* that sequence — never let a high-IRR
    measure jump ahead of the load-reduction it depends on. Write `state.measures.roadmap_phases`.
-7. **Target-gap statement:** does the recommended set reach the confirmed target
+4. **Target-gap statement:** does the recommended set reach the confirmed target
    (`state.targets`)? If not, which defensive additions close the gap and at what cost —
    engine math only. Write `state.measures.gap_statement`.
 

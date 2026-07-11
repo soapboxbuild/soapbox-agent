@@ -27,7 +27,7 @@
       "capex_incremental_usd": 2200000,
       "capex_like_for_like_usd": 600000,
       "phase": 1,
-      "source_citation": "Site audit walk-through + AFHA report cross-walk (P1) -- see citations.json"
+      "source_citation": "Site audit walk-through + third-party condition assessment cross-walk (P1) -- see citations.json"
     },
     {
       "id": "demo-4m-M2-chiller",
@@ -69,7 +69,7 @@
       "capex_like_for_like_usd": 1800000,
       "phase": 3,
       "trigger": "Central hydronic furnace end-of-life, ~Year 6 (est. 2032)",
-      "source_citation": "AFHA 2020 condition assessment cross-walk + Audette custom plan (P1/P3) -- see citations.json"
+      "source_citation": "third-party condition assessment cross-walk + Audette custom plan (P1/P3) -- see citations.json"
     },
     {
       "id": "demo-4m-M4-dhw-hpwh",

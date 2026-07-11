@@ -52,7 +52,7 @@
 
   "documents": [
     { "name": "4th and Madison - Audette Data Request export.xlsx", "type": "utility", "storage_path": "demo/reference/audette-data-request.xlsx", "read": true },
-    { "name": "Condition Assessment (AFHA-style) cross-walk", "type": "pca", "storage_path": "demo/reference/condition-assessment.pdf", "read": true },
+    { "name": "Condition Assessment (third-party) cross-walk", "type": "pca", "storage_path": "demo/reference/condition-assessment.pdf", "read": true },
     { "name": "Tune-up Summary Report", "type": "audit", "storage_path": "demo/reference/tune-up-summary.pdf", "read": true },
     { "name": "5-Year Capital Plan", "type": "other", "storage_path": "demo/reference/5-year-capital-plan.xlsx", "read": true }
   ],

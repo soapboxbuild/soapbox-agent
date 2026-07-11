@@ -16,7 +16,7 @@
   },
   {
     "claim": "Central plant heater is a hydronic_furnace (installed 2003) served via fan_coil_units off the central hydronic loop -- native Audette equipment-survey mapping, not a fan-coil proxy for a different heater type.",
-    "source": "Site condition assessment cross-walk (AFHA-style report) + audette-modeling-recipes.md section 5a",
+    "source": "Site condition assessment cross-walk (third-party report) + audette-modeling-recipes.md section 5a",
     "provenance": "library"
   },
   {

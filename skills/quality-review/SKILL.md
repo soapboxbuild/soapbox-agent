@@ -156,3 +156,7 @@ skill) and the archetype guidance (`decarb-plan/references/archetypes/`).
 - **Weighting mismatch.** The NPV vs carbon weighting doesn't match the org's stated
   criterion (e.g. defaulted carbon-weighted 35/65 when the org's criterion is
   pay-for-itself) — suggest reweighting.
+- **Stale cost basis.** A recommended measure whose CapEx lacks an `escalation` stamp, or
+  whose `escalation.index_vintage` is older than one year / `escalated_to` is not the
+  current year, is not in current-year dollars (the costing layer stamps `escalation` on
+  every figure) — surface it and request re-escalation.

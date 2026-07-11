@@ -47,6 +47,28 @@
             "capex": { "type": "number" },
             "opex_delta_yr": { "type": "number" }
           }
+        },
+        "contingency_pct": { "type": "number", "minimum": 0, "maximum": 1 },
+        "cost_breakdown": {
+          "type": "object",
+          "required": ["material", "labour", "equipment"],
+          "additionalProperties": false,
+          "properties": {
+            "material": { "type": "number" },
+            "labour": { "type": "number" },
+            "equipment": { "type": "number" }
+          }
+        },
+        "escalation": {
+          "type": "object",
+          "required": ["base_year", "index", "index_vintage", "escalated_to"],
+          "additionalProperties": false,
+          "properties": {
+            "base_year": { "type": "integer" },
+            "index": { "type": "string" },
+            "index_vintage": { "type": "string" },
+            "escalated_to": { "type": "integer" }
+          }
         }
       }
     }

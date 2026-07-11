@@ -16,7 +16,10 @@
           "measure": "high-efficiency condensing boiler replacement",
           "capex": 520000,
           "opex_delta_yr": -14000
-        }
+        },
+        "contingency_pct": 0.15,
+        "cost_breakdown": { "material": 0.55, "labour": 0.35, "equipment": 0.1 },
+        "escalation": { "base_year": 2024, "index": "ENR-CCI", "index_vintage": "2026-Q1", "escalated_to": 2026 }
       }
     },
     {

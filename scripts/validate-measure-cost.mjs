@@ -18,6 +18,21 @@ for (const m of data.measures) {
     }
     if (!m.cost.efficiency_alternative) { failed = true; console.error(`✗ ${m.measure_id}: fuel_switch missing efficiency_alternative`) }
   }
+  if (m.cost.escalation) {
+    if (!Number.isInteger(m.cost.escalation.escalated_to)) {
+      failed = true; console.error(`✗ ${m.measure_id}: escalation.escalated_to must be an integer year`)
+    }
+    if (typeof m.cost.escalation.index_vintage !== 'string' || m.cost.escalation.index_vintage.length === 0) {
+      failed = true; console.error(`✗ ${m.measure_id}: escalation.index_vintage must be a non-empty string`)
+    }
+  }
+  if (m.cost.cost_breakdown) {
+    const { material, labour, equipment } = m.cost.cost_breakdown
+    const sum = material + labour + equipment
+    if (Math.abs(sum - 1.0) > 0.011) {
+      failed = true; console.error(`✗ ${m.measure_id}: cost_breakdown shares sum to ${sum}, must be within 0.011 of 1.0`)
+    }
+  }
 }
 if (failed) { process.exit(1) }
 console.log('measure-cost contract OK')

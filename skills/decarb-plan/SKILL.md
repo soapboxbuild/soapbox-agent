@@ -656,6 +656,28 @@ Set `phase: "P3"` and save.
    portfolio deliverable that reaches the roster with only a handful of measures because the optimizer
    returned few is a red flag — the Cortland Rosslyn roster sat at 2 measures until challenged, then
    4+ real candidates surfaced (garage DCV, lighting controls, EV expansion, amenity HPHX).
+1b. **Source-audit cross-walk — every measure traces to the audit; nothing documented is dropped;
+   nothing is fabricated; capture is READ, not assumed.** BEFORE presenting the Gate-2 roster, walk
+   the asset's audit / PCA (`state.documents`) against the roster:
+   - **Nothing documented is dropped.** Every measure the audit/PCA *recommends* appears in the
+     roster or is explicitly screened-out with a reason — never silently omitted. (Cortland Village
+     dropped a ~$30K/yr showerhead measure plus in-unit LED and DHW-pipe insulation because the
+     roster was built from the optimizer, not the audit.)
+   - **Every roster measure cites its source line.** Each measure names the audit/PCA line (or the
+     register / Audette candidate) it came from. A measure NOT in any source — extrapolated beyond
+     the documents — must be labeled **"not in audit — extrapolated, feasibility study required"**
+     and never presented as audit-backed. (Cortland Village fabricated solar + EV the audit never
+     scoped; Congress Park sized solar ~6× too large with invented roof geometry, on roofs the audit
+     found were pitched shingle with ~1,700 SF usable → ~30 kW, not ~200 kW.)
+   - **Sizing traces to the documents.** Solar kW / usable roof area, fixture counts, unit counts,
+     equipment tons — from the audit / PCA / ALTA, never a generic per-SF assumption.
+   - **Read the audit's explicit Owner% / Tenant% (capture) columns** where present and reconcile
+     them against the 2C capture map BEFORE computing any capture-dependent value. (Cortland Village
+     reported $906K of value on a bundle the audit's own capture columns showed was **0% owner** —
+     a RUBS/master-meter split was assumed instead of read.)
+   A roster that reaches Gate 2 without an audit line (or an explicit "not in audit") beside every
+   measure — or with any capture-dependent number computed before the audit's capture columns were
+   read — is NOT ready. Do the cross-walk first.
 2. Pull all source candidates the proposal references (register, Audette available measures,
    document-recommended measures).
 3. For candidates needing modeled physics (savings/carbon), run Audette

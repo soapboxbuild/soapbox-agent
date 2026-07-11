@@ -121,14 +121,22 @@ guessed keys like `domestic_hot_water`). Rules:
   - `rooftop_unit_heating_type`: `electric_resistance` | `gas`; `rooftop_unit_cooling_type`: `direct_expansion`
   - `clothes_dryers_type`: `electric` | `gas`; `heat_pump_type`: `water_loop_heat_pump` | `split_air_source_heat_pump`
 - **Sizes/years left blank must be `null`, NOT `0`** — a `0` size triggers a divide-by-zero in the inferrer.
-- **ALL capacity/size fields are in TONS — including DHW** (Audette peculiarity, verified from source
-  2026-07-07). Every `*_size` field (`central_plant_heater_size`, `central_plant_cooler_size`,
-  `central_plant_heat_pump_size`, `heat_pump_size`, `terminal_cooler_size`, `terminal_heater_size`,
-  `terminal_heater_cooler_size`, **`domestic_hot_water_heater_size`**) is interpreted as **tons of
-  heating/cooling capacity** — the internal coverage-ratio math is entirely in tons and does no unit
-  conversion at submit. Convert first: MBH ÷ 12 = tons; kW ÷ 3.517 = tons; for DHW/boilers given in
-  input-BTU, apply efficiency then ÷ 12,000. Do **not** submit gallons, kBtu, MBH, cfm, or kW in these
-  fields. (The only unit-tagged field is `generic_hvac_equipment[].size_units`: `cfm | mbtu | tons`.)
+- **CAPACITY UNITS — the #1 recurring survey error. There are exactly TWO units, and which one
+  depends on the equipment group:**
+  - **RTUs and air-handling units → SUPPLY AIRFLOW in CFM.** The rooftop unit / air-handling unit is
+    sized by its airflow via the `*_supply_air_rate` field (e.g. `air_handling_equipment_supply_air_rate`,
+    `rooftop_unit_supply_air_rate`) — in **CFM**. NEVER convert an RTU to tons; there is no tons field for it.
+  - **EVERY OTHER heating/cooling capacity → EQUIVALENT REFRIGERATION TONS — including DHW** (Audette
+    peculiarity, verified from source 2026-07-07). Every `*_size` field (`central_plant_heater_size`,
+    `central_plant_cooler_size`, `central_plant_heat_pump_size`, `heat_pump_size`, `terminal_cooler_size`,
+    `terminal_heater_size`, `terminal_heater_cooler_size`, **`domestic_hot_water_heater_size`**) is
+    interpreted as **tons of heating/cooling capacity** (1 ton = 12,000 Btu/h) — the internal
+    coverage-ratio math is entirely in tons and does NO unit conversion at submit. Convert BEFORE
+    submitting: MBH ÷ 12 = tons; kBtu/h ÷ 12 = tons; kW ÷ 3.517 = tons; gas DHW/boilers given in
+    input-BTU → apply efficiency then ÷ 12,000. Do **NOT** submit gallons, kBtu, MBH, kW, or CFM in a
+    `*_size` field, and do **NOT** submit tons in a `*_supply_air_rate` (CFM) field.
+  - `*_size` fields left blank must be `null`, NOT `0` (a `0` size divides-by-zero in the inferrer).
+  - (The only self-tagged field is `generic_hvac_equipment[].size_units`: `cfm | mbtu | tons`.)
 - `other_equipment` REQUIRES: `clothes_dryers_exists`, `clothes_washers_exists`, `elevators_exists`,
   `escalator_exists`, `rooftop_photovoltaics_exists` (all booleans).
 - **Cross-group validation — a ventilation path is mandatory:** at least ONE of

@@ -681,14 +681,46 @@ P3 must have run the retrofit-advisor ideation (register non-empty) before build
 do not assemble the Gate-2 roster from an empty or partial register.
 
 1. Record the register's returned measure ids in `state.measures.register_ids`.
-2. `retrofit__screen_measures` to produce the roster labels.
-3. **Roadmap phasing — sequence by decarb logic + equipment RUL, not independent IRR.** Read
+2. For candidates needing modeled physics (savings/carbon), run Audette
+   `run_measure_design_analysis`. Read `retrofit__get_retrofit_playbook('baseline-discipline')`
+   and **mark all modeled savings as provisional** per that playbook — modeled numbers are not
+   measured numbers and are labeled as such through to the report.
+3. **CapEx source — Soapbox Costing.** Before economics, source each screened-in measure's
+   CapEx from the costing skill (Soapbox Costing MCP, `costing.mcp.soapbox.build`):
+   `get_measure_capex` → capex low/base/high + `cost_breakdown` + `contingency_pct` + `escalation`
+   + `references`; `estimate_service_upgrade` for any fuel-switch/electrification measure → the
+   `electrical_capacity` UNVERIFIED range (never collapse it to a point estimate); `get_der_economics`
+   for solar/storage/GHP; `get_energy_prices`/`get_tariff` for the OpEx delta feeding the same
+   measure. Use `cost-bases.md` / engine defaults ONLY where the costing MCP has no coverage for
+   that measure/market, and flag those cells low-confidence. This step SOURCES CapEx into
+   `measure.cost` — it does not replace the plan's economics (capture, NPV/IRR, exit), which
+   continue to consume these figures exactly as below. Surface the costing tool's `references`
+   (citations) alongside each measure's cost so provenance survives to the report.
+4. `retrofit__evaluate_measure` for **EVERY** register measure. Reminders:
+   - `asset_id` = the **Soapbox asset id** (`state.asset.id`) — not the Audette uid.
+   - `feasibility.score` is an **INTEGER 1–5**.
+   - Every economic field must be engine- or source-provenanced; the tool refuses
+     unprovenanced numbers — supply real sources, never fabricate provenance.
+   - Cap rate for exit math comes from `kickoff.cap_rate` **with its verbatim source string**.
+   - **Savings basis = the LOCKED per-end-use capture (from the 2C capture map, Gate 1).** A
+     measure's dollar savings accrue only to the share the owner actually BEARS for **that
+     end-use** — so a common-area or central-plant measure (elevators, garage ventilation, corridor
+     lighting, central heating/DHW) does NOT use the building's blended in-unit split, but takes the
+     end-use's **RUBS-recovery capture: ≈10% net owner where RUBS applies, ~100% only where the
+     owner absorbs the utility** (documented gross lease / no RUBS). Solar under VNM = 80% owner.
+     Never inherit Audette's 15% account-default, and never blanket a master-metered load to 100%.
+     Set Audette's landlord-share for the measure to the end-use's locked capture or modeled owner
+     savings are mis-priced. Do NOT re-derive or re-open the map here.
+   - Record returned measure ids in `state.measures.register_ids`.
+5. Roster labels come from the register — retrofit-advisor already screens candidates during
+   ideation, so decarb-plan does not re-screen here.
+6. **Roadmap phasing — sequence by decarb logic + equipment RUL, not independent IRR.** Read
    `retrofit__get_retrofit_playbook('staging')`. Order measures as: load-reduction / controls &
    retro-commissioning FIRST, then electrification of heating/DHW **timed to each system's RUL**
    (from the 2D equipment inventory) and to `kickoff.capital_events`, then supply (solar/storage)
    aligned to roof life. Screen by IRR ≥ hurdle *within* that sequence — never let a high-IRR
    measure jump ahead of the load-reduction it depends on. Write `state.measures.roadmap_phases`.
-4. **Target-gap statement:** does the recommended set reach the confirmed target
+7. **Target-gap statement:** does the recommended set reach the confirmed target
    (`state.targets`)? If not, which defensive additions close the gap and at what cost —
    engine math only. Write `state.measures.gap_statement`.
 

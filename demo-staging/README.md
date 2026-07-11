@@ -6,7 +6,7 @@ Staging for the **Demo** org (`8ebc72a7-dca1-4cb1-be02-eed12f38340f`) → **Demo
 | # | Workflow | Asset | Status | Runbook |
 |---|----------|-------|--------|---------|
 | 1 | RSRA (Aris) | 4400 Prairie Crossing (`062cbda3`) | ✅ validated | `runbook-rsra.md` |
-| 2 | ESG Profile | Madison (`cece8ad8`) | fill_report enum fixed (v14); pre-computed-payload prompt; verifying | `runbook-esg.md` (pending) |
+| 2 | ESG Profile | Madison (`cece8ad8`) | ✅ validated post-v14 (renders `esg-profile` artifact; ~5min, speed-polish pending) | `runbook-esg.md` |
 | 3 | Decarb + Measure Ideation | 4th & Madison (`f6e043dd`) | inputs staged; Christopher runs the engagement, then demo resumes from Files | `runbook-decarb.md` (pending) |
 
 ## Key facts
@@ -22,7 +22,15 @@ Staging for the **Demo** org (`8ebc72a7-dca1-4cb1-be02-eed12f38340f`) → **Demo
 3. Re-stage Files if missing: `bash demo-staging/stage-files.sh` (idempotent — skips existing).
 4. One smoke of each workflow (fresh thread) the day before; keep the rendered artifacts as fallbacks.
 
+## Fallback artifacts (show if a live render stalls on stage)
+- RSRA: artifact `86943ce4-783a-4605-894b-67027e0eae10` (asset `062cbda3`, thread `0db2286c`).
+- ESG: artifact `d93af6dc-8fdc-41bd-ae31-5b2ba72cf816` (asset `cece8ad8`, thread `39b5efaf`).
+- Decarb: TBD after the engagement run.
+
+## Timing observed (rehearsals)
+- RSRA ~168s to rendered artifact (with live narration). ESG ~314s (live crrem+physrisk + render).
+- Both exceed the 30–60s/turn target; they stream narration so the audience sees continuous progress. For strict snappiness, pre-stage more of the computed output (RSRA-style) and tighten the `[DEMO MODE]` prompt further.
+
 ## Scripts
-- `stage-files.sh` — upload fixtures to the Files store (service-acct app API).
-- `run-one.sh <assetId> "<prompt>" <tag>` — detached single-workflow rehearsal (survives session teardown; logs to `~/.demo_run_<tag>.log`).
-- `scrub-check.py` — fail-closed real-name scrub gate.
+- `stage-files.sh` — upload fixtures to the Files store (service-acct app API; sources `.demo.env`).
+- `scrub-check.py` — fail-closed real-name scrub gate (PDF/XLSX/DOCX text extraction + word-boundary denylist).

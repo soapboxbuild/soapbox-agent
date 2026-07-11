@@ -159,6 +159,22 @@ org memory, the reference library, and the `decarb` report template.
      improvement = net-owner utility savings (post-capture, per above) + owner-share ancillary +
      annual avoided fine. Fine avoidance may ALSO be shown as a cumulative/undiscounted figure for
      context (e.g. "$3.7M cumulative, ~$1.7M PV"), but the exit-value line is the headline outcome.
+   - **Lead with the OPERATING return; label exit- and fine-dependence explicitly.** Report
+     `irr_excl_exit` (operating IRR) alongside the exit-inclusive `irr_incremental`, and lead with
+     operating. If a plan's operating IRR is BELOW the hurdle and it only clears on the capitalized
+     exit uplift, say so in the headline ("clears the hurdle only on exit-value realization") — never
+     present the exit-inclusive IRR as if it were the operating return (Cortland on Blake headlined
+     ~40% while operating IRR was 5.7%). Never headline a plan that FAILS its BPS compliance as the
+     recommendation without a compliance caveat up front.
+   - **When fine avoidance dominates value, prove the fine is real and stress it.** A single avoided
+     regulatory penalty must not silently drive most of net value: Congress Park capitalized a
+     $583K/yr Energize Denver fine to ~$11.1M (99% of exit value) while the same plan told the owner
+     to file the extension that eliminates the near-term fine. Before capitalizing any avoided fine,
+     complete the BPS research (deadline, extension option, penalty rate — a **Gate-1** item, not a
+     P5 afterthought) and confirm the fine is genuinely unavoidable/persistent. If fine avoidance is
+     >50% of net value, present a **without-fine sensitivity** and a regulatory-persistence caveat;
+     never headline value that rests almost entirely on a penalty the plan itself tells the owner how
+     to avoid.
    - **Landlord-capture matches who BEARS the cost, not who pays the meter.** Two independent
      questions: (a) is the load metered per tenant, or master/common? (b) does the owner ABSORB the
      bill or REBILL it via RUBS? Do not collapse them:
@@ -492,6 +508,18 @@ against ground truth:
   step. Do not begin per-building edits/uploads on a partial set and discover the missing ones
   mid-stream (the first run churned 17→27 that way, forcing rework). Batch the `create_building`
   calls ≤6/turn per the Audette-write rule, checkpointing UIDs after each batch.
+- **Never bulk-delete building models to "fix" an editable attribute — verify first, edit in place.**
+  GFA IS editable: pass `gross_floor_area` (in m²) on the existing building; do NOT delete+recreate to
+  change it. (Belmar deleted+recreated all 7 buildings on a false "GFA not editable" claim; Coalton
+  edited the same field in place fine.) Deleting a building model is DESTRUCTIVE — it mints a new UID
+  and orphans everything keyed to the old one (uploaded utility data, equipment surveys,
+  carbon-reduction plans), forcing full re-upload/re-survey/re-create and compounding UID drift.
+  Before ANY bulk delete: (a) confirm you are holding BUILDING-model UIDs, not the PROPERTY UID (the
+  session context often surfaces the property uid — a property-uid-as-building-uid mixup plus an
+  SF-read-as-m² unit confusion is what made Village "delete ~102 models" to fix a 10× GFA error that
+  wasn't real); (b) confirm the attribute genuinely cannot be edited in place. Delete ONLY when the
+  model SET itself is structurally wrong (e.g. per-unit auto-models you must consolidate), verified —
+  and re-attach utility/survey/plan data to the new UIDs afterward.
 - Only once the model reconciles (or the owner adjudicates the correct structure) proceed. Then apply
   the [[utility-split-estimation]] allocation rule: carve out common/amenity loads first, allocate the
   remainder GFA-weighted (never even), and set landlord shares per building/end-use (tenant-metered
@@ -656,6 +684,28 @@ Set `phase: "P3"` and save.
    portfolio deliverable that reaches the roster with only a handful of measures because the optimizer
    returned few is a red flag — the Cortland Rosslyn roster sat at 2 measures until challenged, then
    4+ real candidates surfaced (garage DCV, lighting controls, EV expansion, amenity HPHX).
+1b. **Source-audit cross-walk — every measure traces to the audit; nothing documented is dropped;
+   nothing is fabricated; capture is READ, not assumed.** BEFORE presenting the Gate-2 roster, walk
+   the asset's audit / PCA (`state.documents`) against the roster:
+   - **Nothing documented is dropped.** Every measure the audit/PCA *recommends* appears in the
+     roster or is explicitly screened-out with a reason — never silently omitted. (Cortland Village
+     dropped a ~$30K/yr showerhead measure plus in-unit LED and DHW-pipe insulation because the
+     roster was built from the optimizer, not the audit.)
+   - **Every roster measure cites its source line.** Each measure names the audit/PCA line (or the
+     register / Audette candidate) it came from. A measure NOT in any source — extrapolated beyond
+     the documents — must be labeled **"not in audit — extrapolated, feasibility study required"**
+     and never presented as audit-backed. (Cortland Village fabricated solar + EV the audit never
+     scoped; Congress Park sized solar ~6× too large with invented roof geometry, on roofs the audit
+     found were pitched shingle with ~1,700 SF usable → ~30 kW, not ~200 kW.)
+   - **Sizing traces to the documents.** Solar kW / usable roof area, fixture counts, unit counts,
+     equipment tons — from the audit / PCA / ALTA, never a generic per-SF assumption.
+   - **Read the audit's explicit Owner% / Tenant% (capture) columns** where present and reconcile
+     them against the 2C capture map BEFORE computing any capture-dependent value. (Cortland Village
+     reported $906K of value on a bundle the audit's own capture columns showed was **0% owner** —
+     a RUBS/master-meter split was assumed instead of read.)
+   A roster that reaches Gate 2 without an audit line (or an explicit "not in audit") beside every
+   measure — or with any capture-dependent number computed before the audit's capture columns were
+   read — is NOT ready. Do the cross-walk first.
 2. Pull all source candidates the proposal references (register, Audette available measures,
    document-recommended measures).
 3. For candidates needing modeled physics (savings/carbon), run Audette

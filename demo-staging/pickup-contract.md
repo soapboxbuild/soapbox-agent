@@ -232,3 +232,21 @@ the row exists.
    — not empirically verified against the DB in this task (brief scoped the DB dive to decarb-plan/
    Cortland only); by analogy with decarb-plan's confirmed filesystem-only persistence, treat it as
    filesystem-only unless later verified otherwise.
+
+---
+
+## CONTROLLER ADDENDUM (post-spike verification)
+
+**Decarb state channel — corrected & sharpened:**
+- The engagement `state` ledger is `projects/<asset-key>/decarb-plan.json` in the agent **workspace**.
+- The **Resume Protocol reads ONLY the workspace `.json`** (`cat projects/<asset-key>/decarb-plan.json`; SKILL line 355). Missing file ⇒ new engagement at P0.
+- The Files store holds the **companion/exports** (`decarb-plan-state.txt/.html`), NOT what resume reads. Confirmed durable per asset across many real engagements.
+- **A real "4th and Madison" decarb engagement already exists**: asset `b577e453-8356-4746-8d75-76b7bf93f072`, `decarb-plan-state.txt` in Files (2026-07-07). Usable as the pseudonymization basis.
+- **OPEN PLATFORM FACT (blocks decarb pre-stage):** is the managed-agent `projects/` workspace durable per asset / hydrated from the Files store at session start, and writable out-of-band? 
+  - If workspace hydrates from Files ⇒ stage `decarb-plan.json` into Files ⇒ resume picks it up ⇒ decarb-as-approved holds.
+  - If workspace ephemeral & separate ⇒ fresh demo thread starts at P0 ⇒ "pre-stage & resume" infeasible ⇒ reshape decarb beat. ESCALATED to Christopher.
+- P0 DOES bootstrap from Files: it searches portfolio/asset files for an "engagement reference" doc and pre-fills kickoff (SKILL 373-380). So an engagement-reference doc in Files accelerates a live run regardless.
+
+**RSRA/ESG channel (unblocked, proceed):** both read inputs via `search_files` → Files store. No cache hooks. Stage supporting data as **Files documents the agent reads & cites** (keeps clear of RSRA fabrication gate). physrisk stays a live hero call. crrem MCP absent on Demo portfolio → add `installed_plugins` row (Task 4.2) or fall back to static.
+
+**Verifier gate:** connector row `plugin_id='verifier'`, portfolio-scoped (asset_id NULL) — already present on Demo portfolio. Asset scoping is via tool-call args. Findings store seeded via live verifier MCP calls (needs a session), not SQL.

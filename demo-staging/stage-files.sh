@@ -9,10 +9,14 @@ ORG="8ebc72a7-dca1-4cb1-be02-eed12f38340f"
 SUPA="https://fplbvanvwvnviczozwhz.supabase.co"
 AGENT_DIR="$HOME/soapbox-agent"
 
+# Secrets come from the gitignored demo-staging/.demo.env (never hardcode credentials).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+[ -f "$SCRIPT_DIR/.demo.env" ] && source "$SCRIPT_DIR/.demo.env"
+: "${SOAPBOX_AGENT_EMAIL:?set in demo-staging/.demo.env}" "${SOAPBOX_AGENT_PASSWORD:?set in demo-staging/.demo.env}"
 ANON=$(grep -hE "SUPABASE_ANON_KEY|PUBLIC_SUPABASE_ANON" "$HOME/soapbox-platform/.env" 2>/dev/null | grep -oE "eyJ[A-Za-z0-9._-]+" | head -1)
-TOKEN=$(curl -s --max-time 20 "$SUPA/auth/v1/token?grant_type=password" \
-  -H "apikey: $ANON" -H "Content-Type: application/json" \
-  -d '{"email":"claude@agents.soapbox.build","password":"SOURCED_FROM_ENV"}' \
+TOKEN=$(python3 -c "import json,sys;print(json.dumps({'email':sys.argv[1],'password':sys.argv[2]}))" "$SOAPBOX_AGENT_EMAIL" "$SOAPBOX_AGENT_PASSWORD" \
+  | curl -s --max-time 20 "$SUPA/auth/v1/token?grant_type=password" -H "apikey: $ANON" -H "Content-Type: application/json" -d @- \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 [ -n "$TOKEN" ] || { echo "AUTH FAIL"; exit 1; }
 

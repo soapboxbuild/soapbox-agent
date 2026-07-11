@@ -12,3 +12,5 @@ skills/*/demo/.pseudonym-map.md
 skills/*/demo/**/.pseudonym-map.md
 
 demo-staging/.scrub-denylist.json
+
+demo-staging/.demo.env

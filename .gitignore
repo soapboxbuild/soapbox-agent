@@ -10,3 +10,5 @@ skills/rsra/demo/.venv/
 # demo private pseudonym maps (real names — never commit)
 skills/*/demo/.pseudonym-map.md
 skills/*/demo/**/.pseudonym-map.md
+
+demo-staging/.scrub-denylist.json

@@ -61,7 +61,7 @@ real names there or anywhere else; that file exists only so a future
 ```bash
 node -e "JSON.parse(require('fs').readFileSync('skills/esg-profile/demo/madison/example-sponsor.json'))" && echo SPONSOR_JSON_VALID
 node scripts/validate-esg-profile.mjs   # schema-compiles against templates/esg-profile/schema.json (checks demo/example-sponsor.json directly; Madison fixture shares the same schema and was checked ad hoc — see task-2.2-report.md)
-grep -riE "watermark|talbot|prose frontier|varia|savannah|stoneweg|pearlmark|greystar" skills/esg-profile/demo/madison/ || echo SCRUB_LOOKS_CLEAN
+python3 demo-staging/scrub-check.py   # fail-closed real-name scrub gate (denylist is untracked)
 ```
 
 ## To go live later

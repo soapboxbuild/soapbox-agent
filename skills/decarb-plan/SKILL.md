@@ -662,6 +662,17 @@ Set `phase: "P3"` and save.
    `run_measure_design_analysis`. Read `retrofit__get_retrofit_playbook('baseline-discipline')`
    and **mark all modeled savings as provisional** per that playbook — modeled numbers are not
    measured numbers and are labeled as such through to the report.
+3a. **CapEx source — Soapbox Costing.** Before economics, source each screened-in measure's
+   CapEx from the costing skill (Soapbox Costing MCP, `costing.mcp.soapbox.build`):
+   `get_measure_capex` → capex low/base/high + `cost_breakdown` + `contingency_pct` + `escalation`
+   + `references`; `estimate_service_upgrade` for any fuel-switch/electrification measure → the
+   `electrical_capacity` UNVERIFIED range (never collapse it to a point estimate); `get_der_economics`
+   for solar/storage/GHP; `get_energy_prices`/`get_tariff` for the OpEx delta feeding the same
+   measure. Use `cost-bases.md` / engine defaults ONLY where the costing MCP has no coverage for
+   that measure/market, and flag those cells low-confidence. This step SOURCES CapEx into
+   `measure.cost` — it does not replace the plan's economics (capture, NPV/IRR, exit), which
+   continue to consume these figures exactly as below. Surface the costing tool's `references`
+   (citations) alongside each measure's cost so provenance survives to the report.
 4. `retrofit__evaluate_measure` for **EVERY** candidate. Reminders:
    - `asset_id` = the **Soapbox asset id** (`state.asset.id`) — not the Audette uid.
    - `feasibility.score` is an **INTEGER 1–5**.

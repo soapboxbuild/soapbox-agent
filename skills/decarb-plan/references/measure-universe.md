@@ -44,6 +44,8 @@ economics (per-end-use capture — see the 2C capture map), carbon, feasibility,
     GRESB-specific: ESPM data-coverage refresh, green-lease data-sharing clauses (no CapEx).
 
 ## Screening reminders
+- Measure CapEx is sourced from the Soapbox Costing MCP (`get_measure_capex`), with
+  `cost-bases.md` as the fallback for cells the MCP doesn't cover (see SKILL.md step 3a).
 - Each measure's savings basis = its **end-use's** owner capture (2C capture map), never the
   building's blended in-unit split.
 - Modeled savings are provisional until measured (baseline-discipline playbook).

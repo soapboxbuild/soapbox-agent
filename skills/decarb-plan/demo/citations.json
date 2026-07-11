@@ -1,0 +1,72 @@
+[
+  {
+    "claim": "Baseline electricity consumption ~9,300,000 kWh/yr (112 kWh/m2/yr), calibrated from 24 months of utility billing data.",
+    "source": "Utility bill export (demo-derived from ENERGY STAR Portfolio Manager-style data request), P1 calibration",
+    "provenance": "library"
+  },
+  {
+    "claim": "Baseline gas (fuel) consumption ~1,900,000 kWh-equivalent/yr (23 kWh/m2/yr), central hydronic furnace + DHW plant.",
+    "source": "Fuel delivery invoices + utility bill export, P1 calibration",
+    "provenance": "library"
+  },
+  {
+    "claim": "Property GFA 83,000 m2, 1 building, 22 floors, built 2003, Office archetype.",
+    "source": "Building setup / ENERGY STAR Portfolio Manager-style property record, P0",
+    "provenance": "library"
+  },
+  {
+    "claim": "Central plant heater is a hydronic_furnace (installed 2003) served via fan_coil_units off the central hydronic loop -- native Audette equipment-survey mapping, not a fan-coil proxy for a different heater type.",
+    "source": "Site condition assessment cross-walk (AFHA-style report) + audette-modeling-recipes.md section 5a",
+    "provenance": "library"
+  },
+  {
+    "claim": "Central plant cooler is a 2,200-ton water-cooled chiller installed 2010, approaching end of expected service life around Year 3 of the plan.",
+    "source": "Site equipment inventory / mechanical condition assessment (P1)",
+    "provenance": "library"
+  },
+  {
+    "claim": "DHW plant is a centrally distributed gas_heater installed 2011.",
+    "source": "Site equipment inventory (P1)",
+    "provenance": "library"
+  },
+  {
+    "claim": "Peer benchmark median site EUI for comparable Office assets is ~100 kWh/m2/yr.",
+    "source": "Building Performance Database (BPD), filtered by property type (Office) and comparable climate zone, size class 50,000-100,000 m2",
+    "provenance": "web"
+  },
+  {
+    "claim": "Grid emissions factor of 0.35 kgCO2e/kWh used for baseline and target-year emissions (held flat across the hold period for this demo).",
+    "source": "eGRID location-based subregion average (demo proxy factor)",
+    "provenance": "web"
+  },
+  {
+    "claim": "Natural gas emissions factor of 0.181 kgCO2e/kWh (HHV basis).",
+    "source": "EPA emissions factor for natural gas combustion",
+    "provenance": "web"
+  },
+  {
+    "claim": "Metro City Building Performance Standard (BPS): first compliance year 2032, cap 30 kgCO2e/m2/yr, fine rate $268/tCO2e over cap.",
+    "source": "Fictional ordinance modeled on the structure of common large-building carbon-performance standards -- invented for this demo fixture, not a real jurisdiction filing",
+    "provenance": "library"
+  },
+  {
+    "claim": "Air-to-water air-source heat pump COP 3.2 used for the central plant heater electrification measure; heat-pump water heater COP 3.0 for the DHW electrification measure.",
+    "source": "Audette custom-plan modeling assumptions, cross-checked against manufacturer-class ASHP/HPWH performance curves for the climate zone",
+    "provenance": "library"
+  },
+  {
+    "claim": "Solar PV virtual net metering (VNM) landlord capture of 80% used for the rooftop solar measure.",
+    "source": "Standard VNM capture convention (Soapbox reporting standard: solar VNM = 0.80 to landlord)",
+    "provenance": "library"
+  },
+  {
+    "claim": "Exit cap rate 6.0%, discount rate 8.0%, 10-year hold period used for the economics waterfall and IRR.",
+    "source": "Kickoff-confirmed assumptions (demo fixture defaults)",
+    "provenance": "library"
+  },
+  {
+    "claim": "Utility escalation assumptions of 3%/yr electricity and 4%/yr gas (Soapbox default, confirmed at kickoff).",
+    "source": "Soapbox default utility_escalation assumption set",
+    "provenance": "library"
+  }
+]

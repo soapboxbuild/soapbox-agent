@@ -1,0 +1,168 @@
+{
+  "_comment": "Ideated measure set for 4th & Madison decarb plan (P3 hero content). Each measure cites its capture end-use (from capture_map) and its per-measure energy delta in kWh + kWh/m2 only, per reporting standard. Phased roadmap ties Phase 2/3 to natural equipment-replacement triggers rather than forcing an all-at-once retrofit.",
+  "register_ids": [
+    "demo-4m-M1-envelope",
+    "demo-4m-M2-chiller",
+    "demo-4m-M3-central-plant-hp",
+    "demo-4m-M4-dhw-hpwh",
+    "demo-4m-M5-lighting-controls",
+    "demo-4m-M6-solar-pv"
+  ],
+  "measures": [
+    {
+      "id": "demo-4m-M1-envelope",
+      "name": "Envelope Upgrade -- low-e glazing film + perimeter air sealing",
+      "category": "envelope",
+      "end_use": "central_gas_plant",
+      "description": "Applies low-e window film to the curtain wall and air-seals perimeter joints across all 22 floors, reducing heating load on the central hydronic loop ahead of Phase 3 electrification. Sized to reduce heating fuel input by 10%.",
+      "capacity_or_scope": "83,000 m2 curtain wall / perimeter zone treatment",
+      "energy_deltas": {
+        "electricity_kwh_yr": 0,
+        "gas_kwh_yr": -152000
+      },
+      "energy_deltas_kwh_m2_yr": {
+        "electricity": 0,
+        "gas": -1.8
+      },
+      "capex_incremental_usd": 2200000,
+      "capex_like_for_like_usd": 600000,
+      "phase": 1,
+      "source_citation": "Site audit walk-through + AFHA report cross-walk (P1) -- see citations.json"
+    },
+    {
+      "id": "demo-4m-M2-chiller",
+      "name": "Chiller Plant Upgrade -- high-efficiency VFD water-cooled chiller",
+      "category": "hvac_efficiency",
+      "end_use": "central_gas_plant",
+      "description": "Replaces the 2010-vintage water-cooled chiller (2,200 tons) with a high-efficiency variable-frequency-drive chiller at end of its expected service life (~Year 3), cutting cooling electricity ~13% relative to baseline cooling load. Bundled with the envelope's residual cooling-side benefit for reporting simplicity.",
+      "capacity_or_scope": "2,200-ton central plant chiller replacement",
+      "energy_deltas": {
+        "electricity_kwh_yr": -302250,
+        "gas_kwh_yr": 0
+      },
+      "energy_deltas_kwh_m2_yr": {
+        "electricity": -3.6,
+        "gas": 0
+      },
+      "capex_incremental_usd": 700000,
+      "capex_like_for_like_usd": 1200000,
+      "phase": 2,
+      "trigger": "Chiller replacement cycle, ~Year 3",
+      "source_citation": "Site audit equipment inventory (P1) -- see citations.json"
+    },
+    {
+      "id": "demo-4m-M3-central-plant-hp",
+      "name": "Central Plant Heat Pump Electrification -- air-to-water ASHP replacing hydronic furnace",
+      "category": "hvac_electrification",
+      "end_use": "central_gas_plant",
+      "description": "Replaces the existing central_plant_heater (hydronic_furnace, 600-ton equivalent, installed 2003, at end of service life ~Year 6) with an air-to-water air-source heat pump (COP 3.2) serving the existing fan_coil_units terminal distribution. This is the hero electrification measure -- it eliminates ~90% of the building's remaining space-heating gas load, with the residual carried as electric-resistance backup for design-day peaks (folded into the electric addition below for simplicity).",
+      "capacity_or_scope": "600-ton equivalent air-to-water ASHP, COP 3.2, retains existing fan_coil_units distribution",
+      "energy_deltas": {
+        "electricity_kwh_yr": 427500,
+        "gas_kwh_yr": -1368000
+      },
+      "energy_deltas_kwh_m2_yr": {
+        "electricity": 5.1,
+        "gas": -16.5
+      },
+      "capex_incremental_usd": 4700000,
+      "capex_like_for_like_usd": 1800000,
+      "phase": 3,
+      "trigger": "Central hydronic furnace end-of-life, ~Year 6 (est. 2032)",
+      "source_citation": "AFHA 2020 condition assessment cross-walk + Audette custom plan (P1/P3) -- see citations.json"
+    },
+    {
+      "id": "demo-4m-M4-dhw-hpwh",
+      "name": "DHW Heat Pump Water Heater",
+      "category": "dhw_electrification",
+      "end_use": "central_gas_plant",
+      "description": "Replaces the central gas_heater domestic hot water plant (centrally distributed) with a heat-pump water heater (COP 3.0), sized to the existing central distribution loop. Near-breakeven on opex (gas $ saved roughly offset by electricity $ added at current blended rates) -- value is carbon/BPS-driven, not opex-driven.",
+      "capacity_or_scope": "Central HPWH plant, COP 3.0, retains existing central distribution",
+      "energy_deltas": {
+        "electricity_kwh_yr": 126667,
+        "gas_kwh_yr": -380000
+      },
+      "energy_deltas_kwh_m2_yr": {
+        "electricity": 1.5,
+        "gas": -4.6
+      },
+      "capex_incremental_usd": 500000,
+      "capex_like_for_like_usd": 150000,
+      "phase": 1,
+      "source_citation": "Site audit DHW plant inventory (P1) -- see citations.json"
+    },
+    {
+      "id": "demo-4m-M5-lighting-controls",
+      "name": "Lighting Retrofit + BAS/RCx Controls Subscription",
+      "category": "controls",
+      "end_use": "common_lighting",
+      "description": "LED lighting retrofit across common areas, garage, and base-building corridors, paired with an ongoing retro-commissioning (RCx) controls subscription (Parity RCx-like) that continuously tunes BAS setpoints and schedules. The subscription fee is tracked separately from the gross utility savings it enables, per the value-creation waterfall convention.",
+      "capacity_or_scope": "Full common-area LED conversion + continuous RCx subscription",
+      "energy_deltas": {
+        "electricity_kwh_yr": -744000,
+        "gas_kwh_yr": 0
+      },
+      "energy_deltas_kwh_m2_yr": {
+        "electricity": -9.0,
+        "gas": 0
+      },
+      "capex_incremental_usd": 950000,
+      "capex_like_for_like_usd": 0,
+      "subscription_fee_usd_yr": 45000,
+      "phase": 1,
+      "source_citation": "Lighting audit + BAS trend review (P1) -- see citations.json"
+    },
+    {
+      "id": "demo-4m-M6-solar-pv",
+      "name": "Rooftop Solar PV (500 kWp, VNM net metering)",
+      "category": "renewable_generation",
+      "end_use": "rooftop_solar",
+      "description": "500 kWp rooftop array under a virtual net metering (VNM) arrangement. Generation offsets purchased electricity 1:1 at the meter; per the VNM revenue-sharing convention 80% of the value flows to the landlord (owner_capture_pct 0.80 in capture_map), with the remaining 20% flowing to tenants/other VNM subscribers.",
+      "capacity_or_scope": "500 kWp rooftop array",
+      "energy_deltas": {
+        "electricity_kwh_yr": -700000,
+        "gas_kwh_yr": 0
+      },
+      "energy_deltas_kwh_m2_yr": {
+        "electricity": -8.4,
+        "gas": 0
+      },
+      "capex_incremental_usd": 1500000,
+      "capex_like_for_like_usd": 0,
+      "phase": 2,
+      "trigger": "Bundled with Phase 2 (roof access during chiller plant work)",
+      "source_citation": "Roof structural/solar feasibility review (P1) -- see citations.json"
+    }
+  ],
+  "roadmap_phases": [
+    {
+      "phase": 1,
+      "label": "Near-term, low disruption (Year 1)",
+      "measures": ["demo-4m-M1-envelope", "demo-4m-M4-dhw-hpwh", "demo-4m-M5-lighting-controls"],
+      "capex_incremental_usd": 3650000,
+      "capex_like_for_like_usd": 750000,
+      "annual_landlord_savings_usd": 110367,
+      "trigger": "No forced equipment trigger -- executed on hold-period start to capture quick paybacks and stage the BAS/RCx baseline ahead of later phases."
+    },
+    {
+      "phase": 2,
+      "label": "Chiller replacement cycle + Solar PV (Year 3)",
+      "measures": ["demo-4m-M2-chiller", "demo-4m-M6-solar-pv"],
+      "capex_incremental_usd": 2200000,
+      "capex_like_for_like_usd": 1200000,
+      "annual_landlord_savings_usd": 120715,
+      "trigger": "Chiller reaches end of expected service life (~Year 3); roof access reused for solar array install."
+    },
+    {
+      "phase": 3,
+      "label": "Central plant electrification (Year 6)",
+      "measures": ["demo-4m-M3-central-plant-hp"],
+      "capex_incremental_usd": 4700000,
+      "capex_like_for_like_usd": 1800000,
+      "annual_landlord_savings_usd": 1710,
+      "trigger": "Central hydronic furnace (hydronic_furnace, installed 2003) reaches end of service life (~Year 6, est. 2032) -- coincides with the BPS first compliance year."
+    }
+  ],
+  "gap_statement": "The full three-phase plan reduces site emissions 21% from baseline (3,600 -> 2,800 tCO2e/yr) and site energy 28% (135 -> 98 kWh/m2/yr), fully eliminating gas consumption by Year 6. This closes most, but not all, of the gap to the Metro City BPS first-compliance cap (30 kgCO2e/m2/yr): post-plan intensity is 34 kgCO2e/m2/yr against a 30 kgCO2e/m2/yr cap, leaving a residual ~350 tCO2e/yr of fine exposure at the modeled rate ($268/tCO2e) that would require a further measure (e.g. additional on-site or off-site renewable procurement) to fully close.",
+  "gate2_confirmed_at": "2026-07-11T00:00:00Z"
+}

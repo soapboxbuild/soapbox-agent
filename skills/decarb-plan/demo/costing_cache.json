@@ -1,0 +1,79 @@
+{
+  "_comment": "Costing MCP-style CapEx cache for 4th & Madison (demo fixture). Shape mirrors costing.mcp.soapbox.build tool responses (RSMeans-class unit-cost basis, region-adjusted) -- NOT redistributing real RSMeans data, figures are invented/rounded for the demo per the soapbox-costing-plugin's NREL->NLR rebrand and non-redistribution note.",
+  "region": "Metro City (fictional; region cost index 1.00 assumed for demo)",
+  "pricing_basis_year": 2026,
+  "results": [
+    {
+      "measure_id": "demo-4m-M1-envelope",
+      "measure_name": "Envelope Upgrade -- low-e glazing film + perimeter air sealing",
+      "unit_cost_basis": "$/m2 of treated curtain wall + perimeter linear ft air sealing",
+      "quantity": { "curtain_wall_m2": 18500, "perimeter_sealing_lf": 3200 },
+      "total_installed_cost_usd": 2800000,
+      "like_for_like_baseline_cost_usd": 600000,
+      "incremental_cost_usd": 2200000,
+      "cost_confidence": "class_4_screening",
+      "source": "costing.mcp.soapbox.build unit-cost catalog (demo invocation)"
+    },
+    {
+      "measure_id": "demo-4m-M2-chiller",
+      "measure_name": "Chiller Plant Upgrade -- high-efficiency VFD water-cooled chiller",
+      "unit_cost_basis": "$/ton installed, water-cooled centrifugal VFD chiller",
+      "quantity": { "tons": 2200 },
+      "total_installed_cost_usd": 1900000,
+      "like_for_like_baseline_cost_usd": 1200000,
+      "incremental_cost_usd": 700000,
+      "cost_confidence": "class_4_screening",
+      "source": "costing.mcp.soapbox.build unit-cost catalog (demo invocation)"
+    },
+    {
+      "measure_id": "demo-4m-M3-central-plant-hp",
+      "measure_name": "Central Plant Heat Pump Electrification -- air-to-water ASHP replacing hydronic furnace",
+      "unit_cost_basis": "$/ton installed, air-to-water air-source heat pump plant + electrical service upgrade allowance",
+      "quantity": { "tons": 600, "electrical_service_upgrade_allowance_usd": 850000 },
+      "total_installed_cost_usd": 6500000,
+      "like_for_like_baseline_cost_usd": 1800000,
+      "incremental_cost_usd": 4700000,
+      "cost_confidence": "class_4_screening",
+      "source": "costing.mcp.soapbox.build unit-cost catalog (demo invocation)"
+    },
+    {
+      "measure_id": "demo-4m-M4-dhw-hpwh",
+      "measure_name": "DHW Heat Pump Water Heater",
+      "unit_cost_basis": "$/plant installed, central heat-pump water heater, retains existing distribution",
+      "quantity": { "plants": 1 },
+      "total_installed_cost_usd": 650000,
+      "like_for_like_baseline_cost_usd": 150000,
+      "incremental_cost_usd": 500000,
+      "cost_confidence": "class_4_screening",
+      "source": "costing.mcp.soapbox.build unit-cost catalog (demo invocation)"
+    },
+    {
+      "measure_id": "demo-4m-M5-lighting-controls",
+      "measure_name": "Lighting Retrofit + BAS/RCx Controls Subscription",
+      "unit_cost_basis": "$/m2 common-area LED conversion + BAS integration allowance; subscription billed separately (not capitalized)",
+      "quantity": { "common_area_m2": 24000 },
+      "total_installed_cost_usd": 950000,
+      "like_for_like_baseline_cost_usd": 0,
+      "incremental_cost_usd": 950000,
+      "recurring_subscription_usd_yr": 45000,
+      "cost_confidence": "class_4_screening",
+      "source": "costing.mcp.soapbox.build unit-cost catalog (demo invocation)"
+    },
+    {
+      "measure_id": "demo-4m-M6-solar-pv",
+      "measure_name": "Rooftop Solar PV (500 kWp, VNM net metering)",
+      "unit_cost_basis": "$/Wdc installed, rooftop-mounted array + inverters + VNM interconnection allowance",
+      "quantity": { "kwp": 500 },
+      "total_installed_cost_usd": 1500000,
+      "like_for_like_baseline_cost_usd": 0,
+      "incremental_cost_usd": 1500000,
+      "cost_confidence": "class_4_screening",
+      "source": "costing.mcp.soapbox.build unit-cost catalog (demo invocation)"
+    }
+  ],
+  "totals": {
+    "total_installed_cost_usd": 14300000,
+    "total_like_for_like_baseline_cost_usd": 3750000,
+    "total_incremental_cost_usd": 10550000
+  }
+}

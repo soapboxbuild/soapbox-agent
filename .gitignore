@@ -4,3 +4,4 @@ __pycache__/
 .pytest_cache/
 node_modules/
 skills/esg-profile/demo/.scrub-denylist.json
+skills/esg-profile/demo/madison/.scrub-denylist.json

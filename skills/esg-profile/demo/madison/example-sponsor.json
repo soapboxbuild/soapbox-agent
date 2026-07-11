@@ -1,0 +1,20 @@
+{
+  "meta": {"fund":"Fund IV","reporting_year":2025,"anonymized":true,"generated_period":"Q3 2025"},
+  "sponsor": {
+    "name":"Madison",
+    "investment_overview":{"asset_class":"Residential / BTR","location":"US Sunbelt (multi-market)","size":"~8,200 units","exit_date":"TBD","standing_dev":"24 / 2"},
+    "risk_profile":{
+      "transition":{"green_street_rating":"Not rated","crrem_stranding_year":2030,"market_regulation":"Fragmented state/local Building Performance Standards (BPS); fine exposure varies by jurisdiction","fine_exposure":"TBD"},
+      "physical":{"impact":"Moderate-High","hazards":["Heat","Drought","Severe Convective Storm"],"source":"physrisk (live)"}},
+    "scorecard":{"pillars":{"policy_strategy":88.5,"governance_resourcing":62.3,"portfolio_management":79.6,"monitoring_reporting":91.0},"total":80.6,
+      "trend":[{"year":2021,"total":41.2},{"year":2022,"total":55.8},{"year":2023,"total":68.4},{"year":2024,"total":76.1},{"year":2025,"total":80.6}]},
+    "initiatives":{"completed":["GRESB/GRI reporting","Asset-level energy/water/waste tracking (utility management platform)","All-electric standing-asset conversion pilot (3 assets)"],
+      "in_progress":[{"item":"Building Performance Standards (BPS) compliance audit across active markets","budget":"$1.4M"},{"item":"CRREM stranding-year analysis","budget":"-"}],
+      "planned":[{"item":"Formalize green lease language","budget":"Not set","regression":true},{"item":"Rooftop solar feasibility study — clubhouse & common areas","budget":"$310K"}]},
+    "regressions":["Net Zero policy — not yet formalized, no commitment date set","Green lease language — no progress since prior review","Embodied carbon consideration — 0% of assets"],
+    "benchmark":{"metrics":[{"metric":"% Sq ft w/ Energy Ratings","sponsor":"64%","mieppi":"41%","asset_class":"29%","mir":"38%"}]},
+    "governance_rights":{"annual_budget":"No (no JV control rights)","leasing":"No","capex_variance":"No","contractor_engagement":"No"},
+    "energy":{"eui_kwh_m2":95,"carbon_intensity":"18 kg CO₂/m²","renewable_pct":22,"energy_rating_pct":64},
+    "provenance":[{"source_id":"crrem","mode":"live","origin":"crrem get_pathway","period":"2025"},{"source_id":"physical_risk","mode":"live","origin":"physrisk","period":"2025"},{"source_id":"questionnaire","mode":"static","origin":"scrubbed extract","period":"2025"}]
+  }
+}

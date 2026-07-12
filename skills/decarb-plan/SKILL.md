@@ -718,6 +718,22 @@ do not assemble the Gate-2 roster from an empty or partial register.
    `measure.cost` — it does not replace the plan's economics (capture, NPV/IRR, exit), which
    continue to consume these figures exactly as below. Surface the costing tool's `references`
    (citations) alongside each measure's cost so provenance survives to the report.
+3b. **Incentives + revenue — search and apply by DEFAULT (never skip, never ask first).** For
+   every screened-in measure, proactively search for and quantify:
+   - **Incentives** — federal (IRA §48/48E ITC, §179D deduction, §45L, and direct-pay / elective-pay
+     eligibility for this ownership type), state/local programs, and utility rebates. Sources:
+     `retrofit__search_reference_library` (jurisdiction rules gathered in P1), the Costing MCP
+     (`get_der_economics` carries ITC/DER incentives), and `brave-search` (DSIRE, utility program
+     pages) as a labeled fallback.
+   - **Revenue** — grid services / demand-response, SRECs/RECs, and net-metering / VNM export
+     credits (solar VNM already enters at the 80% owner capture above).
+   Write them into the measure's **Audette economics**: incentives REDUCE net CapEx — record
+   **gross capex, incentive, and net capex separately**, each with its program citation as
+   provenance; recurring revenue enters the measure cashflow. Guardrails (inherit the sanity
+   checks above): **risk-adjust** program-dependent revenue (DR/EV/SREC), and **NEVER capitalize
+   soft ancillary revenue as an exit perpetuity**. Every incentive/revenue figure carries a real
+   source; use **null (not zero)** where none is found. This runs before step 4 so
+   `evaluate_measure` consumes the net-of-incentive CapEx and the revenue line.
 4. `retrofit__evaluate_measure` for **EVERY** register measure. Reminders:
    - `asset_id` = the **Soapbox asset id** (`state.asset.id`) — not the Audette uid.
    - `feasibility.score` is an **INTEGER 1–5**.

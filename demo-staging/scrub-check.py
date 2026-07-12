@@ -5,7 +5,11 @@ Scans every demo fixture (extracting text from PDF/XLSX/DOCX, not just plain
 text) for any real-name term in the untracked denylist. Exits non-zero on the
 first directory that leaks, so it can gate staging into the Files store.
 
-Usage: python3 demo-staging/scrub-check.py
+Usage: python3 demo-staging/scrub-check.py [path ...]
+  With no arguments, scans the default fixture roots (SCAN_DIRS).
+  With one or more path arguments (files or directories), scans those
+  instead — e.g. to gate a fixture already committed elsewhere:
+    python3 demo-staging/scrub-check.py ~/soapbox-platform/apps/api/src/services/demo-fixtures/
 Denylist: demo-staging/.scrub-denylist.json  (untracked; real names)
 """
 import json, os, re, sys, zipfile
@@ -65,28 +69,47 @@ def extract_text(path):
         return ""
 
 
+def scan_file(path, patterns, hits):
+    text = extract_text(path)
+    for term, pat in patterns:
+        if pat.search(text):
+            hits.append((os.path.relpath(path, REPO), term))
+
+
 def main():
     terms = load_terms()
+    if not terms:
+        # Empty denylist means the gate can't actually check anything —
+        # fail closed rather than silently passing every fixture.
+        print("SCRUB FAIL — denylist is empty; refusing to pass a no-op scrub gate.")
+        sys.exit(1)
     # word-boundary match so short terms (e.g. "Varia") don't fire on
     # "variance"/"variable"; boundaries anchor on alphanumeric edges.
     patterns = [(t, re.compile(r"\b" + re.escape(t) + r"\b", re.IGNORECASE)) for t in terms]
     hits = []
     scanned = 0
-    for base in SCAN_DIRS:
-        root = os.path.join(REPO, base)
-        if not os.path.isdir(root):
+
+    # Explicit path arguments take priority over the default SCAN_DIRS so the
+    # tool can gate fixtures committed outside this repo (e.g. the platform's
+    # apps/api/src/services/demo-fixtures/).
+    targets = sys.argv[1:] if len(sys.argv) > 1 else [os.path.join(REPO, base) for base in SCAN_DIRS]
+
+    for target in targets:
+        if os.path.isfile(target):
+            scanned += 1
+            scan_file(target, patterns, hits)
             continue
-        for dirpath, dirnames, filenames in os.walk(root):
+        if not os.path.isdir(target):
+            continue
+        for dirpath, dirnames, filenames in os.walk(target):
             dirnames[:] = [d for d in dirnames if d not in SKIP_NAMES]
             for fn in filenames:
                 if fn in SKIP_FILES:
                     continue
                 path = os.path.join(dirpath, fn)
-                text = extract_text(path)
                 scanned += 1
-                for term, pat in patterns:
-                    if pat.search(text):
-                        hits.append((os.path.relpath(path, REPO), term))
+                scan_file(path, patterns, hits)
+
     if hits:
         print(f"SCRUB FAIL — {len(hits)} real-name leak(s) in {scanned} files:")
         for path, term in hits:

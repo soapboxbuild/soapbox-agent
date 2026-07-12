@@ -68,13 +68,16 @@ node record-fixture.mjs \
 
 ### Step 2: Scrub Sensitive Data
 
-The `.scrub-denylist.json` defines PII/secrets to strip from the fixture. Run:
+The `.scrub-denylist.json` defines PII/secrets to strip from the fixture. `scrub-check.py`
+scans the default fixture roots (`SCAN_DIRS`) when called with no arguments — pass the
+fixture's actual path(s) to scan those instead (files or directories, recursively):
 
 ```bash
-python3 scrub-check.py fixtures/rsra.json
+python3 demo-staging/scrub-check.py fixtures/rsra.json
 ```
 
-This validates the fixture against the denylist and warns on any sensitive values. Use the existing `stage-files.sh` or manual edit to remove:
+This validates the fixture against the denylist and exits non-zero (fail-closed) on any
+leaked term or an empty denylist. Use the existing `stage-files.sh` or manual edit to remove:
 - Email addresses
 - Tenant/API keys
 - Internal IDs (except Demo-org reference)

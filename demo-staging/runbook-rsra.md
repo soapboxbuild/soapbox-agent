@@ -3,7 +3,7 @@
 **Status:** ✅ Validated end-to-end on stage (thread `0db2286c`, artifact "4400 Prairie Crossing — RSRA", ~75s scripted replay).
 
 ## Setup (staged)
-- Org: **Demo** (`8ebc72a7-…`) → portfolio **Demo** → asset **4400 PRAIRIE CROSSING** (`062cbda3-…`, Denver CO, multifamily, 2006).
+- Org: **Demo** (`8ebc72a7-…`) → portfolio **Demo** → asset **4400 PRAIRIE CROSSING** (`062cbda3-…`, Prairieton TX, multifamily, 2023).
 - Files on asset: `om_4400_prairie_crossing.pdf` (Deal Documents), `rsra_data.json` + `physrisk_cache.json` + `bps_cache.json` (Demo Staging).
 - Asset `system_prompt` = `[DEMO MODE — 4400 Prairie Crossing]` (uses a scripted-replay fixture; renders via fill_report).
 
@@ -25,4 +25,4 @@
 - If a live render stalls: the validated artifact from thread `0db2286c` is on the asset — open it from the artifacts pane / Files.
 
 ## Notes
-- Numbers obey kWh/m², ≤2 sig figs, peer benchmarks. Pseudonymous (Stonebridge Capital / Denver relocation) — real names never appear (scrub gate: `python3 demo-staging/scrub-check.py`).
+- Numbers obey kWh/m², ≤2 sig figs, peer benchmarks. Pseudonymous (Stonebridge Capital acquisition, Prairieton TX) — real names never appear (scrub gate: `python3 demo-staging/scrub-check.py`).

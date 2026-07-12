@@ -80,21 +80,22 @@ org memory, the reference library, and the `decarb` report template.
      gate now BLOCKS a decarb report whose crrem_meta is set but crrem_pathway is empty (it would
      otherwise silently drop the curve), so a from-state rebuild without a fresh fetch will fail.
    - **Grid emission factor — the CRREM carbon basis (HARD).** The building's carbon intensity in
-     `targets.trajectory[]` (both BAU and with-plan) MUST be computed on a grid emission factor that
-     is **consistent with the CRREM pathway and DECLINES over the horizon** — i.e. the actual serving
-     utility's factor and/or a CRREM/region-consistent forward grid-decarbonization trajectory.
+     `targets.trajectory[]` (both BAU and with-plan) MUST be computed on a **forward, DECLINING** grid
+     emission factor sourced from the **cambium MCP** — `get_emission_factors(gea_region=<asset US state
+     abbrev, e.g. 'WA'>, scenario=<org default, else mid_case>, year)` — call `list_scenarios` if unsure
+     which scenario applies. Use the returned **AER** (average rate) for **each year** of the intensity
+     and BAU trajectory, and **LRMER** (long-run marginal) for per-measure carbon savings.
      **Never** compute the building's CRREM intensity from a **static, current-year eGRID subregion
      *average* held flat across all years** — that is the #1 cause of a false "already stranded"
      verdict. Two failure modes the gate/verifier must reject:
-     - **Wrong factor for the utility.** An all-electric building on a low-carbon utility (e.g.
-       **Seattle City Light** ≈ all-hydro, ~0.03 kgCO₂e/kWh) is 5–10× cleaner than its eGRID
-       subregion average (NWPPc ≈ 0.29). Using the subregion average overstates emissions ~5–10× and
-       fabricates stranding. Use the **actual utility factor** (Audette's serving-utility / CETA-aligned
-       factor is the right basis here), not the regional eGRID mean.
-     - **Flat BAU.** Where the grid is decarbonizing (WA CETA, most US regions), the BAU carbon curve
-       MUST slope **down** as the grid greens even with zero measures — a flat BAU against a declining
-       CRREM pathway mixes bases and is a hard data error (compounds the "non-increasing trajectory"
-       rule below).
+     - **Wrong / stale factor.** An all-electric building on a low-carbon grid (e.g. **Seattle City
+       Light** ≈ all-hydro, ~0.03 kgCO₂e/kWh) is far cleaner than a static eGRID subregion average
+       (NWPPc ≈ 0.29). Cambium's forward WECCNW curve (`mid_case` AER ≈ 0.16 kg/kWh in 2026 declining
+       to ~0.01 by 2050) is the correct, region-consistent basis — it captures grid decarbonization
+       that a single static eGRID mean does not. Do not use the regional eGRID mean as the headline.
+     - **Flat BAU.** Cambium AER declines year over year, so the BAU carbon curve MUST slope **down**
+       as the grid greens even with zero measures — a flat BAU against a declining CRREM pathway mixes
+       bases and is a hard data error (compounds the "non-increasing trajectory" rule below).
      The eGRID/ESPM **location-based** GHG number (what ESPM reports, what a GRESB/lender sees) may be
      shown as a clearly-labeled **secondary disclosure**, but it is NOT the CRREM stranding verdict and
      must never be the headline carbon intensity plotted against the CRREM curve. If the two bases give

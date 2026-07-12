@@ -2,6 +2,14 @@
 
 This directory contains tooling to record, scrub, validate, and commit golden-run fixtures for demo-scripted-replay.
 
+## Prerequisites
+
+Before first use, install the recorder's one dependency (`@supabase/supabase-js`) from this directory:
+
+```bash
+cd demo-staging && npm install   # or: bun install
+```
+
 ## Required Environment Variables
 
 To run the fixture recorder, you must source `.demo.env` and set the following:

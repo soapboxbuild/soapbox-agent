@@ -88,23 +88,22 @@ The script validates:
 - All timestamps are monotonically increasing
 - Required fields present
 
-### Step 4: Commit into API
+### Step 4: Commit the fixture into the API repo
 
-Once scrubbed and validated, commit the fixture into the platform's fixture registry via Supabase. The platform's `POST /api/fixtures` endpoint expects:
-- `workflow`: string
-- `version`: number
-- `fixture`: the full JSON stringified
+Fixtures are **committed build-time assets**, not database rows. The platform loads
+them with `readFileSync` from `apps/api/src/services/demo-fixtures/<workflow>.json`
+(see `loadDemoFixture` in `apps/api/src/services/demo-replay.ts`). There is no
+`/api/fixtures` endpoint and no `fixtures` table — copy the scrubbed, validated JSON
+into that path in the `soapbox-platform` repo and commit it:
 
-Example:
 ```bash
-curl -X POST https://api.stage.soapbox.build/api/fixtures \
-  -H "Authorization: Bearer $(vw read agents)" \
-  -H "Content-Type: application/json" \
-  -d "$(jq -n --slurpfile f fixtures/rsra.json \
-    '{workflow: "rsra", version: 1, fixture: $f[0]}')"
+cp /tmp/rsra.json ~/soapbox-platform/apps/api/src/services/demo-fixtures/rsra.json
+cd ~/soapbox-platform
+git add apps/api/src/services/demo-fixtures/rsra.json
+git commit -m "feat(demo): freeze verified rsra golden-run fixture"
 ```
 
-Or use the Supabase MCP directly to insert into the `fixtures` table.
+The fixture takes effect on the next API deploy. `<workflow>` is one of `rsra`, `esg`, `decarb`.
 
 ## Cleanup: Delete Throwaway Conversations
 

@@ -1,0 +1,8 @@
+{
+  "name": "demo-staging-fixtures",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.1"
+  }
+}

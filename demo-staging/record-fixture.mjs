@@ -1,11 +1,18 @@
 // soapbox-agent/demo-staging/record-fixture.mjs
 // Usage: node record-fixture.mjs --workflow rsra --asset 062cbda3-... --prompt "Run a rapid sustainability risk assessment." --target-ms 75000 --out fixtures/rsra.json
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => {
   if (v.startsWith('--')) a.push([v.slice(2), arr[i + 1]]); return a
 }, []))
+
+const VALID_WORKFLOWS = ['rsra', 'esg', 'decarb']
+if (!VALID_WORKFLOWS.includes(args.workflow)) {
+  console.error(`invalid --workflow "${args.workflow}" — must be one of: ${VALID_WORKFLOWS.join(', ')}`)
+  process.exit(1)
+}
 
 const DEMO_ORG_ID = '8ebc72a7-dca1-4cb1-be02-eed12f38340f'
 const API = process.env.DEMO_API_HOST // e.g. stage app API host
@@ -24,6 +31,11 @@ const H = { Authorization: `Bearer ${token}`, 'x-organization-id': DEMO_ORG_ID, 
 const convRes = await fetch(`${API}/api/assets/${args.asset}/conversations`, {
   method: 'POST', headers: H, body: JSON.stringify({ title: `fixture-record-${args.workflow}` }),
 })
+if (!convRes.ok) {
+  const bodySnippet = (await convRes.text()).slice(0, 500)
+  console.error(`conversation create failed: ${convRes.status} ${convRes.statusText}\n${bodySnippet}`)
+  process.exit(1)
+}
 const conv = await convRes.json()
 console.error('conversation:', conv.id, '(clean up after)')
 
@@ -34,6 +46,11 @@ let render = null
 const res = await fetch(`${API}/api/conversations/${conv.id}/messages`, {
   method: 'POST', headers: H, body: JSON.stringify({ content: args.prompt }),
 })
+if (!res.ok) {
+  const bodySnippet = (await res.text()).slice(0, 500)
+  console.error(`message post failed: ${res.status} ${res.statusText}\n${bodySnippet}`)
+  process.exit(1)
+}
 const reader = res.body.getReader()
 const dec = new TextDecoder()
 let buf = ''
@@ -68,5 +85,6 @@ const fixture = {
   events, render,
 }
 const out = args.out ?? `fixtures/${args.workflow}.json`
+mkdirSync(dirname(out), { recursive: true })
 writeFileSync(out, JSON.stringify(fixture, null, 2))
 console.error(`wrote ${out} (${events.length} events, recorded ${recordedTotalMs}ms)`)

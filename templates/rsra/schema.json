@@ -402,6 +402,27 @@
               "type": "string"
             }
           }
+        },
+        "operational_risk": {
+          "type": "object",
+          "description": "Operational (non-$) climate risk indices surfaced in the Climate VaR box — heat/water are disruption indices, NOT asset-value loss. Populate from calculate_climate_var operational_risk output.",
+          "additionalProperties": true,
+          "properties": {
+            "heat_impact_index_exit": {
+              "type": [
+                "number",
+                "string"
+              ],
+              "description": "Chronic-heat disruption index at exit (degree-days/index) — never a $ loss."
+            },
+            "water_stress_index_exit": {
+              "type": [
+                "number",
+                "string"
+              ],
+              "description": "Water-stress index at exit."
+            }
+          }
         }
       }
     },

@@ -828,6 +828,23 @@ of bugs that ship a technically-correct analysis inside a broken report. Record 
    ("Cambium not available this run" shipped once — that is a fail, not an acceptable degrade). Either
    get Cambium or label the Scope 2 figure explicitly low-confidence and flag the connector as broken to
    the user (never-fail-silently).
+3c. **Figure consistency — every number must reconcile, and a $ must match the % it sits beside.**
+   The class of bug this catches: annual vs cumulative conflated, a dollar figure that doesn't equal the
+   percent next to it, a coverage claim that names hazards the model didn't score, or a speculative
+   multiplier stated as fact. Concretely, in the Climate VaR block:
+   - `cumulative_var_npv_usd ÷ asset_value ≈ cumulative_var_npv_pct` (the headline VaR). The NPV dollar is
+     the **cumulative 5-yr** figure — it is NOT the annual loss. `expected_annual_loss_pct_exit` is
+     **per-year**; annual dollars (if ever shown) = that % × asset value, ≈ VaR% ÷ hold_years, and must be
+     an order of magnitude smaller than the cumulative NPV. If a sentence puts an annual % and a cumulative
+     $ side by side as one quantity, that's the finding — separate them.
+   - **Coverage matches what was modeled.** Don't state "flood + wind" when wind EAL ≈ 0, and don't imply a
+     hazard is included that wasn't. If hail/convective (unmodeled here) is the real driver, say so
+     qualitatively — never assert a specific VaR multiple ("2–3× higher") the model didn't produce.
+   - **Don't conflate an insurance deductible with an annual EAL/VaR** — a per-event % deductible ($/event)
+     is not an annual expected loss; keep them in separate sentences with their units.
+   - Sanity-check the driver: if the primary $ VaR driver is a hazard scored "Low (1/4)", say why the $ is
+     still material (or flag that the coarse ~1km flood cell may be overstating it) — a "Low" hazard as the
+     headline loss driver is a tension, not a silent pass.
 4. **Output hygiene.** The final chat message is a clean summary only — no leaked phase narration.
 
 **Consistent + evolving:** these checks are the shared contract for BOTH the verifier and retrofit-advisor

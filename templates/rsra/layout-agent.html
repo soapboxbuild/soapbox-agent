@@ -1042,16 +1042,20 @@
           sXLabs+='<text x="'+sX(sGx)+'" y="'+(sCy2+13)+'" font-size="9" fill="#94A3B8" text-anchor="middle">'+sGx+'%</text>';
           sYLabs+='<text x="'+(sCx1-4)+'" y="'+(Number(sY(sGy))+3).toFixed(1)+'" font-size="9" fill="#94A3B8" text-anchor="end">'+sGy+sVdSuffix+'</text>';
         }
+        /* Number the dots and key them to a wrapping legend below — inline labels
+           collide when points cluster, so the marker carries only a numeral (never
+           overlaps) and the full label lives in the legend. */
+        var sLegend='';
         sens.forEach(function(row,i){
           var co2=Number(String(row.emissions_reduction_pct||0).replace(/[^0-9.]/g,''));
           var vd=hasVDPct ? Number(row.value_delta_pct||0) : Number(row.value_delta_usd||0)/1000;
           var px=sX(co2),py=sY(vd);
           sLinePts.push(px+','+py);
-          sPts+='<circle cx="'+px+'" cy="'+py+'" r="6" fill="#12253A" stroke="#fff" stroke-width="2"/>';
-          var anch=i<sens.length/2?'start':'end',dx=i<sens.length/2?10:-10;
-          sLabs+='<text x="'+(Number(px)+dx).toFixed(1)+'" y="'+(Number(py)-5).toFixed(1)+'" font-size="9" fill="#475569" text-anchor="'+(dx>0?'start':'end')+'">'+esc(row.label||'')+'</text>';
+          sPts+='<circle cx="'+px+'" cy="'+py+'" r="8" fill="#12253A" stroke="#fff" stroke-width="2"/>'
+              + '<text x="'+px+'" y="'+(Number(py)+3).toFixed(1)+'" font-size="9" font-weight="700" fill="#fff" text-anchor="middle">'+(i+1)+'</text>';
+          sLegend+='<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;white-space:nowrap"><span style="display:inline-flex;width:15px;height:15px;border-radius:50%;background:#12253A;color:#fff;font-size:9px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</span>'+esc(row.label||'')+'</span>';
         });
-        sensChartEl.innerHTML='<div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Value Uplift vs. Carbon Reduction — sensitivity at each investment level</div><svg viewBox="0 0 560 195" width="100%" style="display:block;overflow:visible" aria-label="Value creation vs carbon reduction scatter chart">'+sGrid+sXLabs+sYLabs+'<polyline points="'+sLinePts.join(' ')+'" fill="none" stroke="#12253A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.4"/>'+sPts+sLabs+'<text x="'+(((sCx1+sCx2)/2)).toFixed(0)+'" y="185" font-size="9" fill="#64748B" text-anchor="middle">CO₂ Reduction (%)</text><text x="12" y="92" font-size="9" fill="#64748B" text-anchor="middle" transform="rotate(-90,12,92)">'+sVdYLabel+'</text></svg>';
+        sensChartEl.innerHTML='<div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin-bottom:8px">Value Uplift vs. Carbon Reduction — sensitivity at each investment level</div><svg viewBox="0 0 560 195" width="100%" style="display:block;overflow:visible" aria-label="Value creation vs carbon reduction scatter chart">'+sGrid+sXLabs+sYLabs+'<polyline points="'+sLinePts.join(' ')+'" fill="none" stroke="#12253A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.4"/>'+sPts+'<text x="'+(((sCx1+sCx2)/2)).toFixed(0)+'" y="185" font-size="9" fill="#64748B" text-anchor="middle">CO₂ Reduction (%)</text><text x="12" y="92" font-size="9" fill="#64748B" text-anchor="middle" transform="rotate(-90,12,92)">'+sVdYLabel+'</text></svg><div style="display:flex;flex-wrap:wrap;gap:4px 0;margin-top:10px;font-size:11px;color:#475569;line-height:1.5">'+sLegend+'</div>';
       }
       /* Table */
       var sensTbody = document.querySelector('#sensitivity-table tbody');
@@ -1285,13 +1289,13 @@
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:600;color:#12253A;margin-bottom:4px">Expected Loss at Risk' + (holdYrs ? ' · ' + holdYrs : '') + '</div>' +
               '<div style="font-size:12px;color:#475569;line-height:1.6">' +
-                'NPV of cumulative flood + wind damage under <strong>' + scenarioStr + '</strong>. ' +
-                'Annual expected loss at exit: <strong>' + ealExit + '</strong> of asset value' +
-                (npvUsd ? ' (' + npvUsd + ' NPV)' : '') + '. ' +
+                'Cumulative flood structural damage over the ' + (holdYrs || 'hold') + ', NPV' +
+                (npvUsd ? ': <strong>' + npvUsd + '</strong> (' + varPct + ' of asset value)' : ' <strong>' + varPct + '</strong> of asset value') + ', under <strong>' + scenarioStr + '</strong>. ' +
+                'Expected annual loss reaches <strong>' + ealExit + '/yr</strong> at exit. ' +
                 'Primary driver: <strong>' + driver + '</strong>.' +
               '</div>' +
               '<div style="margin-top:6px;font-size:10px;color:#94A3B8">' +
-                'Physical risk only · Transition VaR not modeled · Model uncertainty ±30–50% · ' + esc(cVar.covers || 'Flood + Wind') +
+                'Physical risk only · Transition VaR not modeled · Model uncertainty ±30–50% · ' + esc(cVar.covers || 'Flood structural damage only') +
               '</div>' +
             '</div>' +
           '</div>' + opHtml;

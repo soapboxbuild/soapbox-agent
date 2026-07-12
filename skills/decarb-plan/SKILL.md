@@ -165,6 +165,15 @@ org memory, the reference library, and the `decarb` report template.
      a pass-through: it pays the master/utility bill and rebills ~(1 − capture%) to tenants, so it only
      BEARS `capture%` of the cost. A measure that cuts the bill by $X therefore returns only
      `capture% × $X` to the owner — the rest was tenant money that also disappears from the rebill.
+     **Carbon ≠ cash on RUBS:** RUBS shifts who bears the COST, never who owns the EMISSIONS.
+     Master-metered / RUBS-rebilled energy stays the owner's **Scope 1/2** (the owner holds the meter
+     → operational control); only energy on a tenant's OWN direct utility account is Scope 3. So a
+     measure on RUBS-billed common energy can cut the owner's reported carbon ~fully while returning
+     only ~`capture%` of the cash. Keep the two boundaries separate — never reduce owner Scope 1/2
+     just because energy is RUBS-rebilled, and never let carbon ownership follow the cost split.
+     **Scope allocation follows system architecture (centralized → owner S1/S2; unitized/in-unit on
+     tenant meters → tenant S3), derived from DOCUMENTS first (OM/PCA/as-builts/equipment schedule),
+     then the Audette system schedule, then archetype — docs win; Audette often mis-categorizes.**
      At a 10% landlord capture, owner utility savings are ~10% of gross ≈ **$0/yr at plan scale**, NOT
      the gross figure. **Never credit the owner the gross (or 100%) utility savings, and never model the
      owner-favorable fuel-switch asymmetry** "owner keeps 100% of the gas cut while tenant meters absorb

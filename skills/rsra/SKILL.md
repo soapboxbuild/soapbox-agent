@@ -193,6 +193,29 @@ building + region + scenario yields the same number every run. For a tenant-mete
 landlord Scope 2 is only common-area load × Cambium AER; resident electricity is Scope 3 (tenant
 boundary) and is excluded from the landlord figure — do not inflate Scope 2 with resident load.
 
+**Scope allocation follows SYSTEM ARCHITECTURE — derive it from DOCUMENTS first (HARD).**
+Whether energy is the owner's (Scope 1/2) or the tenant's (Scope 3) depends on whether systems are
+**centralized vs unitized** and how they're metered. Establish the architecture in this order:
+1. **Documents (ground truth, ALWAYS first):** OM utility table, PCA/PCNA, as-builts, equipment
+   schedules, lease/utility exhibits. These state the actual systems and who's metered.
+2. **Audette model system schedule** — ONLY if connected, and NEVER over the documents. Audette
+   frequently mis-categorizes systems and defaults to an archetype/mixed-fuel guess when it lacks
+   meter data, so treat it as corroboration, not authority. Docs win on any conflict.
+3. **Archetype inference** (type + vintage + region) — last resort when neither doc nor model
+   resolves it; label `(est.)`.
+Then allocate:
+- **Centralized / central-plant** systems the owner master-meters → owner **Scope 1** (central
+  combustion) or **Scope 2** (central electric) — even though tenants use the output.
+- **Unitized / in-unit** systems on tenant-held meters → tenant **Scope 3** (downstream leased assets).
+
+**RUBS shifts ECONOMIC capture, NOT carbon ownership (HARD).** RUBS = the owner holds the master
+meter/utility account and rebills tenants by ratio. That is cost recovery, not operational control.
+RUBS/master-metered energy stays the owner's **Scope 1/2** (owner holds the meter). Only energy on a
+tenant's OWN direct utility account is the owner's **Scope 3**. NEVER let RUBS move emissions off the
+owner's Scope 1/2. Keep the two boundaries separate: RUBS reduces the owner's **economic capture**
+of savings (~10% net owner where RUBS applies) but leaves **carbon ownership at 100%** — a measure on
+RUBS-billed common energy cuts the owner's reported carbon fully while returning little cash.
+
 **Audette pipeline failed (`audette_pipeline_state = 'failed'`):** This is not a fatal error — the RSRA can still proceed from OM and web data. But always surface this to the user immediately:
 
 > ⚠️ **Audette model unavailable** — the Audette pipeline for this asset has a failed state, so no energy model or carbon baseline is available. The RSRA will proceed from the Offering Memorandum and web research instead. To get a calibrated Audette model, run `#audette-onboard` to re-onboard the asset (you'll need utility bills or a PCNA). Want me to continue with the RSRA now, or onboard Audette first?

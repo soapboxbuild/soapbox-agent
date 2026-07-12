@@ -802,7 +802,8 @@ of bugs that ship a technically-correct analysis inside a broken report. Record 
 
 1. **Section completeness (schema ↔ data).** Every section the template renders must have its data key
    populated: `decarb_sensitivity` (≥3 rows), `ghg_scoping.scopes` (Scope 1/2/3),
-   `certifications_and_debt`, `physical_climate_risk.climate_var` (when physrisk ran), `emissions_profile`.
+   `certifications_and_debt`, `risk_scores.factors` (≥4 dimensions),
+   `physical_climate_risk.climate_var` (when physrisk ran), `emissions_profile`.
    A section whose key is absent renders **invisibly** — silent data loss. If a field you computed won't
    fit the schema, that is a **schema↔template drift** finding (fix the schema, don't drop the field).
 2. **Measure-sizing sanity (retrofit-advisor owns this).** No measure quantity may exceed its sizing rule
@@ -849,6 +850,7 @@ Do **not** let the running phase-status lines ("Phase 1+2 kicking off…", "Foun
 - [ ] `physical_climate_risk.climate_var` — **REQUIRED when physrisk ran**: populate from `calculate_climate_var` (`cumulative_var_npv_pct`, `expected_annual_loss_pct_exit`, `primary_driver`, `hold_period_years`, `covers`) + `operational_risk` (heat/water indices). Without it the Climate VaR box is invisible and the physical-risk section shows hazards but no quantified $ risk — a load-bearing omission for underwriting.
 - [ ] `ghg_scoping.scopes` — Scope 1, 2, and 3 entries
 - [ ] `certifications_and_debt` — ENERGY STAR / green-debt / fund-alignment recommendations (the Certifications & Green Debt section is hidden without it)
+- [ ] `risk_scores.factors` — **REQUIRED**: the cross-cutting Risk Factor Scorecard. Score each underwriting risk dimension — at minimum **Physical climate**, **Transition / regulatory**, **Market / liquidity** (green premium · brown discount), and **Data confidence** — each with `factor`, `level` (No risk | Low | Moderate | High | Red flag), and a 1–2 sentence `rationale` citing the driving fact. This is the reader's whole-risk-surface view; physical hazards alone are not "the risk factors."
 
 **Required sequence — no exceptions:**
 1. Compute all values from Phase 1–9 research.

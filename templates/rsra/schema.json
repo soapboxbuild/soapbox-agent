@@ -626,6 +626,53 @@
           "description": "Fund / LP ESG alignment (e.g. GRESB, SFDR, net-zero commitments)."
         }
       }
+    },
+    "risk_scores": {
+      "type": "object",
+      "description": "Scored risk-factor summary for underwriting. Rate each acquisition risk dimension so the reader sees the whole risk surface at a glance, not just physical hazards. Complements physical_climate_risk (detail) — this is the cross-cutting scorecard.",
+      "additionalProperties": true,
+      "properties": {
+        "factors": {
+          "type": "array",
+          "description": "One row per risk dimension. Recommended set: 'Physical climate', 'Transition / regulatory', 'Market / liquidity (green premium · brown discount)', 'Data confidence'. Add others (e.g. 'Insurance / P&C') where material.",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "factor",
+              "level"
+            ],
+            "properties": {
+              "factor": {
+                "type": "string",
+                "description": "Risk dimension name."
+              },
+              "level": {
+                "type": "string",
+                "description": "Rating: No risk | Low | Moderate | High | Red flag."
+              },
+              "score": {
+                "type": [
+                  "number",
+                  "integer"
+                ],
+                "description": "Optional 0–4 numeric score matching the level."
+              },
+              "rationale": {
+                "type": "string",
+                "description": "1–2 sentence basis for the rating, citing the driving fact (e.g. 'No TX BPS → no transition penalty through hold')."
+              }
+            }
+          }
+        },
+        "overall": {
+          "type": "string",
+          "description": "Optional overall risk posture (e.g. 'Low — opportunity-led')."
+        },
+        "note": {
+          "type": "string"
+        }
+      }
     }
   }
 }

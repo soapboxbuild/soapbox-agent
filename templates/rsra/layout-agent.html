@@ -1301,6 +1301,34 @@
       physSection.style.display = '';
     }
 
+    /* ── Risk Factor Scorecard ── */
+    var rf = data.risk_scores || {};
+    var rfFactors = Array.isArray(rf.factors) ? rf.factors : (Array.isArray(rf) ? rf : []);
+    var rfSection = document.getElementById('risk-factors-section');
+    if (rfSection && rfFactors.length > 0) {
+      /* self-contained class mapper — riskClass() above is scoped to the physical-risk block */
+      function rfClass(lvl) {
+        lvl = (lvl || '').toLowerCase();
+        return lvl.indexOf('high') !== -1 || lvl.indexOf('red') !== -1 ? 'risk-high'
+             : lvl.indexOf('mod') !== -1 ? 'risk-moderate'
+             : (lvl.indexOf('low') !== -1 || lvl.indexOf('no ') !== -1) ? 'risk-low' : '';
+      }
+      var rfTbody = document.querySelector('#risk-factors-table tbody');
+      var rfHtml = '';
+      rfFactors.forEach(function(f) {
+        var lvl = f.level || f.rating || '';
+        rfHtml += '<tr><td><strong>' + esc(f.factor || f.name || '—') + '</strong></td>';
+        rfHtml += '<td class="' + rfClass(lvl) + '">' + esc(lvl || '—') + '</td>';
+        rfHtml += '<td style="color:#475569">' + esc(f.rationale || f.basis || f.note || '—') + '</td></tr>';
+      });
+      if (rfTbody) rfTbody.innerHTML = rfHtml;
+      if (rf.overall || rf.note) {
+        var rfNote = document.getElementById('risk-factors-note');
+        if (rfNote) rfNote.innerHTML = (rf.overall ? '<strong>Overall posture:</strong> ' + esc(rf.overall) + (rf.note ? ' — ' : '') : '') + esc(rf.note || '');
+      }
+      rfSection.style.display = '';
+    }
+
     /* ── GHG Scoping ── */
     var ghg = data.ghg_scoping || {};
     var ghgSection = document.getElementById('ghg-section');
@@ -1648,6 +1676,19 @@
     </table>
     <div id="climate-var-box" style="display:none;margin-top:20px;border-radius:8px;border:1.5px solid #12253A;background:#F8FAFC;padding:16px 20px"></div>
     <div id="physical-risk-note" style="margin-top:12px;font-size:12px;color:#475569;line-height:1.6"></div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       RISK FACTOR SCORECARD
+  ════════════════════════════════════ -->
+  <div id="risk-factors-section" class="section" style="display:none">
+    <div class="section-label">Risk Assessment</div>
+    <h2 class="section-title">Risk Factor Scorecard</h2>
+    <table class="profile-table" id="risk-factors-table">
+      <thead><tr><th>Risk Factor</th><th>Rating</th><th>Basis</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div id="risk-factors-note" style="margin-top:12px;font-size:12px;color:#475569;line-height:1.6"></div>
   </div>
 
   <!-- ══════════════════════════════════

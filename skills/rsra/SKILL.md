@@ -522,6 +522,23 @@ Use the appropriate benchmark set for the asset type. All figures are USD and re
 | EV charging (parking lot) | Any surface lot | $3,000–8,000/stall | |
 | Solar carport / rooftop | Any owned roof/lot | $3.00–5.50/W DC | |
 
+### Measure sizing discipline (avoid oversizing)
+
+Cost ranges above are per-unit — you must still size the **quantity** sensibly. Oversized measures read as
+unserious and inflate the plan. Hard rules (retrofit-advisor enforces these; see Phase 5A):
+
+- **EV charging — size day-one conservatively.** Install **~5% of parking spaces** as active Level-2 stalls
+  day-one (typical multifamily), and rough-in **conduit** for future expansion — do NOT electrify 15–25% of
+  parking on day one. For a 324-unit / ~400-space property that is **~15–20 active stalls + conduit**, not 80.
+  If you ever propose >10% of spaces active day-one, state the explicit demand basis (e.g. tenant EV survey).
+- **EV charging is NOT a building-decarbonization measure.** It serves tenant vehicles (a Scope 3 *shift*, not
+  a reduction of the building's Scope 1/2). Do **not** attribute a building CO₂ reduction % to it — set its
+  `emissions_reduction_pct` to 0 (or omit) and justify it on revenue/retention/positioning, not carbon.
+- **Vintage screening** (already in Phase 5A): never propose LED/weatherization/envelope measures on a
+  post-2015 build — they are inapplicable and flag as a verifier finding.
+- Every measure quantity must trace to a building fact (parking count, roof area, unit count, equipment age).
+  If the fact is unknown, size against a stated assumption and **flag it** — do not silently pick a round number.
+
 ### 5B — Compliance-Required vs. Elective CapEx
 
 Separate the table explicitly. **IRR screen:** For each elective measure, compute IRR using (1) annual energy/penalty savings and (2) hold period from the OM, then compare against the deal-derived hurdle rate.
@@ -777,6 +794,32 @@ panel, a static grid factor instead of Cambium, or a benchmark EUI presented as 
 3. Only render once the findings are clean or explicitly caveated. Do NOT `fill_report` around an open
    conflict. (Consistent with the render-gate model — verification precedes the deliverable.)
 
+### Report-integrity checks (run EVERY render — verifier + retrofit-advisor share this list)
+
+Beyond claim-verification, the verifier gate MUST also catch **deliverable-integrity** defects — the class
+of bugs that ship a technically-correct analysis inside a broken report. Record each as a
+`verifier__record_finding`; a failing check blocks render until fixed:
+
+1. **Section completeness (schema ↔ data).** Every section the template renders must have its data key
+   populated: `decarb_sensitivity` (≥3 rows), `ghg_scoping.scopes` (Scope 1/2/3),
+   `certifications_and_debt`, `physical_climate_risk.climate_var` (when physrisk ran), `emissions_profile`.
+   A section whose key is absent renders **invisibly** — silent data loss. If a field you computed won't
+   fit the schema, that is a **schema↔template drift** finding (fix the schema, don't drop the field).
+2. **Measure-sizing sanity (retrofit-advisor owns this).** No measure quantity may exceed its sizing rule
+   (see "Measure sizing discipline"): EV ≤~5% of parking active day-one; every quantity traces to a
+   building fact; no vintage-inapplicable measure (LED on post-2015). Flag an oversized/implausible
+   quantity as a conflict — 80 EV stalls on a 324-unit building is a fail, not a rounding preference.
+3. **No fabricated precision / correct units.** A benchmark-estimated EUI may not render as measured;
+   an operational index (heat/water) may not be shown as a $ loss; EV charging may not claim a building
+   CO₂ reduction %.
+4. **Output hygiene.** The final chat message is a clean summary only — no leaked phase narration.
+
+**Consistent + evolving:** these checks are the shared contract for BOTH the verifier and retrofit-advisor
+— do not maintain divergent copies. When a NEW defect class ships (something this list didn't catch),
+`hindsight__retain` it to the shared `soapbox` bank as a report-integrity lesson so the next run's gate
+inherits it. The retrofit-advisor and verifier both read that bank, so the checklist grows in one place.
+The same gate applies to any renderer (portfolio-analysis, CRREM, decarb) — reference this list, don't fork it.
+
 ## Phase 10: Report Output
 
 The report artifact is produced **solely** by `fill_report(template:'rsra', data)`. You author NO report HTML and edit NO HTML — ever.
@@ -789,13 +832,23 @@ Do **not** emit a loading skeleton or any hand-written HTML before (or instead o
 
 ⛔ **DO NOT write your own HTML.** The template contains all CSS, layout, and JavaScript rendering. Your only job is to compute the data object and call `fill_report`.
 
+### Final message discipline (no leaked phase narration)
+
+Progress narration from Phases 1–9 is *streamed interim* text. After `fill_report`, your **final** assistant
+message must be a **single clean deal summary** — a signal line, top CapEx, key risk flag, immediate action.
+Do **not** let the running phase-status lines ("Phase 1+2 kicking off…", "Found the Audette model…",
+"Phase 9.9…") concatenate into the final message; they render as a stray run-on wall of text (often with raw
+`**markdown**`) above the summary. Emit the summary as its own clean message with proper line breaks.
+
 **Pre-flight checklist — verify ALL fields are present before calling `fill_report`:**
 - [ ] `decarb_plan` — at least 1 measure with `measure`, `capex_total`, `timing`, `emissions_reduction_pct`
 - [ ] `decarb_sensitivity` — **REQUIRED, 3 rows**: derive from decarb_plan (e.g. "Phase 1 only", "Phase 1+2", "Full plan"). Each row needs `label`, `total_spend`, `spend_per_unit` (if multifamily), `emissions_reduction_pct` (number), `noi_impact_annual`, `value_delta_pct`. **If this array is missing or empty, the sensitivity chart and table will be completely invisible in the report — this is a critical omission.**
 - [ ] `deal_signal.level` — one of: `"Low Risk"` · `"Moderate Risk — Opportunity"` · `"Moderate Risk — CapEx"` · `"High Transition Risk"`
 - [ ] `emissions_profile.fuel_profile`, `baseline_emissions`, `regulation`
 - [ ] `physical_climate_risk.hazards` — at least 3 hazards with `risk_2030` and `risk_2050`
+- [ ] `physical_climate_risk.climate_var` — **REQUIRED when physrisk ran**: populate from `calculate_climate_var` (`cumulative_var_npv_pct`, `expected_annual_loss_pct_exit`, `primary_driver`, `hold_period_years`, `covers`) + `operational_risk` (heat/water indices). Without it the Climate VaR box is invisible and the physical-risk section shows hazards but no quantified $ risk — a load-bearing omission for underwriting.
 - [ ] `ghg_scoping.scopes` — Scope 1, 2, and 3 entries
+- [ ] `certifications_and_debt` — ENERGY STAR / green-debt / fund-alignment recommendations (the Certifications & Green Debt section is hidden without it)
 
 **Required sequence — no exceptions:**
 1. Compute all values from Phase 1–9 research.

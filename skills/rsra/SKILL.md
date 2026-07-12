@@ -822,6 +822,12 @@ of bugs that ship a technically-correct analysis inside a broken report. Record 
 3. **No fabricated precision / correct units.** A benchmark-estimated EUI may not render as measured;
    an operational index (heat/water) may not be shown as a $ loss; EV charging may not claim a building
    CO₂ reduction %.
+3b. **Grid factor MUST be Cambium (hard rule) — no silent fallback.** Scope 2 uses the Cambium
+   `mid_case` grid factor. If the Cambium tool errors or returns nothing, RETRY; if still unavailable,
+   this is a **blocking finding** — do NOT silently substitute eGRID/static and bury it in a footnote
+   ("Cambium not available this run" shipped once — that is a fail, not an acceptable degrade). Either
+   get Cambium or label the Scope 2 figure explicitly low-confidence and flag the connector as broken to
+   the user (never-fail-silently).
 4. **Output hygiene.** The final chat message is a clean summary only — no leaked phase narration.
 
 **Consistent + evolving:** these checks are the shared contract for BOTH the verifier and retrofit-advisor

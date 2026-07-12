@@ -806,6 +806,15 @@ of bugs that ship a technically-correct analysis inside a broken report. Record 
    `physical_climate_risk.climate_var` (when physrisk ran), `emissions_profile`.
    A section whose key is absent renders **invisibly** — silent data loss. If a field you computed won't
    fit the schema, that is a **schema↔template drift** finding (fix the schema, don't drop the field).
+   Also verify **field SHAPES** the template keys off — a wrong shape renders blank/`—` even though the data
+   is "present":
+   - `property.type` MUST be the schema enum (`multifamily`, `office`, …), NOT free-text like
+     "Class A Multifamily — Garden-Style" — the per-unit CapEx path (meta bar + per-unit figures) keys off it.
+     Put descriptive detail in `property.name`/`building_class`, keep `type` canonical.
+   - `physical_climate_risk.hazards[]` MUST include `data_source` (the physrisk-format table renders it);
+     `finding` is legacy and shows blank in that column. Provide both if you have a narrative.
+   - `physical_climate_risk.operational_risk` (heat/water indices) must be populated whenever heat/water
+     hazards exist, or the VaR box's operational line is blank.
 2. **Measure-sizing sanity (retrofit-advisor owns this).** No measure quantity may exceed its sizing rule
    (see "Measure sizing discipline"): EV ≤~5% of parking active day-one; every quantity traces to a
    building fact; no vintage-inapplicable measure (LED on post-2015). Flag an oversized/implausible

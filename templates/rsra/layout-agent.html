@@ -908,7 +908,11 @@
     setText('cover-meta-by',    preparedBy);
 
     /* CapEx per unit for meta bar */
-    var isMF = prop.type === 'multifamily' || prop.type === 'senior-living' || prop.type === 'student-housing';
+    /* Tolerant match — property.type should be the schema enum ('multifamily' etc.) but agents
+       sometimes free-text it ('Class A Multifamily — Garden-Style'); substring-match so per-unit
+       rendering (meta bar, capex cards) still fires instead of falling back to '—'. */
+    var _ptype = String(prop.type || '').toLowerCase();
+    var isMF = /multi[\s-]?family|multifamily|residential|senior[\s-]?living|student[\s-]?housing|apartment|btr|build[\s-]?to[\s-]?rent/.test(_ptype);
     if (isMF && totals.capex_per_unit) {
       setText('cover-meta-capex-unit', fmtCurrency(totals.capex_per_unit) + '/unit');
     }
@@ -1237,7 +1241,7 @@
           riskHtml += '<tr><td>' + esc(h.hazard) + '</td>';
           riskHtml += '<td class="' + riskClass(h.risk_2030) + '">' + esc(h.risk_2030 || '—') + '</td>';
           riskHtml += '<td class="' + riskClass(h.risk_2050) + '">' + esc(h.risk_2050 || '—') + '</td>';
-          riskHtml += '<td style="font-size:11px;color:#64748B">' + esc(h.data_source || '—') + '</td></tr>';
+          riskHtml += '<td style="font-size:11px;color:#64748B">' + esc(h.data_source || h.finding || '—') + '</td></tr>';
         } else {
           var lvl = (h.risk_level || '').toLowerCase();
           riskHtml += '<tr><td>' + esc(h.hazard) + '</td>';

@@ -373,19 +373,29 @@ search_knowledge("minimum energy")
 
 Physical risk is now expressed as a **dollar value at risk** — not abstract hazard scores. This aligns with ISSB/TCFD expectations and gives the investment team a number they can underwrite.
 
-### 4A — physrisk MCP (primary source when lat/lon available)
+### 4A — physrisk MCP (REQUIRED source — the open-source climate library)
 
-If you have the property's lat/lon coordinates (geocode the address if needed):
+Physical risk MUST come from the **physrisk** MCP (the open-source OS-Climate physical-risk engine) —
+never from web guesses when physrisk can answer. This is a **HARD requirement**, and it's the reason
+climate results have been inconsistent: skipping physrisk and free-typing hazards produces a different
+answer every run and usually no Climate VaR.
 
-1. Call `assess_physical_risk(lat, lon, address)` → returns flood, heat, wind, water stress scores at 2030 + 2050 under SSP2-4.5
-2. If `asset_value_usd` is available (from OM asking price or AUM estimate), call `calculate_climate_var(lat, lon, asset_value_usd, hold_years=10, scenario="ssp245")` → returns:
+**You have lat/lon for almost every asset (from the OM/geocode/asset record), so you MUST call physrisk.**
+1. **ALWAYS call `assess_physical_risk(lat, lon, address)`** → flood, heat, wind, water-stress scores at
+   2030 + 2050 (SSP2-4.5). Do not proceed to 4B or web for these hazards while physrisk can serve them.
+2. **ALWAYS call `calculate_climate_var(lat, lon, asset_value_usd, hold_years, scenario="ssp245")` when
+   an asset value exists** — and it almost always does (OM asking price, appraisal, or AUM-derived
+   estimate; use the OM price for the demo). A missing Climate VaR is a defect, not an acceptable
+   outcome — if you have coordinates and any value, you compute CVaR.
    - **`climate_var.cumulative_var_npv_pct`** — headline metric: expected % of asset value at risk over hold period (flood + wind only, NPV-discounted)
    - **`climate_var.expected_annual_loss_pct_exit`** — annualized rate at exit year
    - **`operational_risk`** — heat and water disruption indices (separate from financial VaR)
 
 Use these results verbatim to populate `physical_climate_risk` in the dispatch JSON — do not retype or summarize the scores.
 
-**If asset_value is not yet known:** run `assess_physical_risk` only; omit `climate_var` from the dispatch JSON. Note in the physical risk section: "Call `calculate_climate_var` with purchase price to generate dollar-denominated VaR."
+**If asset_value is genuinely unavailable:** run `assess_physical_risk` only; omit `climate_var` and note "Call `calculate_climate_var` with purchase price to generate dollar-denominated VaR." This is the ONLY acceptable reason to omit CVaR.
+
+**If the physrisk tool ERRORS or times out:** retry once, then state explicitly in the report + to the user: "physrisk engine unavailable this run — hazards below are web-sourced and Climate VaR could not be computed." NEVER present web estimates as physrisk results, and never silently drop CVaR without saying why. (If you hit this repeatedly, the physrisk MCP may be down — surface it so it can be restarted, per the never-fail-silently rule.)
 
 **Fabrication gate:** every hazard score, flood zone, and FEMA panel number MUST come from a `physrisk` tool result or an explicitly cited source. NEVER emit a plausible-looking FEMA panel or hazard score from memory. If physrisk is unavailable and 4B cannot supply a cited value, mark the hazard **"data unavailable"** in the dispatch JSON — do not guess.
 
@@ -426,7 +436,29 @@ If elevated physical risk:
 
 This is the centerpiece of the RSRA — replacing the amorphous "ESG allowance" with an itemized, defensible estimate.
 
-### 5A — Asset Class CapEx Benchmarks
+### 5A — Measures & CapEx via retrofit-advisor + Soapbox Costing (PRIMARY — do this FIRST)
+
+Do NOT hand-pick measures from the benchmark tables below, and do NOT take the Audette model's default
+measure list at face value. **Audette seeds generic archetype defaults** — e.g. an **LED retrofit on a
+2022 all-electric new build**, where LED is already the installed standard and is NOT a real opportunity.
+Passing those through unscreened is the #1 source of implausible RSRA CapEx. Instead:
+
+1. **Ideate + screen via the retrofit-advisor skill** (`retrofit__*` — the register-backed Retrofit
+   Specialist / "cost advisor"). Give it the asset's **vintage, fuel, equipment (docs/Audette 2D),
+   climate zone, and jurisdiction**. The advisor screens each candidate for provenance AND
+   **vintage/system fit**, and REJECTS measures that don't apply — a post-~2015 building already has
+   LED / high-efficiency fixtures, so LED is **dropped, not costed**; a measure whose equipment
+   contradicts the documented system is rejected. Use the advisor's screened-in measures as the RSRA
+   CapEx line items — never a raw Audette default list.
+2. **Cost each screened-in measure via the Soapbox Costing MCP** (`costing.mcp.soapbox.build`):
+   `get_measure_capex` (cited capex low/base/high + `references`), `estimate_service_upgrade` for any
+   electrification/fuel-switch (keep the UNVERIFIED capacity range), `get_der_economics` for
+   solar/storage, `get_energy_prices`/`get_tariff` for the OpEx delta. Surface the costing `references`
+   with each measure so provenance survives into the report.
+3. The static benchmark tables in **5A-fallback** below are a LAST-RESORT sanity check only, used where
+   the Costing MCP has no coverage for that measure/market — label those cells `(est.)`.
+
+### 5A-fallback — Asset Class CapEx Benchmarks (fallback / sanity only)
 
 Use the appropriate benchmark set for the asset type. All figures are USD and represent installed cost (labor + materials + soft costs), pre-incentive.
 
@@ -727,6 +759,19 @@ Choose one:
 **⚫ REFER TO INVESTMENT COMMITTEE** — Significant policy conflict, major physical climate risk, or regulatory exposure warrants committee review before proceeding.
 
 ---
+
+## Phase 9.9: Verification gate — run the verifier BEFORE you render (REQUIRED)
+
+Before calling `fill_report`, run the **verifier** (`verifier__*`) over the assembled findings — the
+same discipline as decarb-plan. This catches the exact defects that have shipped in RSRAs: an
+inflated Scope 2, a measure that fails vintage fit (LED on a new build), a fabricated hazard/FEMA
+panel, a static grid factor instead of Cambium, or a benchmark EUI presented as measured.
+1. Record the key claims as `verifier__record_finding` (baseline emissions basis, scope split, each
+   material CapEx measure + its provenance, physical-risk source, grid-factor source).
+2. Resolve every finding to a verdict; a `conflict`/unverified verdict on a load-bearing number must be
+   FIXED (recompute) or explicitly labeled low-confidence in the report — never rendered as if solid.
+3. Only render once the findings are clean or explicitly caveated. Do NOT `fill_report` around an open
+   conflict. (Consistent with the render-gate model — verification precedes the deliverable.)
 
 ## Phase 10: Report Output
 

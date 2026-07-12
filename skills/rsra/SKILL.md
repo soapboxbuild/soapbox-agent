@@ -383,17 +383,21 @@ answer every run and usually no Climate VaR.
 **You have lat/lon for almost every asset (from the OM/geocode/asset record), so you MUST call physrisk.**
 1. **ALWAYS call `assess_physical_risk(lat, lon, address)`** → flood, heat, wind, water-stress scores at
    2030 + 2050 (SSP2-4.5). Do not proceed to 4B or web for these hazards while physrisk can serve them.
-2. **ALWAYS call `calculate_climate_var(lat, lon, asset_value_usd, hold_years, scenario="ssp245")` when
-   an asset value exists** — and it almost always does (OM asking price, appraisal, or AUM-derived
-   estimate; use the OM price for the demo). A missing Climate VaR is a defect, not an acceptable
-   outcome — if you have coordinates and any value, you compute CVaR.
+2. **Call `calculate_climate_var(lat, lon, asset_value_usd, hold_years, scenario="ssp245")` when an
+   asset value exists** (OM asking price / appraisal / AUM-derived; use the OM price for the demo).
+   - **CVaR is BEST-EFFORT and PROVISIONAL — do not treat it as a hard IC number and do not block the
+     report on it.** Known limitation: the underlying physrisk flood vulnerability (EU JRC global
+     depth-damage curve) does not apply first-floor height, so it can OVERSTATE the flood-driven EAL
+     for low-lying-but-shallow sites. When you report CVaR, label it "provisional — physical-risk
+     model refinement in progress" and sanity-check it against the hazard SCORES: if all flood scores
+     are Low/No-risk but the CVaR is large, say so and lead with the scores, not the dollar VaR.
    - **`climate_var.cumulative_var_npv_pct`** — headline metric: expected % of asset value at risk over hold period (flood + wind only, NPV-discounted)
    - **`climate_var.expected_annual_loss_pct_exit`** — annualized rate at exit year
    - **`operational_risk`** — heat and water disruption indices (separate from financial VaR)
 
 Use these results verbatim to populate `physical_climate_risk` in the dispatch JSON — do not retype or summarize the scores.
 
-**If asset_value is genuinely unavailable:** run `assess_physical_risk` only; omit `climate_var` and note "Call `calculate_climate_var` with purchase price to generate dollar-denominated VaR." This is the ONLY acceptable reason to omit CVaR.
+**If asset_value is unavailable:** run `assess_physical_risk` only; omit `climate_var` and note "Call `calculate_climate_var` with purchase price to generate dollar-denominated VaR." (Since CVaR is provisional/best-effort, omitting or heavily caveating it is fine — never block the deliverable on it.)
 
 **If the physrisk tool ERRORS or times out:** retry once, then state explicitly in the report + to the user: "physrisk engine unavailable this run — hazards below are web-sourced and Climate VaR could not be computed." NEVER present web estimates as physrisk results, and never silently drop CVaR without saying why. (If you hit this repeatedly, the physrisk MCP may be down — surface it so it can be restarted, per the never-fail-silently rule.)
 

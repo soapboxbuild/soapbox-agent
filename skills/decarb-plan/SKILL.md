@@ -79,6 +79,27 @@ org memory, the reference library, and the `decarb` report template.
      rebuild the CRREM curve from saved state.** Stored state may predate the curve fix; the render
      gate now BLOCKS a decarb report whose crrem_meta is set but crrem_pathway is empty (it would
      otherwise silently drop the curve), so a from-state rebuild without a fresh fetch will fail.
+   - **Grid emission factor — the CRREM carbon basis (HARD).** The building's carbon intensity in
+     `targets.trajectory[]` (both BAU and with-plan) MUST be computed on a grid emission factor that
+     is **consistent with the CRREM pathway and DECLINES over the horizon** — i.e. the actual serving
+     utility's factor and/or a CRREM/region-consistent forward grid-decarbonization trajectory.
+     **Never** compute the building's CRREM intensity from a **static, current-year eGRID subregion
+     *average* held flat across all years** — that is the #1 cause of a false "already stranded"
+     verdict. Two failure modes the gate/verifier must reject:
+     - **Wrong factor for the utility.** An all-electric building on a low-carbon utility (e.g.
+       **Seattle City Light** ≈ all-hydro, ~0.03 kgCO₂e/kWh) is 5–10× cleaner than its eGRID
+       subregion average (NWPPc ≈ 0.29). Using the subregion average overstates emissions ~5–10× and
+       fabricates stranding. Use the **actual utility factor** (Audette's serving-utility / CETA-aligned
+       factor is the right basis here), not the regional eGRID mean.
+     - **Flat BAU.** Where the grid is decarbonizing (WA CETA, most US regions), the BAU carbon curve
+       MUST slope **down** as the grid greens even with zero measures — a flat BAU against a declining
+       CRREM pathway mixes bases and is a hard data error (compounds the "non-increasing trajectory"
+       rule below).
+     The eGRID/ESPM **location-based** GHG number (what ESPM reports, what a GRESB/lender sees) may be
+     shown as a clearly-labeled **secondary disclosure**, but it is NOT the CRREM stranding verdict and
+     must never be the headline carbon intensity plotted against the CRREM curve. If the two bases give
+     opposite stranding conclusions, show both, labeled — never let the regional-average number stand
+     alone as "stranded."
    - **Compliance overlays (CRREM + BPS).** Determine the asset's jurisdiction, then
      **auto-include** every standard that applies there **plus** CRREM (e.g. an asset in Seattle
      auto-gets Seattle BEPS + WSCBA + CRREM) — the user may override with an explicit instruction

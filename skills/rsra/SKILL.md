@@ -844,7 +844,13 @@ of bugs that ship a technically-correct analysis inside a broken report. Record 
      is not an annual expected loss; keep them in separate sentences with their units.
    - Sanity-check the driver: if the primary $ VaR driver is a hazard scored "Low (1/4)", say why the $ is
      still material (or flag that the coarse ~1km flood cell may be overstating it) — a "Low" hazard as the
-     headline loss driver is a tension, not a silent pass.
+     headline loss driver is a tension, not a silent pass. NB: physrisk applies NO EAL floor — a repeated
+     0.5%/yr riverine on an FEMA Zone-X inland site is the ~1km WRI resolution limit (the cell can't tell the
+     parcel is dry), not a real signal; treat it as provisional and don't let it silently headline the VaR.
+   - **decarb_sensitivity scenarios must PROGRESS, not repeat.** Each incremental scenario (e.g. Cert only →
+     +Solar → Full) must have a DISTINCT, monotonically increasing `emissions_reduction_pct` and spend —
+     identical CO₂ reduction across all rows (e.g. `[12, 12, 12]`) is a data error (it also degenerates the
+     value-vs-carbon chart into a vertical line). Certification-only ≈ 0% CO₂; each added measure adds its own.
 4. **Output hygiene.** The final chat message is a clean summary only — no leaked phase narration.
 
 **Consistent + evolving:** these checks are the shared contract for BOTH the verifier and retrofit-advisor
@@ -875,7 +881,7 @@ Do **not** let the running phase-status lines ("Phase 1+2 kicking off…", "Foun
 
 **Pre-flight checklist — verify ALL fields are present before calling `fill_report`:**
 - [ ] `decarb_plan` — at least 1 measure with `measure`, `capex_total`, `timing`, `emissions_reduction_pct`
-- [ ] `decarb_sensitivity` — **REQUIRED, 3 rows**: derive from decarb_plan (e.g. "Phase 1 only", "Phase 1+2", "Full plan"). Each row needs `label`, `total_spend`, `spend_per_unit` (if multifamily), `emissions_reduction_pct` (number), `noi_impact_annual`, `value_delta_pct`. **If this array is missing or empty, the sensitivity chart and table will be completely invisible in the report — this is a critical omission.**
+- [ ] `decarb_sensitivity` — **REQUIRED, 3 rows** modeling *incremental* spend levels (e.g. "Cert only" → "Cert + Solar" → "Full plan"). Each row needs `label`, `total_spend`, `spend_per_unit` (if multifamily), `emissions_reduction_pct` (number), `noi_impact_annual`, `value_delta_pct`. **Each row's numbers are the RUNNING CUMULATIVE of only the measures INCLUDED in that scenario — never the whole plan's total copied into every row.** Cert-only reduces ≈0–3% CO₂ (certification itself cuts almost nothing); adding solar steps it up; the full plan is the top. So `emissions_reduction_pct`, `total_spend`, and `value_delta_pct` must all **increase monotonically** down the rows and be **distinct** (e.g. `3% / 10% / 12%`, not `12% / 12% / 12%`). Identical values across rows is a data error — it makes the "sensitivity" show no sensitivity and collapses the chart to a vertical line. **If the array is missing/empty the whole section is invisible.**
 - [ ] `deal_signal.level` — one of: `"Low Risk"` · `"Moderate Risk — Opportunity"` · `"Moderate Risk — CapEx"` · `"High Transition Risk"`
 - [ ] `emissions_profile.fuel_profile`, `baseline_emissions`, `regulation`
 - [ ] `physical_climate_risk.hazards` — at least 3 hazards with `risk_2030` and `risk_2050`
@@ -1012,7 +1018,7 @@ fill_report({
 - `decarb_plan[].timing` must start with `"Early"`, `"Mid"`, or `"Late"` for correct badge colors
 - `decarb_plan[].incentive_program` — separate multiple incentives with `;`
 - `physical_climate_risk` and `ghg_scoping` sections auto-hide when omitted; show when data provided
-- `decarb_sensitivity` — **always populate** with 3 scenarios derived from the decarb plan (e.g. "Phase 1 only", "Phase 1+2", "Full plan"). Each row needs: `label`, `total_spend`, `spend_per_unit` (if MF), `emissions_reduction_pct` (number, not string), `noi_impact_annual` (estimated annual savings in $), `value_delta_pct` (NOI delta / cap rate %, e.g. 1.2). The scatter chart only renders when `value_delta_pct` is provided. Section is hidden when array is empty.
+- `decarb_sensitivity` — **always populate** with 3 *incremental* scenarios (e.g. "Cert only" → "Cert + Solar" → "Full plan"). Each row needs: `label`, `total_spend`, `spend_per_unit` (if MF), `emissions_reduction_pct` (number, not string), `noi_impact_annual` (estimated annual savings in $), `value_delta_pct` (NOI delta / cap rate %, e.g. 1.2). **Every row is the running CUMULATIVE of only the measures in that scenario — spend, CO₂ %, and value delta must increase monotonically and be distinct across the three rows (never the plan total repeated).** The scatter chart only renders with `value_delta_pct` AND at least two distinct `emissions_reduction_pct` values (identical CO₂ across rows hides the chart). Section is hidden when array is empty.
 - `sources` — optional array of `{label, value_cited?, url?}` for collapsible citations block
 - `emissions_profile.bpd_chart` — optional; include when BPD bucket data is available (see Phase 2C); omit `subject_eui` unless EUI is actually measured
 - `disposition_mode: true` — adds a "Sustainability Passport — Disposition / Exit" banner

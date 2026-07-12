@@ -1019,8 +1019,13 @@
       var hasVDPct = sens.some(function(r){ return r.value_delta_pct != null; });
       var hasVDUsd = sens.some(function(r){ return r.value_delta_usd != null; });
       var hasVD = hasVDPct || hasVDUsd;
-      if (sensChartEl && hasVD) {
-        var sCo2Vals = sens.map(function(r){ return Number(String(r.emissions_reduction_pct||0).replace(/[^0-9.]/g,'')); });
+      var sCo2Vals = sens.map(function(r){ return Number(String(r.emissions_reduction_pct||0).replace(/[^0-9.]/g,'')); });
+      var sCo2Spread = new Set(sCo2Vals.map(function(v){ return v.toFixed(2); })).size >= 2;
+      if (sensChartEl && hasVD && !sCo2Spread) {
+        /* Every scenario shares one CO₂-reduction value → a value-vs-carbon scatter is just a
+           vertical line. Hide the scatter; the sensitivity table below still carries each scenario. */
+        sensChartEl.style.display = 'none';
+      } else if (sensChartEl && hasVD) {
         var sVdVals, sVdYLabel, sVdSuffix, sVdRound;
         if (hasVDPct) {
           sVdVals = sens.map(function(r){ return Number(r.value_delta_pct||0); });

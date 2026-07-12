@@ -101,6 +101,15 @@ Check in order:
 2. Asset document library: `search_files("offering memorandum")`, `search_files("investment summary")`, `search_files("property overview")`
 3. Prompt: "Please upload the OM to begin."
 
+**Read the OM via the INDEX, not a full-document dump (speed).** OMs are large (10–15 MB, 60+
+pages). Pull the facts you need with targeted `search_documents(...)` queries against the vector
+index — e.g. `search_documents("utility structure gas electric water heater fuel type")`,
+`search_documents("unit count year built square footage")`, `search_documents("acquisition price
+seller sponsor")`. `search_documents` returns small, relevant chunks fast. Reserve `read_file` for
+short, targeted documents — do NOT `read_file` the entire OM just to find a few fields; that
+re-parses the whole PDF into context and is slow and token-heavy. The OM is indexed on upload
+(OM-first priority), so the index is ready.
+
 ### 1B — Extract Property Fundamentals
 
 Read the OM and extract:
@@ -151,9 +160,19 @@ If any of these are not disclosed in the OM, note them as "not stated" and flag 
 Audette is the primary energy and carbon data source. Query it before any benchmark estimates.
 
 ```
-list_buildings() → search for property by address
+list_properties() → find the property by address/name in the CURRENT account
 get_building_model_details(building_id) → pull carbon baseline, CRREM pathway, equipment schedule, decarb recommendations, IRR estimates
 ```
+
+**CONNECT before you conclude "not in Audette" (HARD — this is the #1 cause of unreliable RSRAs).**
+The property is very often in a DIFFERENT Audette customer sub-account than the one the
+connector defaults to. A single `list_properties()` on the wrong account returns nothing and
+must NOT be read as "building not in Audette." Before falling back to benchmarks you MUST:
+1. `list_customer_accounts()` (or the account-list tool) and, for each, `switch_customer_account(uid)` → `list_properties()`, matching on the asset's street address / name (e.g. "4400 Prairie Crossing"). Cache the winning account for the session.
+2. Only if the property is absent from EVERY sub-account may you treat it as not-in-Audette.
+Silently proceeding on benchmarks because the first account didn't have it is a defect — the
+resulting "all figures estimated from benchmark ranges" report is exactly the unreliable output
+we must not ship.
 
 **Data hierarchy — use the highest tier available:**
 1. **Audette calibrated model** — actual EUI + equipment schedule + costed decarb plan (best)
@@ -163,7 +182,16 @@ get_building_model_details(building_id) → pull carbon baseline, CRREM pathway,
 
 If Audette found: use the Audette carbon intensity as the baseline, cite the Audette decarb recommendations, and cross-check IRR estimates from the Audette model against the deal's own hold period and exit cap rate.
 
-If not found: "Building not yet in Audette — proceeding from OM data and benchmarks."
+If genuinely absent from all sub-accounts: state "Building not in Audette (checked all N sub-accounts) — proceeding from OM data and benchmarks" and surface it to the user, so the low-confidence basis is explicit — never imply Audette was consulted when it was not.
+
+**Grid emission factor — the carbon basis (HARD).** Any Scope 2 / grid-electricity emission
+figure MUST use the **cambium MCP** (`get_emission_factors(gea_region=<asset US state, e.g. 'TX'>,
+scenario=<org default, else mid_case>, year).aer`), NOT a static eGRID/ERCOT factor (e.g. "ERCOT
+0.38–0.42 kg/kWh"). A single static grid number is the direct cause of an inflated, run-to-run-
+inconsistent Scope 2. Cambium is region-consistent, declining, and deterministic — the same
+building + region + scenario yields the same number every run. For a tenant-metered building the
+landlord Scope 2 is only common-area load × Cambium AER; resident electricity is Scope 3 (tenant
+boundary) and is excluded from the landlord figure — do not inflate Scope 2 with resident load.
 
 **Audette pipeline failed (`audette_pipeline_state = 'failed'`):** This is not a fatal error — the RSRA can still proceed from OM and web data. But always surface this to the user immediately:
 

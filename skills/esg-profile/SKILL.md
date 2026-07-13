@@ -283,20 +283,15 @@ reconcile → verify per sponsor (each sponsor keeps its own findings and proven
 aggregate into `fund_overview`.
 
 **Portfolio-scope run — no asset in context.** A fund-scoped run increasingly happens at a
-**portfolio thread** rather than an individual asset thread. When there is no asset in context,
-the file-kind inputs are NOT skill-bundled demo files and NOT a single asset's attached files —
-they are files uploaded across the portfolio, reached the same way `portfolio-analysis` reaches
-them: `list_portfolio_files()` first to confirm what's present, then `read_portfolio_file(file_name)`
-by name for each input this run needs — specifically `fund-peers.json` (the peer dataset that
-seeds `fund_overview`), the sponsor's own `extract.xlsx`, `notes_scrubbed.docx`,
-`materiality.json`, and `bps_cache.json`. Bind each resolved file's content as that source's
-`config.connectors[source_id]` value with `provenance.mode: "static"` and `provenance.origin`
-set to the portfolio file name (not a skill-relative path — there is no skill-relative path at
-portfolio scope). This replaces the `{"kind":"file","path":"skills/esg-profile/demo/..."}` binding
-used on an asset-scoped or demo-fixture run; the `mcp`-kind connector calls (firststreet, fabric,
-crrem, espm, etc.) in the collect phase are unchanged either way. The asset-scoped sponsor path
-(single sponsor, files bound to that asset) is unaffected by any of this — use it whenever the
-run does have an asset in context.
+**portfolio thread** rather than an individual asset thread. At portfolio scope EVERY source is a
+live MCP connector — do NOT read portfolio files or skill-bundled demo files for the ESG inputs.
+The registry (`connectors/registry.json`) binds each source to a connector; call them in the
+collect phase and bind each result as `config.connectors[source_id]` with `provenance.mode:
+"live"` and `provenance.origin` set to the connector + tool:
+  - `questionnaire` / `investment_info` / `governance` / `materiality` → **fabric** (`get_questionnaire_responses`, `get_investment_info`, `get_governance_rights`, `get_materiality`)
+  - `fund_peers` (seeds `fund_overview`: stats, sponsor_metrics, ranking, underperformers) → **gresb** `get_peer_comparison`; `peer_benchmark` → **gresb** `get_benchmark`
+  - `green_street` → **green-street** `get_sector_rating`; `physical_risk` → **firststreet** `get_property_risk`; `bps` → **fines** `get_bps_regulation`; `crrem` → **crrem** `get_pathway`; `energy` → **citizen-energy**/**ENERGY STAR**
+Nothing at portfolio scope should carry `provenance.mode: "static"` — if a connector is unreachable, mark that source unavailable and surface it (do not silently fall back to a file). The asset-scoped sponsor path (single sponsor, files bound to that asset) is unaffected — use it whenever the run does have an asset in context.
 
 **Resolve `fund_peers` before aggregating.** Per the standard connector-binding rule above,
 `fund_peers` is bound like any other source: `resolve("fund_peers")` reads whatever

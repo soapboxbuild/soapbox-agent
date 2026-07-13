@@ -1,13 +1,13 @@
 {
   "energy":         { "produces": {"eui_kwh_m2":"number","carbon_intensity":"number","renewable_pct":"number","energy_rating_pct":"number"}, "default_live_adapter": {"kind":"mcp","tool":"citizen-energy get_benchmarking","region_aware":true}, "gap_filler": false },
-  "green_street":   { "produces": {"sector_risk_rating":"string"}, "default_live_adapter": {"kind":"mcp","tool":"green-street get_sector_risk"}, "gap_filler": true },
+  "green_street":   { "produces": {"sector_risk_rating":"string"}, "default_live_adapter": {"kind":"mcp","tool":"green-street get_sector_rating"}, "gap_filler": true },
   "physical_risk":  { "produces": {"physical_impact":"string","hazards":"array"}, "default_live_adapter": {"kind":"mcp","tool":"firststreet get_property_risk"}, "gap_filler": true },
-  "bps":            { "produces": {"market_regulation":"string","fine_exposure":"number"}, "default_live_adapter": {"kind":"mcp","tool":"run_compliance_analysis"}, "gap_filler": false },
+  "bps":            { "produces": {"market_regulation":"string","fine_exposure":"number"}, "default_live_adapter": {"kind":"mcp","tool":"fines get_bps_regulation"}, "gap_filler": false },
   "questionnaire":  { "produces": {"pillar_policy_strategy":"number","pillar_governance_resourcing":"number","pillar_portfolio_management":"number","pillar_monitoring_reporting":"number","total_score":"number","qual_summary":"string","initiatives_completed":"array","initiatives_in_progress":"array","initiatives_planned":"array","esg_risks":"array","mitigation_actions":"array"}, "default_live_adapter": {"kind":"mcp","tool":"fabric get_questionnaire_responses"}, "gap_filler": false },
-  "peer_benchmark": { "produces": {"fund_avg":"number","asset_class_avg":"number","mir_avg":"number","mieppi_avg":"number"}, "default_live_adapter": {"kind":"api","tool":"fund_data"}, "gap_filler": false },
-  "materiality":    { "produces": {"considerations":"array"}, "default_live_adapter": {"kind":"file","path":"reference/materiality.json"}, "gap_filler": false },
+  "peer_benchmark": { "produces": {"fund_avg":"number","asset_class_avg":"number","mir_avg":"number","mieppi_avg":"number"}, "default_live_adapter": {"kind":"mcp","tool":"gresb get_benchmark"}, "gap_filler": false },
+  "materiality":    { "produces": {"considerations":"array"}, "default_live_adapter": {"kind":"mcp","tool":"fabric get_materiality"}, "gap_filler": false },
   "investment_info":{ "produces": {"asset_class":"string","location":"string","size":"string","exit_date":"string","standing_dev":"string"}, "default_live_adapter": {"kind":"mcp","tool":"fabric get_investment_info"}, "gap_filler": false },
   "governance":     { "produces": {"gov_annual_budget":"string","gov_leasing":"string","gov_capex_project_variance":"string","gov_contractor_engagement":"string"}, "default_live_adapter": {"kind":"mcp","tool":"fabric get_governance_rights"}, "gap_filler": false },
   "crrem":          { "produces": {"stranding_year":"number","misalignment":"string"}, "default_live_adapter": {"kind":"mcp","tool":"crrem get_pathway"}, "gap_filler": true },
-  "fund_peers":     { "produces": {"stats":"object","sponsor_metrics":"array","ranking":"array","underperformers":"array"}, "default_live_adapter": {"kind":"api","tool":"fund_data get_peer_rollup"}, "gap_filler": false, "scope": "fund" }
+  "fund_peers":     { "produces": {"stats":"object","sponsor_metrics":"array","ranking":"array","underperformers":"array"}, "default_live_adapter": {"kind":"mcp","tool":"gresb get_peer_comparison"}, "gap_filler": false, "scope": "fund" }
 }

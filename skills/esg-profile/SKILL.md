@@ -288,7 +288,8 @@ live MCP connector — do NOT read portfolio files or skill-bundled demo files f
 The registry (`connectors/registry.json`) binds each source to a connector; call them in the
 collect phase and bind each result as `config.connectors[source_id]` with `provenance.mode:
 "live"` and `provenance.origin` set to the connector + tool:
-  - `questionnaire` / `investment_info` / `governance` / `materiality` → **fabric** (`get_questionnaire_responses`, `get_investment_info`, `get_governance_rights`, `get_materiality`)
+  - `questionnaire` / `investment_info` / `governance` → **fabric** (`get_questionnaire_responses`, `get_investment_info`, `get_governance_rights`)
+  - `materiality` → **materiality** `get_material_topics(sector)` — a framework-grounded materiality agent (SASB IF-RE, GRESB, ESRS) returning DOUBLE materiality (financial + impact) per topic; use it to weight the scorecard pillars and justify which ESG topics matter for the sponsor's asset class
   - `fund_peers` (seeds `fund_overview`: stats, sponsor_metrics, ranking, underperformers) → **gresb** `get_peer_comparison`; `peer_benchmark` → **gresb** `get_benchmark`
   - `green_street` → **green-street** `get_sector_rating`; `physical_risk` → **firststreet** `get_property_risk`; `bps` → **fines** `get_bps_regulation`; `crrem` → **crrem** `get_pathway`; `energy` → **citizen-energy**/**ENERGY STAR**
 Nothing at portfolio scope should carry `provenance.mode: "static"` — if a connector is unreachable, mark that source unavailable and surface it (do not silently fall back to a file). The asset-scoped sponsor path (single sponsor, files bound to that asset) is unaffected — use it whenever the run does have an asset in context.

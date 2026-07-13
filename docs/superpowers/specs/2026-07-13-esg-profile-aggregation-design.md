@@ -35,16 +35,20 @@ Per the "keep it in the agentic layer; spoof from real API docs where we lack an
 |---|---|---|
 | ENERGY STAR | **ESPM** (`energy-star`) | have |
 | GreenStreet (transition/sector risk) | **GreenStreet** | have (built) |
-| Physical climate risk | **First Street** | spoof First Street's response shape (we have `physrisk`; expose it as/alongside a First-Street-shaped output) |
+| Physical climate risk | **First Street** plugin | **build** — new plugin, spoof-backed to First Street's response shape |
 | Building-regulation monitoring (BPS) | **fines & regs** plugin | have |
-| Sponsor questionnaire responses | **Microsoft Fabric MCP** | **build** — spoof-backed MCP shaped to the Fabric REST API |
-| Fund / asset-class averages | **GRESB Real Estate Benchmark** | spoof from GRESB benchmark structure (member-gated, no open API) |
+| Sponsor questionnaire responses | **Microsoft Fabric MCP** | **build** — self-hosted plugin, spoof-backed, shaped to Fabric |
+| Fund / asset-class averages | **GRESB** plugin | have |
 | Materiality considerations | **shared materiality reference** (see below) | via memory MCP |
 | Basic investment info | **Microsoft Fabric MCP** (Madison warehouse) | via Fabric MCP |
 | Investment governance rights | Madison deal terms (via Fabric MCP / small fixture) | spoof |
 | CRREM stranding | **CRREM** | have |
 
-**Microsoft Fabric MCP (new, spoof-backed):** a connector plugin shaped to the real Microsoft Fabric REST API (research the docs for realistic endpoints/response shapes), serving the demo sponsor's **questionnaire responses + investment master data + governance rights** from a fixture. It only needs to serve the one demo sponsor for the recorded run; it is not a production Fabric integration. Follows the two-package plugin pattern (MCP server + registration).
+**Two net-new plugins: First Street and Microsoft Fabric.** Everything else is an existing plugin (ESPM, GreenStreet, GRESB, CRREM, fines & regs) or the memory MCP (materiality).
+
+**First Street MCP (new, spoof-backed):** a physical-climate-risk connector shaped to First Street's response structure (peril-level risk factors/scores). Spoof-backed for the demo sponsor; distinct from our generic `physrisk` because Katie's workflow names First Street specifically as the physical-risk source.
+
+**Microsoft Fabric MCP (new, self-hosted):** deploy our own Fabric MCP in the `soapbox-mcps` Railway project (`fabric.mcp.soapbox.build`). Microsoft ships official Fabric MCP servers we can build on — the open-source **local Fabric MCP** and **`microsoft/fabric-rti-mcp`** are self-hostable, a **Fabric Data Agent** can be exposed as an MCP from a Fabric workspace, and there is a Microsoft-hosted **Fabric Core MCP** (Entra OAuth) for zero-install. Our plugin serves the demo sponsor's **questionnaire responses + investment master data + governance rights** from a fixture, shaped exactly to Fabric's responses; in production the same plugin swaps to the real Core MCP / Data Agent via an Entra service principal. Follows the two-package plugin pattern (MCP server + registration).
 
 **Spoofing standard:** for GRESB, First Street, and Fabric, research the real API's request/response structure and emit **realistic, correctly-shaped** spoofed outputs backed by example files — so the connector calls look and behave like the real thing during the recorded run.
 
@@ -78,8 +82,7 @@ Sponsor identity must be anonymized before anything is shared (Katie's explicit 
 
 ## Out of scope / non-goals
 
-- A production Microsoft Fabric integration (the MCP is spoof-backed for the demo sponsor).
-- Real GRESB / First Street API integrations.
+- Production/live data integrations for the two new plugins — the **First Street** and **Fabric** MCPs are spoof-backed for the demo sponsor (real First Street / Fabric wiring is a later swap, not this work).
 - A standalone materiality skill (rejected — reference + verifier gate instead).
 - Any server-side platform-core code for materiality or connectors.
 - Multi-fund automation beyond what template v3 shows (Fund VI/VII benchmark context is represented; not a general multi-fund engine).
@@ -92,7 +95,8 @@ Sponsor identity must be anonymized before anything is shared (Katie's explicit 
 
 ## Open items to resolve in the plan
 
-- Exact Fabric MCP surface (which endpoints/tools; fixture shape for questionnaire + investment master + governance rights).
+- Exact Fabric MCP surface (self-host approach — open-source local MCP vs Data Agent vs wrapper; which tools; fixture shape for questionnaire + investment master + governance rights; `soapbox-mcps` deploy + `fabric.mcp.soapbox.build`).
+- First Street MCP surface (tools + spoofed peril/risk-factor response shape).
 - The spoofed peer-sponsor dataset for `fund_overview` (how many peers, their metrics, the MIR benchmark math).
 - Where the materiality reference entry is created in the `soapbox` bank and its key schema (asset class × market → considerations).
 - The verifier materiality-gate check definition + how it's added to the verifier's checklist/expertise.

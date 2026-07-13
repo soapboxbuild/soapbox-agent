@@ -2,6 +2,7 @@ import express from 'express'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
+import { renderPdf, uploadPdf, type PdfMode } from './render-pdf.js'
 
 const REPO = 'https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main'
 const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'portfolio-analysis', 'decarb', 'retrofit-advisor', 'esg-profile'] as const
@@ -118,6 +119,39 @@ app.post('/mcp', async (req, res) => {
         }
       }
       return { content: [{ type: 'text' as const, text: html }] }
+    }
+  )
+
+  server.tool(
+    'export_report_pdf',
+    'Render a Soapbox report or slide deck to a paginated PDF and return a 7-day download URL. "report" mode = continuous document (Paged.js: full-bleed cover on page 1, minimized running header on pages 2+, footer with page numbers, keep-together so nothing splits). "deck" mode = a flip slide deck exported one slide per landscape page. Use the SAME data object you would pass to fill_report; pass {} for a static/baked deck. Prefer this over hand-building a PDF.',
+    {
+      report_type: z.enum(KNOWN_TYPES).describe('Report type / template name (same as fill_report).'),
+      data: z.record(z.unknown()).describe('Computed report data object (same as fill_report). Pass {} for a static deck.'),
+      title: z.string().optional().describe('Optional title used for the download file name.'),
+      mode: z.enum(['auto', 'report', 'deck']).optional()
+        .describe("Layout mode; default 'auto' detects deck vs report from the template."),
+    },
+    async ({ report_type, data, title, mode }) => {
+      const html = await fetchTemplate(report_type)
+      if (!html) {
+        return { content: [{ type: 'text' as const, text: `Template not available for report type: ${report_type}` }], isError: true }
+      }
+      const json = JSON.stringify(data)
+        .replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
+        .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')
+      const injected = html.replace(
+        /<script id="report-data"[^>]*>[\s\S]*?<\/script>/,
+        `<script id="report-data" type="application/json">${json}</script>`
+      )
+      try {
+        const { pdf, mode: used } = await renderPdf(injected, (mode ?? 'auto') as PdfMode)
+        const url = await uploadPdf(pdf, `${title || report_type}.pdf`)
+        return { content: [{ type: 'text' as const, text:
+          `PDF ready — ${used} mode, ${Math.round(pdf.length / 1024)} KB.\nDownload (link valid 7 days):\n${url}` }] }
+      } catch (e) {
+        return { content: [{ type: 'text' as const, text: `PDF export failed: ${(e as Error).message}` }], isError: true }
+      }
     }
   )
 

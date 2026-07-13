@@ -456,16 +456,19 @@
   function renderSponsor(s, meta) {
     var out = '';
 
-    /* 1. Investment overview */
+    /* 1. Investment overview — drop tiles whose value is absent or explicitly not disclosed */
     var io = s.investment_overview || {};
-    out += section('Profile', 'Investment Overview',
-      tiles([
-        tile('Asset Class', esc(io.asset_class)),
-        tile('Location', esc(io.location)),
-        tile('Size', esc(io.size)),
-        tile('Standing / Dev', esc(io.standing_dev)),
-        tile('Target Exit', esc(io.exit_date))
-      ]));
+    var ioTiles = [
+      ['Asset Class', io.asset_class],
+      ['Location', io.location],
+      ['Size', io.size],
+      ['Standing / Dev', io.standing_dev],
+      ['Target Exit', io.exit_date]
+    ].filter(function (p) {
+      var v = p[1];
+      return v != null && String(v).trim() !== '' && !/not disclosed|not provided|n\/a|^tbd\b/i.test(String(v));
+    }).map(function (p) { return tile(p[0], esc(p[1])); });
+    out += section('Profile', 'Investment Overview', tiles(ioTiles));
 
     /* 2. Risk profile */
     var rp = s.risk_profile || {};

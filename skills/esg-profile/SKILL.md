@@ -106,7 +106,10 @@ phase. If the file is missing, this is a new run — start at kickoff.
    run for the same fund): `scope` (`sponsor` or `fund`), `fund`, `sponsor` (required when
    `scope: sponsor`; omit — or supply the full sponsor list — when `scope: fund`),
    `reporting_year`, and `anonymize` (default `true`; only set `false` with explicit, informed
-   user confirmation that this specific run is for internal, non-anonymized use).
+   user confirmation that this specific run is for internal, non-anonymized use). A `scope: fund`
+   run may be kicked off at a **portfolio thread** (no asset in context) rather than an asset
+   thread — that changes nothing about this scope-gathering step, but see Fund rollup below for
+   how the `file`-kind connector bindings differ when there is no asset to attach files to.
 2. Write the initial state file per `state-schema.json`: `phase: "kickoff"`, and the `config`
    block (`scope`, `fund`, `sponsor`, `reporting_year`, `anonymize`, `connectors`).
 3. **Load connector bindings from the registry, then apply overrides.** Read
@@ -250,7 +253,10 @@ Set `phase: "render"` and save.
    `fund_overview` **both**, in the same `fill_report` call — the fund render is a combined
    fund+investment deliverable, not a replacement for the sponsor deep-dive (see Fund rollup
    below for how `fund_overview` is assembled). Record the returned artifact id in
-   `state.artifact_id`.
+   `state.artifact_id`. **A fund-scoped run at a portfolio thread renders with no asset in
+   context — do not require or invent an `asset_id` for this call.** The platform stores the
+   artifact against the conversation's portfolio directly; `fill_report` needs nothing extra to
+   do this beyond the usual `report_type` + data object, exactly as on an asset-scoped call.
 
 Set `phase: "export"` and save.
 
@@ -275,6 +281,22 @@ When `config.scope: "fund"`, the deliverable is the **Fund ESG Overview** — an
 the fund's sponsor-level profiles, not a separately-authored document. Run kickoff → collect →
 reconcile → verify per sponsor (each sponsor keeps its own findings and provenance), then
 aggregate into `fund_overview`.
+
+**Portfolio-scope run — no asset in context.** A fund-scoped run increasingly happens at a
+**portfolio thread** rather than an individual asset thread. When there is no asset in context,
+the file-kind inputs are NOT skill-bundled demo files and NOT a single asset's attached files —
+they are files uploaded across the portfolio, reached the same way `portfolio-analysis` reaches
+them: `list_portfolio_files()` first to confirm what's present, then `read_portfolio_file(file_name)`
+by name for each input this run needs — specifically `fund-peers.json` (the peer dataset that
+seeds `fund_overview`), the sponsor's own `extract.xlsx`, `notes_scrubbed.docx`,
+`materiality.json`, and `bps_cache.json`. Bind each resolved file's content as that source's
+`config.connectors[source_id]` value with `provenance.mode: "static"` and `provenance.origin`
+set to the portfolio file name (not a skill-relative path — there is no skill-relative path at
+portfolio scope). This replaces the `{"kind":"file","path":"skills/esg-profile/demo/..."}` binding
+used on an asset-scoped or demo-fixture run; the `mcp`-kind connector calls (firststreet, fabric,
+crrem, espm, etc.) in the collect phase are unchanged either way. The asset-scoped sponsor path
+(single sponsor, files bound to that asset) is unaffected by any of this — use it whenever the
+run does have an asset in context.
 
 **Resolve `fund_peers` before aggregating.** Per the standard connector-binding rule above,
 `fund_peers` is bound like any other source: `resolve("fund_peers")` reads whatever

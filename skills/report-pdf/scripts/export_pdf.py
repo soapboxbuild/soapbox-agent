@@ -78,6 +78,38 @@ def serve(dir_: str):
     return httpd, httpd.server_address[1]
 
 
+def export_deck(page, out: str) -> int:
+    """Slide-deck → landscape PDF: one page per slide, full-resolution element
+    screenshots assembled with img2pdf (no Paged.js — a flip deck is already
+    one-slide-per-page). Neutralizes any stage transform, hides nav chrome, and
+    squares off slide corners so each page is clean edge-to-edge."""
+    try:
+        import img2pdf
+    except ImportError:
+        raise RuntimeError("deck mode needs img2pdf — `pip install --user img2pdf`")
+    page.set_viewport_size({"width": 1680, "height": 980})
+    page.add_style_tag(content=(
+        "#nav,#navbar,#progress{display:none !important}"
+        "#stage{transform:none !important}"
+        ".slide{border-radius:0 !important;box-shadow:none !important}"))
+    n = page.evaluate("document.querySelectorAll('.slide').length")
+    if not n:
+        raise RuntimeError("deck mode: no .slide elements found in template")
+    tmp = tempfile.mkdtemp(prefix="sbdeck_")
+    pngs = []
+    for i in range(n):
+        page.evaluate(
+            "(k)=>{var s=[].slice.call(document.querySelectorAll('.slide'));"
+            "s.forEach(function(x,j){x.classList.toggle('active',j===k)});}", i)
+        page.wait_for_timeout(140)  # settle fonts/layout for this slide
+        fp = os.path.join(tmp, f"s{i:02d}.png")
+        page.locator(".slide.active").screenshot(path=fp, scale="device")
+        pngs.append(fp)
+    with open(out, "wb") as f:
+        f.write(img2pdf.convert(pngs))
+    return n
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--template", required=True)
@@ -86,6 +118,8 @@ def main():
     ap.add_argument("--templates-dir", default=DEFAULT_TEMPLATES)
     ap.add_argument("--assets-dir", default=DEFAULT_ASSETS)
     ap.add_argument("--title", default=None)
+    ap.add_argument("--mode", choices=["auto", "report", "deck"], default="auto",
+                    help="report = Paged.js continuous doc; deck = one page per .slide; auto detects from the template")
     ap.add_argument("--timeout", type=int, default=45000)
     a = ap.parse_args()
 
@@ -94,12 +128,21 @@ def main():
     data = json.load(open(a.data, encoding="utf-8"))
     html = inject_data(html, data, a.title)
 
-    # Wire Paged.js (manual) + print.css into the page head/body.
-    head_add = '<link rel="stylesheet" href="print.css">'
-    body_add = ('<script>window.PagedConfig={auto:false};</script>'
-                '<script src="paged.polyfill.js"></script>')
-    html = html.replace("</head>", head_add + "</head>", 1)
-    html = html.replace("</body>", body_add + "</body>", 1)
+    # Detect report vs slide-deck. Decks own a #deck stage + .slide sections and
+    # paginate themselves (one slide = one page); reports flow continuously and
+    # need Paged.js. Detect from the raw template so we only wire print assets for
+    # the report path.
+    mode = a.mode
+    if mode == "auto":
+        mode = "deck" if ('id="deck"' in html or 'class="slide' in html) else "report"
+
+    if mode == "report":
+        # Wire Paged.js (manual) + print.css into the page head/body.
+        head_add = '<link rel="stylesheet" href="print.css">'
+        body_add = ('<script>window.PagedConfig={auto:false};</script>'
+                    '<script src="paged.polyfill.js"></script>')
+        html = html.replace("</head>", head_add + "</head>", 1)
+        html = html.replace("</body>", body_add + "</body>", 1)
 
     work = tempfile.mkdtemp(prefix="sbpdf_")
     open(os.path.join(work, "index.html"), "w", encoding="utf-8").write(html)
@@ -119,16 +162,19 @@ def main():
             page.wait_for_function(
                 "document.querySelectorAll('table tbody tr, .kpi, .slide').length > 2",
                 timeout=8000)
-        page.evaluate(TRANSFORM_JS)
-        # Paginate with Paged.js (consumes print.css @page rules), then print.
-        page.evaluate("(async () => { await window.PagedPolyfill.preview(); })()")
-        page.wait_for_selector(".pagedjs_page", timeout=a.timeout)
-        page.wait_for_timeout(1200)  # settle charts/fonts
-        pages = page.eval_on_selector_all(".pagedjs_page", "els => els.length")
-        page.pdf(path=a.out, prefer_css_page_size=True, print_background=True)
+        if mode == "deck":
+            pages = export_deck(page, a.out)
+        else:
+            page.evaluate(TRANSFORM_JS)
+            # Paginate with Paged.js (consumes print.css @page rules), then print.
+            page.evaluate("(async () => { await window.PagedPolyfill.preview(); })()")
+            page.wait_for_selector(".pagedjs_page", timeout=a.timeout)
+            page.wait_for_timeout(1200)  # settle charts/fonts
+            pages = page.eval_on_selector_all(".pagedjs_page", "els => els.length")
+            page.pdf(path=a.out, prefer_css_page_size=True, print_background=True)
         browser.close()
     httpd.shutdown()
-    print(json.dumps({"ok": True, "out": a.out, "pages": pages,
+    print(json.dumps({"ok": True, "out": a.out, "mode": mode, "pages": pages,
                       "bytes": os.path.getsize(a.out)}))
 
 

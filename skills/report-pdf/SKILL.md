@@ -37,8 +37,14 @@ python3 scripts/export_pdf.py \
   --data <path/to/report-data.json> \
   --out <output.pdf> \
   [--title "Client — Report Title"] \
+  [--mode auto|report|deck] \
   [--templates-dir <dir>] [--assets-dir <dir>] [--timeout 45000]
 ```
+
+`--mode` (default `auto`): **report** = continuous doc via Paged.js (hero page 1,
+running header 2+, footer, keep-together); **deck** = a flip slide deck exported
+one slide per landscape page (full-res screenshots → `img2pdf`, needs
+`pip install img2pdf`). `auto` detects a deck by its `#deck`/`.slide` structure.
 
 - `--template` — the template folder name under `templates/` (e.g. `decarb`,
   `rsra`, `portfolio-analysis`, `esg-fund-deck`).

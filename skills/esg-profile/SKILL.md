@@ -112,13 +112,15 @@ phase. If the file is missing, this is a new run — start at kickoff.
 3. **Load connector bindings from the registry, then apply overrides.** Read
    `skills/esg-profile/connectors/registry.json` — it lists every known `source_id`
    (`energy`, `green_street`, `physical_risk`, `bps`, `questionnaire`, `peer_benchmark`,
-   `materiality`, `investment_info`, `governance`, `crrem`), the schema of what `value` must
+   `materiality`, `investment_info`, `governance`, `crrem`, `fund_peers`), the schema of what `value` must
    contain (`produces`), the `default_live_adapter`, and whether it is a `gap_filler` (a source
    the asset manager's own process currently leaves blank: `green_street`, `physical_risk`, `crrem`). For each
    `source_id`, default `config.connectors[source_id]` to that entry's `default_live_adapter`
    shape, then apply any run-specific override the user or a prior kickoff config supplied (e.g.
    pointing `energy` at a static EU extract instead of the ESPM default because the demo sponsor
    is Spain-based and ESPM is US-only). Persist the resolved binding set into `state.config.connectors`.
+   `fund_peers` is only resolved when `config.scope: "fund"` — skip it entirely on a sponsor-scoped
+   run.
 4. Set `phase: "collect"` and save.
 
 ---
@@ -243,9 +245,12 @@ Set `phase: "render"` and save.
    deterministic connectors and gap-fillers rarely produce a high-severity conflict on a clean
    run), or every open high-severity finding has a documented override, the gate passes.
 4. On pass, call `fill_report` with `report_type: 'esg-profile'` and a data object conforming to
-   `templates/esg-profile/schema.json` — populate `meta` (fund, reporting_year, anonymized),
-   `sponsor` (for a sponsor-scoped render) and/or `fund_overview` (for a fund-scoped render, see
-   Fund rollup below). Record the returned artifact id in `state.artifact_id`.
+   `templates/esg-profile/schema.json` — populate `meta` (fund, reporting_year, anonymized) plus:
+   on a **sponsor-scoped** run, `sponsor` only; on a **fund-scoped** run, `sponsor` **and**
+   `fund_overview` **both**, in the same `fill_report` call — the fund render is a combined
+   fund+investment deliverable, not a replacement for the sponsor deep-dive (see Fund rollup
+   below for how `fund_overview` is assembled). Record the returned artifact id in
+   `state.artifact_id`.
 
 Set `phase: "export"` and save.
 
@@ -269,7 +274,30 @@ Set `phase: "done"` and save once exports are recorded.
 When `config.scope: "fund"`, the deliverable is the **Fund ESG Overview** — an aggregation over
 the fund's sponsor-level profiles, not a separately-authored document. Run kickoff → collect →
 reconcile → verify per sponsor (each sponsor keeps its own findings and provenance), then
-aggregate into `fund_overview`:
+aggregate into `fund_overview`.
+
+**Resolve `fund_peers` before aggregating.** Per the standard connector-binding rule above,
+`fund_peers` is bound like any other source: `resolve("fund_peers")` reads whatever
+`state.config.connectors.fund_peers` points to and returns `{stats, sponsor_metrics[], ranking[],
+underperformers[]}` for the fund's peer sponsors — never open or parse the underlying file/API by
+name inline. In production this is the `fund_data get_peer_rollup` API adapter; for the Madison
+demo it is bound `{"kind":"file","path":"skills/esg-profile/demo/madison/fund-peers.json"}` (set
+this override in `config.connectors.fund_peers` at kickoff — do not hardcode the path in this
+workflow). Then:
+
+1. Take the resolved `fund_peers` value as the starting `stats`, `sponsor_metrics[]`, `ranking[]`,
+   and `underperformers[]`.
+2. Merge in the subject sponsor's own connector-derived row — the `sponsor.scorecard`,
+   `sponsor.energy`, and `sponsor.benchmark` values already assembled for this sponsor in the
+   `reconcile` phase — into `sponsor_metrics[]` and `ranking[]`. If the bound `fund_peers` source
+   already carries a row for this sponsor (the Madison demo fixture does, for convenience), the
+   connector-derived row **replaces** it rather than duplicating it, so the rendered figures always
+   trace back to this run's own provenance and not a stale peer snapshot.
+3. Recompute `ranking[]` order and re-run the `underperformers[]` auto-selection (below) after the
+   merge — a subject-sponsor row merged in after the peer file's ranking was computed must not be
+   left out of rank order or the below/above-average check.
+
+Aggregate the merged set into `fund_overview`:
 
 - **`stats`** — asset classes, locations, total size, standing/dev counts, scorecard response
   rate, YoY scorecard performance, **avg CRREM stranding year** (weighted appropriately across

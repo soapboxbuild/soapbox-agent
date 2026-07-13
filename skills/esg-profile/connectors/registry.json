@@ -8,5 +8,6 @@
   "materiality":    { "produces": {"considerations":"array"}, "default_live_adapter": {"kind":"file","path":"reference/materiality.json"}, "gap_filler": false },
   "investment_info":{ "produces": {"asset_class":"string","location":"string","size":"string","exit_date":"string","standing_dev":"string"}, "default_live_adapter": {"kind":"mcp","tool":"fabric get_investment_info"}, "gap_filler": false },
   "governance":     { "produces": {"gov_annual_budget":"string","gov_leasing":"string","gov_capex_project_variance":"string","gov_contractor_engagement":"string"}, "default_live_adapter": {"kind":"mcp","tool":"fabric get_governance_rights"}, "gap_filler": false },
-  "crrem":          { "produces": {"stranding_year":"number","misalignment":"string"}, "default_live_adapter": {"kind":"mcp","tool":"crrem get_pathway"}, "gap_filler": true }
+  "crrem":          { "produces": {"stranding_year":"number","misalignment":"string"}, "default_live_adapter": {"kind":"mcp","tool":"crrem get_pathway"}, "gap_filler": true },
+  "fund_peers":     { "produces": {"stats":"object","sponsor_metrics":"array","ranking":"array","underperformers":"array"}, "default_live_adapter": {"kind":"api","tool":"fund_data get_peer_rollup"}, "gap_filler": false, "scope": "fund" }
 }

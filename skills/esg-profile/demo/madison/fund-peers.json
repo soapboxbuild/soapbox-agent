@@ -1,0 +1,34 @@
+{
+  "meta": {"fund":"Fund IV","reporting_year":2025,"anonymized":true,"generated_period":"Q3 2025"},
+  "fund_overview": {
+    "stats": {
+      "asset_classes":"Residential / BTR, Multifamily, Mixed-Use",
+      "locations":"US Sunbelt (multi-market), Western Europe",
+      "total_size":"~31,500 units / 2.4M sq ft",
+      "standing_dev":"58 / 4",
+      "response_rate":"79%",
+      "yoy_performance":"+5.8 pts",
+      "avg_crrem_stranding_year":2031,
+      "fine_exposure":"TBD"
+    },
+    "sponsor_metrics": [
+      {"sponsor":"Madison","green_cert_pct":"41%","energy_rating_pct":"94%","gresb_status":"Participant","net_zero_policy_status":"Formalized","energy_data_coverage":"88%","renewable_pct":"22%","mieppi":"+33.2 pts","mir":"+35.1 pts"},
+      {"sponsor":"Sponsor Ashcombe","green_cert_pct":"27%","energy_rating_pct":"77%","gresb_status":"Participant","net_zero_policy_status":"Formalized","energy_data_coverage":"69%","renewable_pct":"16%","mieppi":"+14.6 pts","mir":"+16.5 pts"},
+      {"sponsor":"Sponsor Kestrel","green_cert_pct":"19%","energy_rating_pct":"70%","gresb_status":"Not rated","net_zero_policy_status":"In progress","energy_data_coverage":"54%","renewable_pct":"9%","mieppi":"+1.3 pts","mir":"+3.2 pts"},
+      {"sponsor":"Sponsor Colworth","green_cert_pct":"9%","energy_rating_pct":"58%","gresb_status":"Not rated","net_zero_policy_status":"Not started","energy_data_coverage":"37%","renewable_pct":"4%","mieppi":"-11.4 pts","mir":"-9.5 pts"},
+      {"sponsor":"Sponsor Belfry","green_cert_pct":"14%","energy_rating_pct":"63%","gresb_status":"Not rated","net_zero_policy_status":"In progress","energy_data_coverage":"46%","renewable_pct":"7%","mieppi":"-4.8 pts","mir":"-2.9 pts"},
+      {"sponsor":"MIR Benchmark","green_cert_pct":"20%","energy_rating_pct":"66%","gresb_status":"Mixed (fund-median)","net_zero_policy_status":"Mixed (fund-median)","energy_data_coverage":"60%","renewable_pct":"10%","mieppi":"—","mir":"0.0 pts"}
+    ],
+    "ranking": [
+      {"rank":1,"sponsor":"Madison","score":90.45,"yoy_change":"+4.9 pts","vs_mieppi":"+33.2 pts","vs_mir":"+35.1 pts"},
+      {"rank":2,"sponsor":"Sponsor Ashcombe","score":71.9,"yoy_change":"+3.1 pts","vs_mieppi":"+14.6 pts","vs_mir":"+16.5 pts"},
+      {"rank":3,"sponsor":"Sponsor Kestrel","score":58.6,"yoy_change":"+0.8 pts","vs_mieppi":"+1.3 pts","vs_mir":"+3.2 pts"},
+      {"rank":4,"sponsor":"Sponsor Belfry","score":52.4,"yoy_change":"-1.6 pts","vs_mieppi":"-4.8 pts","vs_mir":"-2.9 pts"},
+      {"rank":5,"sponsor":"Sponsor Colworth","score":45.8,"yoy_change":"-4.3 pts","vs_mieppi":"-11.4 pts","vs_mir":"-9.5 pts"}
+    ],
+    "underperformers": [
+      {"sponsor":"Sponsor Colworth","identified_risk":"No formal Net Zero policy; energy data coverage at 37% of portfolio, below MIR average of 60%","mitigation":"Q4 2025 engagement to formalize energy data collection SLA and set a Net Zero target year"},
+      {"sponsor":"Sponsor Belfry","identified_risk":"Net Zero policy still in progress with no committed date; GRESB not yet rated after two reporting cycles","mitigation":"Requested GRESB submission commitment and Net Zero target date by FY2026 review"}
+    ]
+  }
+}

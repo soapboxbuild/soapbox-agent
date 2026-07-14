@@ -682,6 +682,7 @@
          space doesn't jump to a fresh page (which stranded whitespace + orphaned
          headings). Keep each heading with the content that follows it, and keep
          atomic blocks (a single plan's waterfall, a chart, a table) unbroken. */
+      .section-head { break-inside: avoid; break-after: avoid; }
       .section-label, .section-title, .section-intro { break-after: avoid; }
       .metrics-bar, .profile-dl, .profile-table, .dash-grid, .dash-tile,
       .dash-rec, .dash-rec-plan, .plan-block, .chart-block, .dq-grid, .chart-legend {
@@ -1673,8 +1674,8 @@
        3. SCENARIO COMPARISON (renders when 2+ plans exist)
   ════════════════════════════════════ -->
   <div id="comparison-section" class="section" style="display:none">
-    <div class="section-label">Scenario Comparison</div>
-    <h2 class="section-title">Plan Comparison</h2>
+    <div class="section-head"><div class="section-label">Scenario Comparison</div>
+    <h2 class="section-title">Plan Comparison</h2></div>
     <div style="overflow-x:auto">
       <table class="profile-table">
         <thead><tr>
@@ -1694,9 +1695,9 @@
        4. VALUE-CREATION WATERFALL (+ per-plan cashflow underneath each)
   ════════════════════════════════════ -->
   <div id="waterfall-section" class="section" style="display:none">
-    <div class="section-label">Value Creation</div>
+    <div class="section-head"><div class="section-label">Value Creation</div>
     <h2 class="section-title">Impact on Asset Value at Exit — Value-Creation Waterfall</h2>
-    <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the present value of BPS fine avoidance. Recurring NOI changes are capitalized (÷ exit cap); fine avoidance is a discounted present value.</p>
+    <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the present value of BPS fine avoidance. Recurring NOI changes are capitalized (÷ exit cap); fine avoidance is a discounted present value.</p></div>
     <div id="waterfall-plans"><!-- JS: one waterfall per plan --></div>
     <div class="chart-legend" id="waterfall-legend"><!-- JS --></div>
   </div>
@@ -1706,9 +1707,9 @@
           capital plan follows)
   ════════════════════════════════════ -->
   <div id="roadmap-section" class="section" style="display:none">
-    <div class="section-label">Capital Planning</div>
+    <div class="section-head"><div class="section-label">Capital Planning</div>
     <h2 class="section-title">Phased Measure Roadmap</h2>
-    <p class="section-intro">Modeled measures with install-year staging. Split into a cost view and an impact/return view (same measures, keyed by name). Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives value. Net Total Cost = incremental − incentives. Y1 Return on Cost = (landlord utility savings + ancillary revenue) ÷ net total cost.</p>
+    <p class="section-intro">Modeled measures with install-year staging. Split into a cost view and an impact/return view (same measures, keyed by name). Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives value. Net Total Cost = incremental − incentives. Y1 Return on Cost = (landlord utility savings + ancillary revenue) ÷ net total cost.</p></div>
     <div class="sub-heading">Cost &amp; Capital</div>
     <div style="overflow-x:auto">
       <table class="profile-table roadmap-table">
@@ -1752,8 +1753,8 @@
        6. EMISSIONS TRAJECTORY (BPS target + CRREM pathway)
   ════════════════════════════════════ -->
   <div id="trajectory-section" class="section" style="display:none">
-    <div class="section-label">Carbon Pathway</div>
-    <h2 class="section-title">Emissions Trajectory — Targets vs. BAU</h2>
+    <div class="section-head"><div class="section-label">Carbon Pathway</div>
+    <h2 class="section-title">Emissions Trajectory — Targets vs. BAU</h2></div>
     <div class="chart-block" id="trajectory-chart"><!-- JS-drawn SVG --></div>
   </div>
 
@@ -1761,8 +1762,8 @@
        6b. EUI COMPLIANCE (energy-based BPS, e.g. WSCBA)
   ════════════════════════════════════ -->
   <div id="eui-compliance-section" class="section" style="display:none">
-    <div class="section-label">Energy Compliance</div>
-    <h2 class="section-title">Building Performance Standard — Energy (EUI)</h2>
+    <div class="section-head"><div class="section-label">Energy Compliance</div>
+    <h2 class="section-title">Building Performance Standard — Energy (EUI)</h2></div>
     <div class="chart-block" id="eui-compliance-block"><!-- JS-rendered --></div>
   </div>
 
@@ -1770,8 +1771,8 @@
        7. MODEL FOUNDATION / BASELINE
   ════════════════════════════════════ -->
   <div id="baseline-section" class="section" style="display:none">
-    <div class="section-label">Model Foundation</div>
-    <h2 class="section-title">Validated Building Model &amp; Calibrated Baseline</h2>
+    <div class="section-head"><div class="section-label">Model Foundation</div>
+    <h2 class="section-title">Validated Building Model &amp; Calibrated Baseline</h2></div>
     <div class="metrics-bar" id="baseline-metrics"><!-- JS --></div>
     <dl class="profile-dl" id="baseline-dl"><!-- JS --></dl>
   </div>
@@ -1785,8 +1786,8 @@
        9. DATA QUALITY
   ════════════════════════════════════ -->
   <div id="dataquality-section" class="section" style="display:none">
-    <div class="section-label">Appendix</div>
-    <h2 class="section-title">Data Quality</h2>
+    <div class="section-head"><div class="section-label">Appendix</div>
+    <h2 class="section-title">Data Quality</h2></div>
     <p class="section-intro" id="dq-summary" style="display:none"></p>
     <div class="dq-grid" id="dq-items" style="display:none"><!-- JS --></div>
   </div>
@@ -1795,8 +1796,8 @@
        10. METHODOLOGY & SOURCES
   ════════════════════════════════════ -->
   <div id="methodology-section" class="section" style="display:none">
-    <div class="section-label">Appendix</div>
-    <h2 class="section-title">Methodology &amp; Sources</h2>
+    <div class="section-head"><div class="section-label">Appendix</div>
+    <h2 class="section-title">Methodology &amp; Sources</h2></div>
     <p class="section-intro" id="methodology-intro" style="display:none"></p>
     <div id="sources-section" style="display:none">
       <details>

@@ -46,6 +46,7 @@ body { background: #fff !important; }
   break-inside: avoid;
 }
 h1,h2,h3,.section-title,.section-label,.section-intro { break-after: avoid; }
+.section-head { break-inside: avoid; break-after: avoid; }
 p, li { orphans: 3; widows: 3; }
 
 /* Tables: small ones stay whole; a table taller than a page splits WITH its header repeated. */

@@ -678,9 +678,13 @@
 
     @media print {
       html, body { background: #fff; }
-      .section { break-inside: avoid; }
+      /* Let sections FLOW across pages so a section that doesn't fit its remaining
+         space doesn't jump to a fresh page (which stranded whitespace + orphaned
+         headings). Keep each heading with the content that follows it, and keep
+         atomic blocks (a single plan's waterfall, a chart, a table) unbroken. */
+      .section-label, .section-title, .section-intro { break-after: avoid; }
       .metrics-bar, .profile-dl, .profile-table, .dash-grid, .dash-tile,
-      .dash-rec, .dash-rec-plan, #waterfall-plans, .dq-grid, .chart-legend {
+      .dash-rec, .dash-rec-plan, .plan-block, .chart-block, .dq-grid, .chart-legend {
         break-inside: avoid;
       }
       .doc-header, .doc-header-meta-strip, #exec-summary-row,

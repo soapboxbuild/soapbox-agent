@@ -6,7 +6,7 @@
 /* ── Page geometry ─────────────────────────────────────────────── */
 @page {
   size: 8.5in 11in;
-  margin: 20mm 14mm 16mm 14mm;
+  margin: 26mm 14mm 16mm 14mm;
   /* discreet running header (page 2+) */
   @top-left  { content: element(runHeaderL); vertical-align: bottom; }
   @top-right { content: element(runHeaderR); vertical-align: bottom; }
@@ -39,10 +39,13 @@ body { background: #fff !important; }
 .meta-strip { margin: 0 -14mm !important; }
 
 /* ── Keep-together / pagination discipline ─────────────────────── */
-.section, .kpi, .kpi-bar, .insight-box, .warn-box, .chart-wrap, svg, figure, .metric-row, .two-col > div {
+/* Keep atomic blocks unbroken, but let .section itself FLOW — forcing a whole
+ * section to stay together made a section that didn't fit jump to a fresh page,
+ * stranding whitespace and orphaning its heading. */
+.kpi, .kpi-bar, .insight-box, .warn-box, .chart-wrap, svg, figure, .metric-row, .plan-block, .chart-block, .two-col > div {
   break-inside: avoid;
 }
-h1,h2,h3,.section-title,.section-label { break-after: avoid; }
+h1,h2,h3,.section-title,.section-label,.section-intro { break-after: avoid; }
 p, li { orphans: 3; widows: 3; }
 
 /* Tables: small ones stay whole; a table taller than a page splits WITH its header repeated. */

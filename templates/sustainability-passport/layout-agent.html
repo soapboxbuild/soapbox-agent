@@ -95,7 +95,8 @@ th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
 /* Print */
 @media print {
   html, body { background: #fff; }
-  .section, table, .chart-wrap, .cert-badge { break-inside: avoid; }
+  table, .chart-wrap, .cert-badge { break-inside: avoid; }
+  .section-label, .section-title { break-after: avoid; }
   .doc-header, .doc-header-meta-strip, .cert-strip, .badge-green, .badge-amber, .badge-red, .badge-grey, .badge-blue {
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }

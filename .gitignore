@@ -14,3 +14,10 @@ skills/*/demo/**/.pseudonym-map.md
 demo-staging/.scrub-denylist.json
 
 demo-staging/.demo.env
+
+# IMN scripted-demo staging, spoof fixtures & demo planning docs — never publish
+demo-staging/
+skills/*/demo/
+scripts/scrub-demo-data.mjs
+docs/superpowers/**/*demo*
+docs/superpowers/**/*stage-demo*

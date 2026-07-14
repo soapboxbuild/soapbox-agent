@@ -770,7 +770,9 @@
     /* ─── PRINT DISCIPLINE (design kit) ─── */
     @media print {
       html, body { background: #fff; }
-      .section,
+      /* Sections FLOW (avoid stranding whitespace / orphaning headings); keep each
+         heading with its content and keep only atomic cards/charts/tables unbroken. */
+      .section-label, .section-title { break-after: avoid; }
       .capex-card,
       .capex-total-card,
       .emissions-card,

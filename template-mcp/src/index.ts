@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { renderPdf, uploadPdf, type PdfMode } from './render-pdf.js'
 
 const REPO = 'https://raw.githubusercontent.com/soapboxbuild/soapbox-agent/main'
-const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'portfolio-analysis', 'decarb', 'retrofit-advisor', 'esg-profile'] as const
+const KNOWN_TYPES = ['rsra', 'crrem', 'sustainability-passport', 'portfolio-analysis', 'decarb', 'retrofit-advisor', 'esg-profile', 'esg-fund-deck', 'delivery-presentation'] as const
 type ReportType = typeof KNOWN_TYPES[number]
 
 // In-memory cache with 5-minute TTL — re-fetches after template updates without requiring a redeploy

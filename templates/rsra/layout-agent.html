@@ -1070,6 +1070,8 @@
       sens.forEach(function(row) {
         var co2Str = row.emissions_reduction_pct != null ? esc(String(row.emissions_reduction_pct).replace(/[^0-9.]/g,''))+'%' : '—';
         var noiStr = row.noi_impact_annual ? '+'+fmtCurrency(row.noi_impact_annual)+'/yr' : '—';
+        var finStr = row.financing_impact_annual ? '+'+fmtCurrency(row.financing_impact_annual)+'/yr' : '—';
+        var ancStr = row.ancillary_impact_annual ? '+'+fmtCurrency(row.ancillary_impact_annual)+'/yr' : '—';
         var vdStr  = row.value_delta_pct != null ? (row.value_delta_pct > 0 ? '+' : '')+row.value_delta_pct+'%' : (row.value_delta_usd ? '+'+fmtCurrency(row.value_delta_usd) : '—');
         var capStr = isMF && row.spend_per_unit ? fmtCurrency(row.spend_per_unit)+'/unit' : fmtCurrency(row.total_spend);
         sensHtml += '<tr>';
@@ -1077,6 +1079,8 @@
         sensHtml += '<td>' + esc(capStr) + '</td>';
         sensHtml += '<td style="font-weight:600;color:#1F6B45">' + esc(co2Str) + '</td>';
         sensHtml += '<td>' + esc(noiStr) + '</td>';
+        sensHtml += '<td style="color:#64748B">' + esc(finStr) + '</td>';
+        sensHtml += '<td style="color:#64748B">' + esc(ancStr) + '</td>';
         sensHtml += '<td style="font-weight:600;color:#12253A">' + esc(vdStr) + '</td>';
         sensHtml += '</tr>';
       });
@@ -1606,12 +1610,13 @@
   <div id="sensitivity-section" class="section" style="display:none">
     <div class="section-label">Investment Trade-offs</div>
     <h2 class="section-title">Value Creation vs. Carbon Reduction</h2>
-    <p style="font-size:12px;color:#475569;margin-bottom:16px;line-height:1.6">Sensitivity of value creation and carbon reduction at incremental spend levels — for investment analysts sizing the sustainability program.</p>
+    <p style="font-size:12px;color:#475569;margin-bottom:16px;line-height:1.6">Sensitivity of value creation and carbon reduction at incremental spend levels — for investment analysts sizing the sustainability program. Recurring impact is split by category; only operational NOI is capitalized into value.</p>
     <div id="sensitivity-chart" style="margin-bottom:20px"></div>
     <table class="profile-table" id="sensitivity-table">
-      <thead><tr><th>Scenario</th><th>CapEx</th><th>CO₂ Reduction</th><th>Annual NOI Lift</th><th>Est. Value Delta</th></tr></thead>
+      <thead><tr><th>Scenario</th><th>Net CapEx</th><th>CO₂ Reduction</th><th>NOI (operational)&#8202;/yr</th><th>Financing&#8202;/yr</th><th>Ancillary&#8202;/yr</th><th>Est. Value Uplift</th></tr></thead>
       <tbody></tbody>
     </table>
+    <p style="font-size:11px;color:#64748B;margin-top:10px;line-height:1.6"><strong>Value uplift</strong> = operational NOI (landlord-share utility savings) &divide; exit cap. <strong>Financing</strong> (Fannie&nbsp;Mae Green Rewards debt-service reduction) and <strong>Ancillary</strong> (EV charging revenue) are recurring but sit below / beside NOI and are <em>not</em> capitalized into value; <strong>incentives</strong> (IRA &sect;48E ITC / &sect;30C) are one-time and already netted into Net CapEx.</p>
   </div>
 
   <!-- ══════════════════════════════════

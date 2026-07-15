@@ -614,7 +614,7 @@
           },
           "noi_impact_annual": {
             "type": "number",
-            "description": "Annual NOI lift (USD)."
+            "description": "Operational NOI impact only (landlord-share utility savings + hard revenue). Excludes financing and ancillary. value_delta_usd must equal this ÷ exit cap."
           },
           "value_delta_pct": {
             "type": "number",
@@ -623,6 +623,14 @@
           "value_delta_usd": {
             "type": "number",
             "description": "Estimated asset value delta (USD)."
+          },
+          "financing_impact_annual": {
+            "type": "number",
+            "description": "Recurring financing benefit (e.g. Green Rewards debt-service reduction). Below the NOI line — NOT capitalized into value."
+          },
+          "ancillary_impact_annual": {
+            "type": "number",
+            "description": "Recurring ancillary/soft revenue (e.g. EV charging). Risk-adjusted, NOT perpetuity-capitalized into value."
           }
         }
       }

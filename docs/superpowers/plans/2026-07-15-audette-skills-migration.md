@@ -482,3 +482,9 @@ git push origin main
 - [ ] The pre-existing "audette without soapbox-agent" portfolio list has been reported to the user (Task 6) — not silently fixed.
 - [ ] `agent-config.ts`'s pointer no longer references a skill that doesn't exist in `soapbox-agent` anymore, and the old `building-setup` files are gone from that repo (Task 7).
 - [ ] Re-run `grep -rn "building-setup"` across both `soapbox-agent` and `soapbox-platform` one final time to confirm no dangling reference survived the migration.
+
+## Execution log (2026-07-16)
+- Task 1-4 done directly on main + branch/PR flow: PR soapboxbuild/audette-skills#1 merged (d4a4faa). Includes an unplanned but directly relevant urgent fix shipped first (commits cfc0c05, 347eb14): heating/cooling/DHW unit-of-measure corrections (kW/litres -> ton-equivalents) that were the actual live blocker a real user hit mid-session — same skill, same migration target, done inline rather than deferred.
+- Task 5 (re-sync + verify): portfolio 883ee445-88fb-4977-8db9-7b691f3ee1cc's `audette` installed_plugins row (id 4a21529f-...) was nulled and soapbox-api restarted (fresh instance confirmed at 2026-07-16T05:24:53Z) for the urgent unit fix — this primes the SAME re-sync for the building-setup migration merged afterward, since both are now on main by the time this portfolio's agent next builds cold. Live-probe via a real user thread pending (not yet re-triggered as of this log entry).
+- Task 6 (audit): 11 portfolios have `audette` installed; 0 have it without `soapbox-agent` also installed. No isolated-exposure gap to flag.
+- Task 7 (agent-config.ts pointer + remove soapbox-agent/skills/building-setup): NOT YET DONE — gated on Task 5's live-probe confirmation per the plan.

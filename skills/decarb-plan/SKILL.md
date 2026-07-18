@@ -800,6 +800,22 @@ Set `phase: "P4"` and save.
 1. **Audette write-back:** `create_custom_plan` with the confirmed measure set — or
    `update_custom_plan_measures` if `state.audette.custom_plan_id` already exists. Record the
    plan id in `state.audette.custom_plan_id`.
+   - **⚠️ When an Audette measure's modeled economics are demonstrably wrong, CORRECT IT AT SOURCE
+     here — never override the number downstream in the report data or engine flows.** The classic
+     case: a fuel-switch (ASHP/HPWH) whose Audette `annual_mean_landlord_utility_cost_savings` shows
+     a SAVING because Audette valued the kWh swap at a rated/seasonal COP and/or blended rates,
+     when at real fuel prices (e.g. MA electricity $0.24/kWh vs gas ~$0.066/kWh-equiv, winter COP
+     2.0–2.8) the switch actually RAISES cost. A downstream fix — editing `economics.measures[]` or
+     the plan `cashflow[].utility_savings` by hand — does NOT work: the render gate recomputes and
+     rejects a hand-entered figure, `patch_report` refuses analytical fields, and the next
+     `fill_report` re-pulls the stale value → it reverts every time (the user asks repeatedly and it
+     never sticks). The ONLY durable fix is to re-model the measure in the Audette custom plan via
+     `update_custom_plan_measures` (correct the native CRM's COP, or use a generic measure with
+     explicit `fuel_cost_reduction_effects` — positive for the fuel removed, **negative** for the
+     fuel added — recipe 10), so Audette recomputes the correct (negative/near-zero) landlord
+     savings and every engine run + re-render pulls it natively. If Audette is disconnected, say so
+     and STOP — this correction cannot be made downstream; the user must reconnect Audette first.
+     Record the override as a verifier finding.
 2. **Equipment survey write-back:** submit the equipment inventory established in P2 (step 2D) —
    and any Gate-1-adjudicated corrections — to Audette via `submit_equipment_survey`. (The inventory
    *knowledge* was gathered in 2D to drive P3 sequencing; this is the deferred *write*.) Record each

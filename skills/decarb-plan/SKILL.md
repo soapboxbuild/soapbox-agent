@@ -753,6 +753,18 @@ do not assemble the Gate-2 roster from an empty or partial register.
    `measure.cost` — it does not replace the plan's economics (capture, NPV/IRR, exit), which
    continue to consume these figures exactly as below. Surface the costing tool's `references`
    (citations) alongside each measure's cost so provenance survives to the report.
+   - **End-of-life LIKE-FOR-LIKE credit — the CapEx basis is the incremental, NOT the full cost, when a
+     measure replaces equipment that is at/near end of life.** `get_measure_capex` returns
+     `like_for_like` + `incremental` (= capex − like_for_like) for replacement measures that define a
+     baseline (e.g. a condensing boiler: the standard non-condensing boiler is the like-for-like the
+     owner installs regardless; only the condensing premium is the decarbonization increment). **Check
+     the existing unit's remaining useful life in the Audette equipment survey (`get_building_model_details`
+     install year / RUL). If it is at/near end of life (replaced regardless), set the measure's
+     `total_cost` = full capex, `like_for_like_cost` = the connector's `like_for_like`, and
+     `incremental_cost` = the connector's `incremental` — and the value bridge / cashflow use the
+     INCREMENTAL (premium) as the CapEx basis, since the like-for-like is a sunk baseline.** If the unit
+     has life left, `like_for_like_cost = 0` and the full capex is incremental. Never hand-adjust this in
+     the report — it flows: Audette RUL + Costing `like_for_like`/`incremental` → measure record → engine.
 3b. **Incentives + revenue — search and apply by DEFAULT (never skip, never ask first).** For
    every screened-in measure, proactively search for and quantify:
    - **Incentives** — federal (IRA §48/48E ITC, §179D deduction, §45L, and direct-pay / elective-pay

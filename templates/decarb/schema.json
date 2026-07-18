@@ -338,7 +338,14 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["standard", "unit", "building_eui", "target_eui", "status", "source"],
+            "required": [
+              "standard",
+              "unit",
+              "building_eui",
+              "target_eui",
+              "status",
+              "source"
+            ],
             "properties": {
               "standard": {
                 "type": "string",
@@ -370,11 +377,24 @@
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["year", "bau_fine", "plan_fine"],
+                  "required": [
+                    "year",
+                    "bau_fine",
+                    "plan_fine"
+                  ],
                   "properties": {
-                    "year": { "type": "integer", "description": "Calendar year." },
-                    "bau_fine": { "type": "number", "description": "Annual fine (USD/yr) with no action — building EUI stays above target as the target tightens (phased). Stepped up at each compliance milestone." },
-                    "plan_fine": { "type": "number", "description": "Annual fine (USD/yr) with the plan in place — trends to 0 in the year the plan's projected EUI drops under the then-current target." }
+                    "year": {
+                      "type": "integer",
+                      "description": "Calendar year."
+                    },
+                    "bau_fine": {
+                      "type": "number",
+                      "description": "Annual fine (USD/yr) with no action — building EUI stays above target as the target tightens (phased). Stepped up at each compliance milestone."
+                    },
+                    "plan_fine": {
+                      "type": "number",
+                      "description": "Annual fine (USD/yr) with the plan in place — trends to 0 in the year the plan's projected EUI drops under the then-current target."
+                    }
                   }
                 }
               },
@@ -384,7 +404,11 @@
               },
               "status": {
                 "type": "string",
-                "enum": ["compliant", "non-compliant", "exempt"],
+                "enum": [
+                  "compliant",
+                  "non-compliant",
+                  "exempt"
+                ],
                 "description": "Compliance status for this standard."
               },
               "source": {
@@ -652,6 +676,10 @@
               }
             }
           }
+        },
+        "bps_penalty_per_tco2e": {
+          "type": "number",
+          "description": "BPS/BERDO/BEUDO penalty rate in $ per tCO2e over the compliance limit (e.g. 234 for Cambridge BEUDO 2026-2030). REQUIRED whenever any plan books bps_fine_avoidance. The render gate recomputes every year's fine avoidance from targets.trajectory (BAU/plan/bps_target kgCO2e/m2) x this rate x property.gfa_m2 and BLOCKS on divergence — so every fine dollar must derive from the trajectory, never hand-entered."
         }
       }
     },

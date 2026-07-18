@@ -132,6 +132,32 @@ org memory, the reference library, and the `decarb` report template.
        official jurisdiction portal before use. Every `targets.eui_compliance[]` entry carries a
        `source` citation; any trajectory year that sets `bps_target` requires `targets.bps_source`.
        If a value can't be sourced, do not guess it — say so and stop.
+     - **⚠️ BPS FINE INTEGRITY — five checks the render gate now enforces (or that reach the client if you skip them). Learned from 245 First (Cambridge BEUDO), 2026-07-18:**
+       1. **Anchor the baseline to the ACTUAL disclosure, never derive it.** Reduction-from-baseline
+          standards (BEUDO −20%/−60% from 2018-19; LL97; BERDO) compute the limit from the building's
+          *reported* baseline. Pull that baseline emissions figure + the reported GFA/vintage from the
+          jurisdiction's public benchmarking dataset (e.g. Cambridge Open Data BEUDO) — do NOT back-
+          calculate it from current emissions or assume it. Reconcile GFA and year-built to that record
+          (a wrong GFA silently shifts every kgCO₂e/m² and every limit). The whole limit/fine stack rides
+          on this one number.
+       2. **Get the compliance-period YEARS exactly right.** Cite the real period boundaries (BEUDO large
+          non-res: **CP1 = 2026–2029 −20%, CP2 = 2030–2034 −60%, net-zero 2035** — not 2027). An off-by-one
+          start year drops a whole fine year.
+       3. **Compliance emissions use the JURISDICTION'S prescribed emission factor, not the economics
+          grid.** BPS compliance is assessed on the city's factor (BEUDO = grid **residual-mix + RPS**),
+          which differs from — and usually exceeds — a Cambium/marginal grid factor used for OpEx. Compute
+          the `bps_target` trajectory (BAU + each plan) on the prescribed factor; keep BAU and the plans on
+          the SAME factor basis (a flat BAU beside a declining economics grid is a red flag). Using the
+          wrong factor mis-states electrification compliance (Plan B looked CP1-compliant on Cambium; re-check
+          on the residual factor).
+       4. **Every fine dollar derives from the trajectory — populate `economics.bps_penalty_per_tco2e`.**
+          Set the structured penalty rate ($/tCO₂e, e.g. 234) and compute each `cashflow[].bps_fine_avoidance`
+          year as `penalty × gfa_m2/1000 × [max(0,BAU−limit) − max(0,plan−limit)]` from `targets.trajectory`.
+          The render gate (`validateFineTotals`) recomputes this and BLOCKS on divergence — a hand-entered or
+          carried-over fine (245 First Plan B booked $220K where the trajectory implied $241K) will not render.
+       5. **Disclose BPS obligations BEYOND the exit horizon.** For a hold that exits before a net-zero
+          cliff (BEUDO 2035), the buyer still inherits it. Model/annotate the post-exit obligation as an exit
+          risk — a CP2-only view understates the true buyer liability.
      - **Exempt is still shown.** A standard the asset is exempt from (e.g. below a size/age
        threshold) still gets an `eui_compliance[]` entry with `status: "exempt"` rather than being
        omitted — the exemption itself is the useful signal to the reader.

@@ -847,6 +847,16 @@ gate (resume may have skipped P4's check).
    `cashflow` + `plans` + exit cap/year) built per **recipe 8** in `references/audette-modeling-recipes.md`.
    Record the object in `state.report.data`.
 
+   **⚠️ ALWAYS populate the `property` block — it is schema-`required` and drives the cover + the
+   property meta-bar (asset name, address, type, size, year built, climate zone). If you omit it the
+   whole cover renders literal placeholders ("Property Name" / "Address" / "—") — a broken-looking
+   deliverable. Also set top-level `prepared_for`, `prepared_by` ("Soapbox"), and `report_date`
+   (the meta strip shows "—" for each missing one).** Source `property.{name, address, type, units OR
+   gfa_sqft, year_built, climate_zone}` from the **Audette building model** (`get_building_model_details`)
+   and the ingested docs — the Soapbox asset record is frequently null for address/GFA/year, so do
+   **not** rely on it alone. `type` must be one of the schema enum (`industrial`, `office`,
+   `multifamily`, `retail`, …); `climate_zone` in ASHRAE form (e.g. "ASHRAE Zone 2A").
+
    The report is **dashboard-first**: the template renders a Decision Dashboard (compliance
    chip, hero KPI tiles, one-line recommendation, cumulative-cashflow J-curve sparkline)
    from `data.dashboard`, then a Scenario Comparison strip (renders whenever

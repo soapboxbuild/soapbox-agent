@@ -956,7 +956,15 @@ gate (resume may have skipped P4's check).
    **Value bridge & incremental IRR — CALL the cashflow engine `compute_plan_economics`. NEVER hand-compute IRR, capitalization, or PV (upholds "No LLM arithmetic", principle 1).**
    For EACH plan, call the `cashflow` MCP tool **`compute_plan_economics`** with the plan's per-year OWNER-SHARE
    line items and the exit terms; put the returned `cashflow`, `waterfall`, and `irr_incremental` into
-   `economics.plans[]` **verbatim** — do not adjust or recompute them.
+   `economics.plans[]` **verbatim** — do not adjust or recompute them. Copy the waterfall **keys unchanged** —
+   in particular do NOT move `capitalized_fine_avoidance` into `pv_bps_fine_avoidance`.
+   - **BPS fine avoidance is CAPITALIZED, not a PV.** The value bridge / `net_value_creation` uses the
+     **capitalized** avoided fine = exit-year avoided fine ÷ exit cap (the engine's `capitalized_fine_avoidance`,
+     or on older engine builds that same ÷cap value in `pv_bps_fine_avoidance`), consistent with capitalized
+     utility/ancillary. The template labels this bar **"Capitalized BPS Fine Avoidance"** — never call it a
+     "present value" / "PV" in any prose, note, or `data_quality`/`methodology` text. A true discounted-PV of the
+     avoided-fine hold-stream is a *separate, much smaller* context figure (often ~10× smaller); do not conflate
+     the two or describe the ÷cap number as a present value.
    - Inputs: `flows: [{year, incremental_capex, owner_utility_savings, ancillary_revenue, incentives, bps_fine_avoidance}]`
      (one row per hold year), `exit_cap_rate`, `exit_year`, optional `discount_rate` (default 0.08 for the fine PV).
    - `owner_utility_savings` is the **landlord share only** — from each Audette measure's

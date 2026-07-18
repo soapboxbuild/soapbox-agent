@@ -1376,8 +1376,15 @@
       /* BPS fine avoidance: only a bar when a fine regime actually exists. null = no mandatory
          BPS penalty in this jurisdiction → there is NO downside to avoid, so it is shown as '—'
          (with a note), never a $0 'avoided' bar that reads as if fines were modeled. */
-      if (w.pv_bps_fine_avoidance != null) {
-        comps.push({ name: 'PV of BPS Fine Avoidance', short: 'PV Fine Avoid.', amount: Number(w.pv_bps_fine_avoidance)||0, type: 'add' });
+      /* The value bridge uses the CAPITALIZED avoided fine (exit-year fine ÷ exit cap), consistent
+         with the capitalized utility/ancillary bars above — it is the exit-price uplift a buyer pays
+         for a fine-free building, and it is what sits inside net_value_creation. Newer engine builds
+         return it as `capitalized_fine_avoidance`; older builds carry that same ÷cap value in
+         `pv_bps_fine_avoidance`. (A true discounted-PV of the hold-period avoided-fine stream is a
+         separate, much smaller CONTEXT figure — it is NOT this bar and is NOT in net value.) */
+      var capFine = (w.capitalized_fine_avoidance != null) ? w.capitalized_fine_avoidance : w.pv_bps_fine_avoidance;
+      if (capFine != null) {
+        comps.push({ name: 'Capitalized BPS Fine Avoidance', short: 'Cap. Fine Avoid.', amount: Number(capFine)||0, type: 'add' });
       }
       var sum5 = comps.reduce(function(s,c){ return s + c.amount; }, 0);
       var net = (w.net_value_creation != null) ? Number(w.net_value_creation) : sum5;
@@ -1697,7 +1704,7 @@
   <div id="waterfall-section" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Value Creation</div>
     <h2 class="section-title">Impact on Asset Value at Exit — Value-Creation Waterfall</h2>
-    <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the present value of BPS fine avoidance. Recurring NOI changes are capitalized (÷ exit cap); fine avoidance is a discounted present value.</p></div>
+    <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the capitalized value of BPS fine avoidance. All recurring NOI changes — utility savings, ancillary revenue, and avoided BPS fines — are capitalized at the exit cap rate (÷ exit cap) on the exit-year run-rate a buyer capitalizes at sale.</p></div>
     <div id="waterfall-plans"><!-- JS: one waterfall per plan --></div>
     <div class="chart-legend" id="waterfall-legend"><!-- JS --></div>
   </div>

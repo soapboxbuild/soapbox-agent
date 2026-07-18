@@ -899,6 +899,18 @@ gate (resume may have skipped P4's check).
    **not** rely on it alone. `type` must be one of the schema enum (`industrial`, `office`,
    `multifamily`, `retail`, …); `climate_zone` in ASHRAE form (e.g. "ASHRAE Zone 2A").
 
+   **⚠️ Populate the FULL per-measure record in `economics.measures[]` — the roadmap tables render
+   columns for all of it, and the owner-only economics you compute for the bridge do NOT fill them.**
+   For EACH measure set: `total_cost`, `like_for_like_cost` (baseline replacement cost you'd spend
+   anyway for end-of-life equipment; `0` for pure add-ons — set it explicitly, don't omit),
+   `incremental_cost` (= total − like_for_like), `incentives`, `landlord_utility_savings` AND
+   **`tenant_utility_savings`** (the tenant-share saving — for labs/office under sub-metered or NNN
+   leases this is the LARGE share; omitting it makes the measures look like they barely save energy),
+   `ancillary_revenue`, `emissions_savings_tco2e`, and (where known) `elec_reduction_kwh`/`gas_reduction_kwh`.
+   Derive `tenant_utility_savings` = gross measure utility saving − `landlord_utility_savings` (gross =
+   landlord ÷ the measure's LL capture rate). A measure row carrying only `incremental_cost` +
+   `landlord_utility_savings` leaves the Like-for-Like Cost and Tenant Utility Savings columns blank ("—").
+
    The report is **dashboard-first**: the template renders a Decision Dashboard (compliance
    chip, hero KPI tiles, one-line recommendation, cumulative-cashflow J-curve sparkline)
    from `data.dashboard`, then a Scenario Comparison strip (renders whenever

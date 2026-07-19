@@ -895,6 +895,14 @@ Set `phase: "P5"` and save.
 Before dispatching any render, re-run `verifier__verification_status` and re-confirm the
 gate (resume may have skipped P4's check).
 
+0. **Derive engagement economics via the engine.** Call `derive_engagement` with the
+   `building_model_uid` (from `state.audette.building_uid`) and `plan_id` (from
+   `state.audette.custom_plan_id`). The server fetches Audette + Costing, computes the
+   engagement record via the cashflow engine, and returns the economics + verification findings.
+   **Do NOT hand-assemble economics** — the numbers come from `derive_engagement`. Review its
+   `verification.findings`; if `ok: false`, fix the inputs in Audette and re-derive. Once
+   passing, continue to step 1.
+
 1. **Assemble the report data object** per `templates/decarb/schema.json` — the authoritative
    schema the template consumes (its field names are exactly what the template's `populateReport()`
    JS reads). Include the **`economics`** object (per-plan `waterfall` 5 components + annual

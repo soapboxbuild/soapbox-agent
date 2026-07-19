@@ -749,6 +749,68 @@
           }
         }
       }
+    },
+    "presentation": {
+      "type": "object",
+      "description": "Phase-2 presentation config (design as data). Read by layout-agent.html populateReport(): section visibility/order, identity (prepared_by/for/date), brand, columns, measure_order, narrative overrides, config-gated paginator (paged.enabled + page_size letter|a4 + running_header/footer), and an annotations overlay for edits that do not map to a known key. Validated separately by validatePresentation() in apps/api; additionalProperties permitted here so new presentation keys do not require a schema bump.",
+      "additionalProperties": true,
+      "properties": {
+        "paged": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "page_size": {
+              "enum": [
+                "letter",
+                "a4"
+              ]
+            },
+            "running_header": {
+              "type": "string"
+            },
+            "running_footer": {
+              "type": "string"
+            }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "properties": {
+            "prepared_by": {
+              "type": "string"
+            },
+            "prepared_for": {
+              "type": "string"
+            },
+            "report_date": {
+              "type": "string"
+            }
+          }
+        },
+        "brand": {
+          "type": "object"
+        },
+        "sections": {
+          "type": "object"
+        },
+        "columns": {
+          "type": "object"
+        },
+        "measure_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "narrative": {
+          "type": "object"
+        },
+        "annotations": {
+          "type": "array"
+        }
+      }
     }
   }
 }

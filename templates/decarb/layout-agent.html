@@ -20,8 +20,10 @@
     convention) in each plan's waterfall.
 
     Hard prohibitions (match RSRA): self-contained single file — inline CSS + inline
-    JS only. NO external stylesheets, NO CDN scripts, NO Paged.js, NO web fonts, NO
-    canvas, NO external images. All charts are JS-drawn inline SVG.
+    JS only. NO external stylesheets, NO CDN scripts, NO external Paged.js/CDN, NO web
+    fonts, NO canvas, NO external images. All charts are JS-drawn inline SVG.
+    Pagination is a first-class, config-gated feature: when report-data.presentation.paged.enabled
+    is true, the internal paginateReport() lays .report into fixed page cards (no external lib).
   -->
   <style>
     /* ─── DESIGN TOKENS (copied from RSRA for visual consistency) ─── */
@@ -1592,6 +1594,75 @@
       var confNote = document.getElementById('confidence-note');
       if (confNote) confNote.innerHTML = '<strong>Data quality:</strong> ' + esc(dq.summary);
     }
+
+    /* ════════════════════════════════
+       11. PRESENTATION CONFIG (Phase 2 — design as data)
+       Reads report-data.presentation: section visibility/order, identity overrides,
+       and the config-gated paginator. Runs last, after every section is populated.
+    ════════════════════════════════ */
+    var P = data.presentation || {};
+    var secCfg = P.sections || {};
+    Object.keys(secCfg).forEach(function(id) {
+      var el = document.querySelector('[data-section="' + id + '"]');
+      if (!el) return;
+      if (secCfg[id].visible === false) el.style.display = 'none';
+      else if (secCfg[id].visible === true) el.style.display = '';
+      if (typeof secCfg[id].order === 'number') el.style.order = String(secCfg[id].order);
+    });
+    if (P.identity) {
+      if (P.identity.prepared_by) setText('cover-meta-by', P.identity.prepared_by);
+      if (P.identity.prepared_for) setText('cover-meta-for', P.identity.prepared_for);
+      if (P.identity.report_date) setText('cover-meta-date', P.identity.report_date);
+    }
+    if (P.paged && P.paged.enabled) { paginateReport(P.paged); }
+  }
+
+  /* Config-gated paginator — no external library. Lays the .report content into fixed
+     page cards (letter 816×1056 / a4 794×1123 px) with a running header + numbered footer.
+     Distributes top-level blocks by measured height (real browser); under a zero-height
+     environment everything lands on page 1, which is still valid, gated output. */
+  function paginateReport(paged) {
+    var report = document.querySelector('.report');
+    if (!report || document.getElementById('pages')) return;
+    var A4 = paged && paged.page_size === 'a4';
+    var PAGE_W = A4 ? 794 : 816, PAGE_H = A4 ? 1123 : 1056, CONTENT_H = PAGE_H - 112;
+    var pages = document.createElement('div');
+    pages.id = 'pages';
+    report.parentNode.insertBefore(pages, report);
+    report.style.display = 'none';
+    function newPage() {
+      var page = document.createElement('div');
+      page.className = 'page';
+      page.style.cssText = 'width:' + PAGE_W + 'px;min-height:' + PAGE_H + 'px;margin:0 auto 20px;background:#fff;'
+        + 'box-shadow:0 1px 6px rgba(18,37,58,.12);box-sizing:border-box;padding:48px 56px;position:relative;display:flex;flex-direction:column;';
+      var hdr = document.createElement('div');
+      hdr.className = 'pg-header';
+      hdr.style.cssText = 'font-size:10px;letter-spacing:.04em;color:#6B7A8D;text-transform:uppercase;border-bottom:1px solid #E4E9EF;padding-bottom:8px;margin-bottom:16px;';
+      hdr.textContent = (paged && paged.running_header) || '';
+      var body = document.createElement('div');
+      body.className = 'pg-body';
+      body.style.cssText = 'flex:1 1 auto;';
+      var ftr = document.createElement('div');
+      ftr.className = 'pg-footer';
+      ftr.style.cssText = 'font-size:10px;color:#6B7A8D;border-top:1px solid #E4E9EF;padding-top:8px;margin-top:16px;';
+      page.appendChild(hdr); page.appendChild(body); page.appendChild(ftr);
+      pages.appendChild(page);
+      return body;
+    }
+    var body = newPage();
+    var blocks = Array.prototype.slice.call(report.children);
+    blocks.forEach(function(block) {
+      body.appendChild(block);
+      if (body.offsetHeight > CONTENT_H && body.children.length > 1) {
+        body.removeChild(block);
+        body = newPage();
+        body.appendChild(block);
+      }
+    });
+    var footers = pages.querySelectorAll('.pg-footer');
+    for (var i = 0; i < footers.length; i++) {
+      footers[i].textContent = ((paged && paged.running_footer) ? paged.running_footer + '  ·  ' : '') + 'Page ' + (i + 1) + ' of ' + footers.length;
+    }
   }
 </script>
 
@@ -1680,7 +1751,7 @@
   <!-- ══════════════════════════════════
        3. SCENARIO COMPARISON (renders when 2+ plans exist)
   ════════════════════════════════════ -->
-  <div id="comparison-section" class="section" style="display:none">
+  <div id="comparison-section" data-section="comparison" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Scenario Comparison</div>
     <h2 class="section-title">Plan Comparison</h2></div>
     <div style="overflow-x:auto">
@@ -1701,7 +1772,7 @@
   <!-- ══════════════════════════════════
        4. VALUE-CREATION WATERFALL (+ per-plan cashflow underneath each)
   ════════════════════════════════════ -->
-  <div id="waterfall-section" class="section" style="display:none">
+  <div id="waterfall-section" data-section="waterfall" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Value Creation</div>
     <h2 class="section-title">Impact on Asset Value at Exit — Value-Creation Waterfall</h2>
     <p class="section-intro">Each plan bridges from incremental capital expense to net value creation at exit: incentives, capitalized owner-share utility savings and ancillary revenue, and the capitalized value of BPS fine avoidance. All recurring NOI changes — utility savings, ancillary revenue, and avoided BPS fines — are capitalized at the exit cap rate (÷ exit cap) on the exit-year run-rate a buyer capitalizes at sale.</p></div>
@@ -1713,7 +1784,7 @@
        5. MEASURE ROADMAP (presented AFTER Value Creation — the economics lead, the
           capital plan follows)
   ════════════════════════════════════ -->
-  <div id="roadmap-section" class="section" style="display:none">
+  <div id="roadmap-section" data-section="roadmap" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Capital Planning</div>
     <h2 class="section-title">Phased Measure Roadmap</h2>
     <p class="section-intro">Modeled measures with install-year staging. Split into a cost view and an impact/return view (same measures, keyed by name). Like-for-like is the replacement cost that would be spent anyway; only the incremental cost over it drives value. Net Total Cost = incremental − incentives. Y1 Return on Cost = (landlord utility savings + ancillary revenue) ÷ net total cost.</p></div>
@@ -1759,7 +1830,7 @@
   <!-- ══════════════════════════════════
        6. EMISSIONS TRAJECTORY (BPS target + CRREM pathway)
   ════════════════════════════════════ -->
-  <div id="trajectory-section" class="section" style="display:none">
+  <div id="trajectory-section" data-section="trajectory" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Carbon Pathway</div>
     <h2 class="section-title">Emissions Trajectory — Targets vs. BAU</h2></div>
     <div class="chart-block" id="trajectory-chart"><!-- JS-drawn SVG --></div>
@@ -1768,7 +1839,7 @@
   <!-- ══════════════════════════════════
        6b. EUI COMPLIANCE (energy-based BPS, e.g. WSCBA)
   ════════════════════════════════════ -->
-  <div id="eui-compliance-section" class="section" style="display:none">
+  <div id="eui-compliance-section" data-section="eui-compliance" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Energy Compliance</div>
     <h2 class="section-title">Building Performance Standard — Energy (EUI)</h2></div>
     <div class="chart-block" id="eui-compliance-block"><!-- JS-rendered --></div>
@@ -1777,7 +1848,7 @@
   <!-- ══════════════════════════════════
        7. MODEL FOUNDATION / BASELINE
   ════════════════════════════════════ -->
-  <div id="baseline-section" class="section" style="display:none">
+  <div id="baseline-section" data-section="baseline" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Model Foundation</div>
     <h2 class="section-title">Validated Building Model &amp; Calibrated Baseline</h2></div>
     <div class="metrics-bar" id="baseline-metrics"><!-- JS --></div>
@@ -1792,7 +1863,7 @@
   <!-- ══════════════════════════════════
        9. DATA QUALITY
   ════════════════════════════════════ -->
-  <div id="dataquality-section" class="section" style="display:none">
+  <div id="dataquality-section" data-section="dq-summary" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Appendix</div>
     <h2 class="section-title">Data Quality</h2></div>
     <p class="section-intro" id="dq-summary" style="display:none"></p>
@@ -1802,7 +1873,7 @@
   <!-- ══════════════════════════════════
        10. METHODOLOGY & SOURCES
   ════════════════════════════════════ -->
-  <div id="methodology-section" class="section" style="display:none">
+  <div id="methodology-section" data-section="methodology" class="section" style="display:none">
     <div class="section-head"><div class="section-label">Appendix</div>
     <h2 class="section-title">Methodology &amp; Sources</h2></div>
     <p class="section-intro" id="methodology-intro" style="display:none"></p>

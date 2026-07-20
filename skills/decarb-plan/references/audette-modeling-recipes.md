@@ -42,6 +42,40 @@ per-building." That conclusion is wrong — shares are configurable at both buil
 level, just with different field names. Use `default_landlord_share_*` for buildings and
 `landlord_share_*` for measures.
 
+### 2a. `landlord_share` is PER MEASURE, keyed to WHERE THE LOAD SITS — never one building-wide split
+
+Audette computes `annual_mean_landlord_utility_cost_savings` / `annual_mean_tenant_utility_cost_savings`
+from **each measure's authored `landlord_share`**. So the owner/tenant savings split is decided
+measure-by-measure at write-back time (`create_custom_plan` / `update_custom_plan_measures`) — NOT
+by a single property/building-wide default stamped onto every measure. Applying one blended split to
+all measures is the exact bug that credits ~95% of a **common-area LED** or **house-metered solar**
+to *tenants*: those are landlord loads, but they inherit a whole-building split dominated by in-unit
+tenant meters. **Set `landlord_share` per measure from the measure's end-use, keyed to what the load
+SERVES** (not to "is it on a master meter" as a monolith).
+
+**End-use → default `landlord_share` (the floor — override per real metering/RUBS when confirmed):**
+
+| End-use / where the load sits | Default `landlord_share` |
+| --- | --- |
+| Common-area / house-metered / amenity: corridor & exterior lighting, garage, elevator, pool/spa, clubhouse, common ventilation | **0.9–1.0** |
+| BTM solar offsetting the **house/common meter** (owner-paid load) | **0.9–1.0** |
+| Solar under **Virtual Net Metering (VNM)** (credits distributed to tenant accounts) | **0.80** (verify VNM tariff exists — recipe/2C; if only BTM NEM, treat as the house-meter offset above) |
+| In-unit / tenant-metered: in-unit HVAC, in-unit DHW, in-unit lighting/appliances (residents pay the meter) | **0.0–0.1** |
+| Mixed / central plant serving **in-unit residential** load (central heating/DHW delivered to units) | **split by served load**; where the residential-served consumption is **rebillable via RUBS and RUBS is verified**, net owner ≈ **0.10** on that share (the Rosslyn/Cortland rule — see SKILL.md 2C). ~1.0 only where the owner genuinely absorbs it (gross lease / RUBS barred). |
+| BPS fine avoidance | 1.0 (100% owner, regardless of metering) |
+
+The map is the **floor by physical load-location**; the agent overrides per real metering evidence and
+per the jurisdiction's verified RUBS/VNM status (2C capture map, Gate 1). The RUBS ~10% recovery applies
+**only to master-metered load that is actually residential consumption** (central plant → units) — it
+does **not** apply to genuine common-area/house/amenity loads, which stay with the owner (0.9–1.0).
+**Never** set a common-area or house-metered measure to the building's blended in-unit split.
+
+**Verification cue:** after authoring, any measure the map assigns a HIGH owner share
+(common-area / house-metered / amenity / BTM-solar-on-house-meter) whose Audette savings land mostly on
+**tenants** is a red flag — that is the signature of the building-wide split leaking in; re-check that
+measure's `landlord_share`. (Central-plant-serving-in-unit measures whose savings land mostly on tenants
+are *correct* under RUBS and are NOT the red flag.)
+
 ## 3. Exit assumptions per building
 
 Set via `edit_building_attributes`:

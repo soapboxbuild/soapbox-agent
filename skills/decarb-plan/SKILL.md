@@ -243,19 +243,19 @@ org memory, the reference library, and the `decarb` report template.
      >50% of net value, present a **without-fine sensitivity** and a regulatory-persistence caveat;
      never headline value that rests almost entirely on a penalty the plan itself tells the owner how
      to avoid.
-   - **Landlord-capture matches who BEARS the cost, not who pays the meter.** Two independent
-     questions: (a) is the load metered per tenant, or master/common? (b) does the owner ABSORB the
-     bill or REBILL it via RUBS? Do not collapse them:
+   - **Landlord-capture is per end-use, keyed to WHERE THE LOAD SITS and who BEARS the cost — not
+     who pays the meter, and never one building-wide split stamped on every measure.** Distinguish:
      - **In-unit tenant-metered** (tenant pays the utility directly) → owner capture ~0–5%.
-     - **Master-metered / landlord-paid** (central heating/DHW plant, elevators, garage/common
-       ventilation, common lighting, amenity): the owner pays the master bill but that is NOT the
-       same as bearing the cost. **If the jurisdiction ALLOWS RUBS, assume the owner recovers up to
-       ~90% from tenants → net owner capture ≈ 10%**, unless documents show the owner absorbs it (a
-       true gross lease with no RUBS, or an explicit statement). Only assume ~100% owner when the
-       owner genuinely absorbs the utility. **Never read "master-metered" as "100% owner."**
-     - Still do NOT price a common/central-plant load at the in-unit *blended* split (the
-       elevator-regen −6%→+12% error) — but the correct number is the RUBS-recovery split (~10%
-       when RUBS applies), not an automatic 100%.
+     - **Common-area / house-metered / amenity** (elevators, garage/common ventilation, corridor &
+       common lighting, spa/pool/laundry): **genuinely landlord loads → owner capture ~90–100%**.
+       Do NOT price these at the in-unit *blended* split (the elevator-regen −6%→+12% error), and do
+       NOT drop them into the ~10% RUBS bucket — RUBS does not rebill common-area loads to residents.
+     - **Master-metered load that is in-unit RESIDENTIAL consumption** (central heating/DHW plant
+       delivering to units): the owner pays the master bill but that is NOT the same as bearing the
+       cost. **If the jurisdiction ALLOWS RUBS, assume the owner recovers up to ~90% from tenants →
+       net owner capture ≈ 10%**, unless documents show the owner absorbs it (a true gross lease with
+       no RUBS, or an explicit statement). Only assume ~100% owner when the owner genuinely absorbs
+       the utility. **Never read "master-metered" as "100% owner"** for residential-served plant.
      - **BPS fine avoidance is 100% owner** regardless of lease/metering.
      - **Solar under Virtual Net Metering (VNM): assume 80% of solar savings flows to the landlord**
        (unless docs state otherwise).
@@ -652,17 +652,25 @@ number. Tenant-metered fuel = 0% owner on residential; amenity/clubhouse buildin
 foundation input, not a P3 afterthought. Record it in `state.baseline`; an unconfirmed or presumed
 split is a `verifier__record_finding` conflict adjudicated at Gate 1.
 
-**Capture is PER END-USE, and turns on who BEARS the cost — not one blended number per building.**
-A single residential building has BOTH tenant-metered in-unit loads (in-unit electric
-HVAC/appliances ≈ the tenant %) AND master-metered / landlord-paid loads (central heating/DHW
-plant, elevators, garage ventilation, corridor/common lighting, amenity — spa, pool, laundry).
-For the master-metered loads, do NOT apply the in-unit *blended* split — but also do NOT assume
-100% owner. **Master-metered means the owner pays the meter, not that it bears the cost:**
-- **If the jurisdiction ALLOWS RUBS, assume the owner rebills up to ~90% to tenants → net owner
-  capture ≈ 10%**, unless documents show the owner absorbs it (true gross lease / no RUBS).
-- **~100% owner only when the owner genuinely absorbs the utility** (documented gross lease, or
-  RUBS not permitted). Amenity/clubhouse buildings with no tenants are the clean 100% case.
+**Capture is PER END-USE, keyed to WHERE THE LOAD SITS and who BEARS the cost — not one blended
+number per building.** A single residential building has BOTH tenant-metered in-unit loads (in-unit
+electric HVAC/appliances ≈ the tenant %) AND landlord loads — but the landlord loads split into two
+kinds that are NOT the same capture:
+- **Common-area / house-metered / amenity loads** (corridor & exterior/common lighting, garage,
+  elevator, common ventilation, spa/pool/laundry) — these are **genuinely landlord loads → capture
+  0.9–1.0**. RUBS does not rebill these to residents (or only trivially via CAM). Do NOT drop them
+  into the ~10% RUBS bucket, and NEVER apply the in-unit blended split to them (that is the bug that
+  credits a common-area LED ~95% to tenants).
+- **Master-metered load that is actually in-unit RESIDENTIAL consumption** (central heating/DHW
+  plant delivering heat/DHW to the units) — here master-metered means the owner pays the meter, not
+  that it bears the cost. **If the jurisdiction ALLOWS RUBS, assume the owner rebills up to ~90% to
+  tenants → net owner capture ≈ 10%**, unless documents show the owner absorbs it (true gross lease /
+  no RUBS). ~100% owner only when the owner genuinely absorbs the utility (documented gross lease, or
+  RUBS not permitted). This is the Rosslyn/Cortland rule — it applies to residential consumption
+  delivered through a master meter, NOT to common-area loads above.
+- Amenity/clubhouse buildings with no tenants are the clean 100% case.
 - **Solar under Virtual Net Metering (VNM): assume 80% of solar savings flows to the landlord.**
+  BTM solar offsetting the owner-paid house/common meter → ~100% owner (see recipe 2a map).
 - **BPS fine avoidance is 100% owner** regardless.
 Build a **capture map** in `state.capture_map` — every end-use → metering → RUBS-recovery status →
 net owner-capture % — and **never inherit Audette's account-default landlord share (commonly 15%)
@@ -800,15 +808,21 @@ do not assemble the Gate-2 roster from an empty or partial register.
    - Every economic field must be engine- or source-provenanced; the tool refuses
      unprovenanced numbers — supply real sources, never fabricate provenance.
    - Cap rate for exit math comes from `kickoff.cap_rate` **with its verbatim source string**.
-   - **Savings basis = the LOCKED per-end-use capture (from the 2C capture map, Gate 1).** A
-     measure's dollar savings accrue only to the share the owner actually BEARS for **that
-     end-use** — so a common-area or central-plant measure (elevators, garage ventilation, corridor
-     lighting, central heating/DHW) does NOT use the building's blended in-unit split, but takes the
-     end-use's **RUBS-recovery capture: ≈10% net owner where RUBS applies, ~100% only where the
-     owner absorbs the utility** (documented gross lease / no RUBS). Solar under VNM = 80% owner.
-     Never inherit Audette's 15% account-default, and never blanket a master-metered load to 100%.
-     Set Audette's landlord-share for the measure to the end-use's locked capture or modeled owner
-     savings are mis-priced. Do NOT re-derive or re-open the map here.
+   - **Savings basis = the LOCKED per-end-use capture (from the 2C capture map, Gate 1) — set PER
+     MEASURE, keyed to the measure's end-use, never one building-wide split.** A measure's dollar
+     savings accrue only to the share the owner actually BEARS for **that end-use**:
+     - **Common-area / house-metered / amenity measures** (elevators, garage ventilation, corridor &
+       common lighting, spa/pool, BTM solar offsetting the house meter) → capture **~0.9–1.0** (they
+       are landlord loads); do NOT use the building's blended in-unit split and do NOT drop them into
+       the RUBS bucket.
+     - **Central plant serving in-unit RESIDENTIAL load** (central heating/DHW → units) → the
+       **RUBS-recovery capture: ≈10% net owner where RUBS applies, ~100% only where the owner absorbs
+       the utility** (documented gross lease / no RUBS).
+     - Solar under VNM = 80% owner. Never inherit Audette's 15% account-default, and never blanket a
+       master-metered load to 100%.
+     Set Audette's `landlord_share` for the measure to the end-use's locked capture (see recipe 2a's
+     end-use → `landlord_share` map) or modeled owner savings are mis-priced. Do NOT re-derive or
+     re-open the map here.
    - Record returned measure ids in `state.measures.register_ids`.
 5. Roster labels come from the register — retrofit-advisor already screens candidates during
    ideation, so decarb-plan does not re-screen here.
@@ -862,6 +876,23 @@ Set `phase: "P4"` and save.
    `{ building_model_uid, plan_a_id, plan_b_id }` (omit `plan_b_id` for single-scenario). This array is
    what P5 step 0 passes to `derive_engagement`. (Legacy single-building/single-plan: recording a lone
    `state.audette.custom_plan_id` still works.)
+   - **⚠️ Author `landlord_share` PER MEASURE, keyed to the measure's end-use / where the load sits —
+     NEVER one property/building-wide split stamped on every measure.** Audette computes
+     `annual_mean_landlord_utility_cost_savings` / `annual_mean_tenant_utility_cost_savings` from each
+     plan measure's authored `landlord_share`, so the owner/tenant split is fixed HERE, measure by
+     measure. On each measure in `create_custom_plan` / `update_custom_plan_measures` set the
+     `landlord_share_*` fields to that measure's locked 2C capture (Gate 1), using the **end-use →
+     `landlord_share` default map in recipe 2a** as the floor: common-area / house-metered / amenity /
+     BTM-solar-on-house-meter → **0.9–1.0**; in-unit / tenant-metered → **0.0–0.1**; central plant
+     serving in-unit residential load → split by served load (RUBS-recovery ≈0.10 net owner where RUBS
+     is verified); VNM solar → 0.80; BPS fine avoidance → 1.0. Applying a single building-wide split to
+     every measure is FORBIDDEN — it is the exact bug that credited a common-area LED and house-metered
+     solar ~95% to *tenants* by inheriting a whole-building split dominated by in-unit tenant meters.
+     **Verification cue:** after authoring, re-read the write-back — any measure the map assigns a HIGH
+     owner share (common-area / house-metered / amenity / BTM-solar-on-house-meter) whose Audette
+     savings land mostly on **tenants** is a red flag; re-check that measure's `landlord_share`.
+     (Central-plant-serving-in-unit measures whose savings correctly land on tenants under RUBS are NOT
+     the red flag.)
    - **⚠️ When an Audette measure's modeled economics are demonstrably wrong, CORRECT IT AT SOURCE
      here — never override the number downstream in the report data or engine flows.** The classic
      case: a fuel-switch (ASHP/HPWH) whose Audette `annual_mean_landlord_utility_cost_savings` shows

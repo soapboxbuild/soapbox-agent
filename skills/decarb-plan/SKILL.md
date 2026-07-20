@@ -24,6 +24,17 @@ org memory, the reference library, and the `decarb` report template.
 
 **Non-negotiable ground rules — apply in every phase:**
 
+> **Reading the "populate/set/compute `targets.*` / `economics.*` / `cashflow.*`" language below.**
+> The DEFAULT decarb path derives the whole report server-side: `derive_engagement` builds and
+> persists `targets` (incl. `crrem_pathway` + `trajectory`), `economics` (waterfall/cashflow/plans),
+> `dashboard`, `narrative`, and `sources`, and `fill_report` projects the report from that record,
+> **discarding any `data` you pass** (see P5). So **you never author a report_data object.** Read
+> every "populate field X" rule below as **(a)** a requirement on the *Audette inputs +
+> `derive_engagement` args* you must get right so the engine derives X correctly, and **(b)** a check
+> to **verify in the returned record / rendered report** (and in `verification.findings`) — never a
+> field for you to hand-write. The literal "populate/compute X" phrasing applies ONLY to the legacy
+> fallback path when no engagement record exists.
+
 1. **No LLM arithmetic.** Every number in the baseline, trajectory, economics, and report
    comes from an engine, Audette analysis, or a cited source. CRREM pathway points come from
    crrem tooling; BPS milestones and fine exposure come from engines/Audette compliance
@@ -908,14 +919,25 @@ Set `phase: "P5"` and save.
 Before dispatching any render, re-run `verifier__verification_status` and re-confirm the
 gate (resume may have skipped P4's check).
 
-0. **Derive engagement economics via the engine.** Pass `state.audette.buildings[]` verbatim as
-   `derive_engagement`'s `buildings: [{ building_model_uid, plan_a_id, plan_b_id }]` — one entry per
-   building on the property, each carrying the two custom plan ids written back in P4. The engine
-   aggregates across all buildings (sums baselines/measures, property-intensity trajectory,
-   GFA-weighted CRREM, IRR from ONE combined run) — you do NOT hand-aggregate. For a single-building
-   property, one entry suffices (or the legacy `building_model_uid` + `plan_id` still works). This is the **only** input to the economics/report path;
-   scenario and measure selection (which Audette custom plan to derive) must already be settled
-   by this point (P3/P4). The server fetches Audette + Costing, runs the cashflow engine, and
+0. **Derive engagement economics via the engine.** Call `derive_engagement` with the FULL arg set.
+   `buildings[]` alone is NOT enough — every unsupplied arg **silently defaults** (no tool error):
+   exit cap → 0.055, exit year → +10yr, BPS penalty → 0, CRREM curve → OMITTED. Pass ALL of:
+   - `buildings`: `state.audette.buildings[]` verbatim — `[{building_model_uid, plan_a_id, plan_b_id}]`,
+     one entry per building on the property (single-building: one entry, or legacy
+     `building_model_uid` + `plan_id`). Each carries the two custom plan ids written back in P4.
+   - `plan_a_label` / `plan_b_label`: the two plan names (e.g. "Plan 1 — Capital-Light" /
+     "Plan 2 — Deep Decarbonization").
+   - `exit_cap_rate` = the Gate-1-locked `state.kickoff.cap_rate`; `exit_year` = as-of year +
+     `state.kickoff.hold_period_years`. **The engine has NO Audette fallback for these** — omit them
+     and every IRR is computed at 0.055 / +10yr, silently ignoring the locked exit assumptions.
+   - `bps_penalty_per_tco2e`: the applicable BPS fine rate when the asset is under a covered-building
+     regime (0 ONLY when genuinely none applies) — this drives the fine-avoidance stream.
+   - `crrem_region` + `country`: the CRREM region resolved for the asset's location (climate zone +
+     grid region) and its country — **without `crrem_region` the compliance curve is omitted.**
+   The engine aggregates across all buildings (sums baselines/measures, property-intensity trajectory,
+   GFA-weighted CRREM, IRR from ONE combined run) — you do NOT hand-aggregate. Scenario and measure
+   selection (which Audette custom plans to derive) must already be settled by this point (P3/P4).
+   The server fetches Audette + Costing, runs the cashflow engine, and
    **persists a complete engagement record** — economics (waterfall, cashflow, plans), CRREM
    targets and emissions trajectory, the decision dashboard, a deterministic narrative, and
    sources — returning you only a compact summary `{record_id, version, plans, verification}`.

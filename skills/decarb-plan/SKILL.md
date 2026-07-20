@@ -11,7 +11,7 @@ description: >
   screening, and do not trigger RSRA for a full plan.
   Triggers on: "decarbonization report", "decarb plan", "decarbonization roadmap",
   "full decarb report", "net zero plan for [asset]", "BPS compliance plan".
-version: 1.8.5
+version: 1.8.6
 ---
 
 # Decarb-Plan Engagement
@@ -897,126 +897,56 @@ gate (resume may have skipped P4's check).
 
 0. **Derive engagement economics via the engine.** Call `derive_engagement` with the
    `building_model_uid` (from `state.audette.building_uid`) and `plan_id` (from
-   `state.audette.custom_plan_id`). The server fetches Audette + Costing, computes the
-   engagement record via the cashflow engine, and returns the economics + verification findings.
-   **Do NOT hand-assemble economics** — the numbers come from `derive_engagement`. Review its
-   `verification.findings`; if `ok: false`, fix the inputs in Audette and re-derive. Once
-   passing, continue to step 1.
+   `state.audette.custom_plan_id`) — this is the **only** input to the economics/report path;
+   scenario and measure selection (which Audette custom plan to derive) must already be settled
+   by this point (P3/P4). The server fetches Audette + Costing, runs the cashflow engine, and
+   **persists a complete engagement record** — economics (waterfall, cashflow, plans), CRREM
+   targets and emissions trajectory, the decision dashboard, a deterministic narrative, and
+   sources — returning you only a compact summary `{record_id, version, plans, verification}`.
+   **Do NOT hand-assemble economics, CRREM curves, trajectory, dashboard, or sources — there is
+   nothing left for you to compute; the record already contains all of it.** Review
+   `verification.findings`; if `ok: false`, fix the inputs **in Audette** (the custom plan,
+   equipment, or measure set) and re-call `derive_engagement` — never patch around a failing
+   verification by hand-editing numbers. Once `ok: true`, continue to step 1.
 
-1. **Assemble the report data object** per `templates/decarb/schema.json` — the authoritative
-   schema the template consumes (its field names are exactly what the template's `populateReport()`
-   JS reads). Include the **`economics`** object (per-plan `waterfall` 5 components + annual
-   `cashflow` + `plans` + exit cap/year) built per **recipe 8** in `references/audette-modeling-recipes.md`.
-   Record the object in `state.report.data`.
+1. **Render via `fill_report` — the SAME path RSRA uses (default; do not hand-write HTML or draw
+   charts).** Call `fill_report(template: 'decarb', data: {}, title: "<Asset> — Decarbonization
+   Roadmap")`. You author **no report_data** — the server detects the persisted decarb engagement
+   record for this asset and projects the entire deliverable from it (property, baseline,
+   economics, targets/CRREM pathway, trajectory, dashboard, narrative, sources), discarding
+   whatever you pass as `data`. The template's own JavaScript then renders every section and
+   chart from that projected data — the **decision dashboard + J-curve sparkline**, per-plan
+   **value-creation waterfall SVG**, and the **emissions trajectory with the CRREM pathway
+   curve**. You write NO report HTML, draw NO charts, and compute NO data object — your only
+   job upstream of this call was step 0. The render is verifier-gated server-side (it
+   independently recomputes economics via the same engine and blocks on divergence); if blocked,
+   the fix is always in Audette + a re-derive, never a hand-edited figure. Record
+   `state.report.render_iterations` starting at 0.
 
-   **⚠️ ALWAYS populate the `property` block — it is schema-`required` and drives the cover + the
-   property meta-bar (asset name, address, type, size, year built, climate zone). If you omit it the
-   whole cover renders literal placeholders ("Property Name" / "Address" / "—") — a broken-looking
-   deliverable. Also set top-level `prepared_for`, `prepared_by` ("Soapbox"), and `report_date`
-   (the meta strip shows "—" for each missing one).** Source `property.{name, address, type, units OR
-   gfa_sqft, year_built, climate_zone}` from the **Audette building model** (`get_building_model_details`)
-   and the ingested docs — the Soapbox asset record is frequently null for address/GFA/year, so do
-   **not** rely on it alone. `type` must be one of the schema enum (`industrial`, `office`,
-   `multifamily`, `retail`, …); `climate_zone` in ASHRAE form (e.g. "ASHRAE Zone 2A").
+2. **Revision loop — RE-DERIVE, DON'T RECOMPUTE.** On user revisions that change measures,
+   costs, or scenario terms, update the Audette custom plan and/or `derive_engagement` args,
+   re-call `derive_engagement`, then re-call `fill_report(same artifact_id, template, data: {})`
+   to re-render from the updated record (increment `state.report.render_iterations`); on
+   approval export **PDF and/or PPTX**. NEVER `save_file` a hand-built report and NEVER hand-edit
+   or reproduce the template's inlined HTML / chart / waterfall renderers to "apply" a revision —
+   the template owns all rendering and is re-fetched fresh on every `fill_report`. Hand-rebuilding
+   mangles charts, drops blocks, reintroduces overflow, and bypasses the gate. You only ever
+   trigger a re-derive + re-fill; you never touch a data payload directly.
 
-   **⚠️ Populate the FULL per-measure record in `economics.measures[]` — the roadmap tables render
-   columns for all of it, and the owner-only economics you compute for the bridge do NOT fill them.**
-   For EACH measure set: `total_cost`, `like_for_like_cost` (baseline replacement cost you'd spend
-   anyway for end-of-life equipment; `0` for pure add-ons — set it explicitly, don't omit),
-   `incremental_cost` (= total − like_for_like), `incentives`, `landlord_utility_savings` AND
-   **`tenant_utility_savings`** (the tenant-share saving — for labs/office under sub-metered or NNN
-   leases this is the LARGE share; omitting it makes the measures look like they barely save energy),
-   `ancillary_revenue`, `emissions_savings_tco2e`, and (where known) `elec_reduction_kwh`/`gas_reduction_kwh`.
-   Derive `tenant_utility_savings` = gross measure utility saving − `landlord_utility_savings` (gross =
-   landlord ÷ the measure's LL capture rate). A measure row carrying only `incremental_cost` +
-   `landlord_utility_savings` leaves the Like-for-Like Cost and Tenant Utility Savings columns blank ("—").
+   **Small presentation-layer tweaks → `patch_report`, not a re-derive.** For a minor edit
+   after the report exists — reword a sentence, adjust a `data_quality`/`methodology` note, fix a
+   non-cascading value (address, year built, a citation), or hide a section (set its key to
+   `null`) — call **`patch_report(artifact_id, patch)`** with ONLY the changed fields (a JSON
+   Merge Patch). It loads the persisted data object, merges your delta, and re-renders in place —
+   no re-derivation, far cheaper, and it re-runs the same verifier gate.
+   `patch_report` rejects analytical fields (`economics`, `targets`, `dashboard`, …): any change
+   to a headline number — or renaming a plan / reordering sections — requires a fresh
+   `derive_engagement` (fix it at the source in Audette) followed by `fill_report`, so the
+   figures re-derive from the engine and re-pass the gate.
 
-   The report is **dashboard-first**: the template renders a Decision Dashboard (compliance
-   chip, hero KPI tiles, one-line recommendation, cumulative-cashflow J-curve sparkline)
-   from `data.dashboard`, then a Scenario Comparison strip (renders whenever
-   `economics.plans` has **2+ plans** — present at least 2 scenarios where applicable, e.g.
-   near-term positive-IRR vs CRREM-aligned), then per-plan waterfalls + cashflows, roadmap,
-   emissions trajectory, and appendices. **Populate `data.dashboard`** (every field nullable;
-   values from the selected plan's engine outputs — never LLM-computed) and the per-plan
-   comparison fields (`irr_incremental`, `ghgi_reduction_pct`, `compliant`). If `dashboard`
-   is omitted the template falls back to the legacy executive-summary row.
-
-   **CRREM pathway (`targets.crrem_pathway` + `targets.crrem_meta`):** source the REAL curve
-   from the **crrem MCP server** — call `crrem get_pathway` with the asset's country, region,
-   property type, and scenario (`get_climate_zone(zip)` returns a `crrem_region_hint`), and
-   pass the points as `targets.crrem_pathway` (`[{year, carbon_kgco2_m2yr}]`) with
-   `targets.crrem_meta {country, region, property_type, scenario}`. **Never fabricate,
-   extrapolate, or hand-interpolate the curve.** The template draws it as a distinct dashed
-   line alongside the stepped `bps_target` line — BPS drives fines, CRREM drives stranding —
-   and annotates the stranding year. All trajectory series are kgCO₂e·m⁻²·yr⁻¹; convert
-   per-ft² GHGI values before filling.
-
-   **CRREM stranding is timing-only, never monetized.** Report stranding as the stranding YEAR /
-   pathway alignment ONLY — never as a dollar, PV, capitalized value, cap-rate expansion, or
-   brown-discount. `dashboard.downside_avoided` is the **PV of ACTUAL BPS fine avoidance ONLY**
-   (real jurisdiction fines from `state.targets` fine exposure / the fines engine) — do NOT add a
-   stranding-risk dollar value to it. If the asset faces no actual fines, there is no capitalized
-   downside — set `downside_avoided` to 0 (or omit the tile); do not invent one from stranding.
-
-   **Baseline/BAU carbon curve:** use the **actual Audette-modeled baseline carbon curve**
-   (`state.targets` trajectory from Audette engine outputs, including grid-factor drift)
-   for `bau`/`planned` wherever available — never a fabricated flat line.
-
-   Section→source mapping:
-
-   | Data key | Source in state |
-   |---|---|
-   | property / baseline | `state.baseline` (validated model + calibrated baseline, values + sources) |
-   | dashboard | selected plan in `state.economics` + `state.targets` (compliance status, net value, IRR vs hurdle, capital ask, GHGI change, downside avoided, CF-positive year) |
-   | targets / trajectory | `state.targets` (Audette baseline/planned carbon curves, BPS milestones, fine exposure) |
-   | targets.crrem_pathway / crrem_meta | crrem MCP server `get_pathway` (region via `get_climate_zone(zip)` hint) — real curve only |
-   | measures / roadmap | measure register via `state.measures.register_ids` + `state.measures.roadmap_phases` |
-   | economics (waterfall + cashflow + plans, incl. per-plan `ghgi_reduction_pct`/`compliant`) | `state.economics` (recipe 8 — owner-share, incremental-over-LfL, fines as PV, capitalized savings/ancillary) |
-   | data_quality | a **client-facing** confidence summary (`summary` + `items[]` dots) derived from `state.conflicts` / verifier findings — see the EXTERNAL-DELIVERABLE rule below. Do **NOT** pass an `adjudications[]` array (the internal reconciliation ledger is not rendered and must not be sent). |
-   | sources | `state.citations` (cite the CRREM pathway export run) |
-
-   **Choosing the recommended plan (`economics.selected_plan`) — by financial outcome, not decarb depth.**
-   Set `selected_plan` to the plan with the better value-creation-bridge outcome — **net value creation at
-   exit first, then incremental IRR** — NOT automatically the deepest-decarbonization plan. A capital-light
-   plan that strands against CRREM but delivers materially higher net value / IRR (e.g. Plan 1 at +$351K /
-   ~55% IRR vs a deep-electrification plan at −5% IRR) is usually the correct recommendation for a typical
-   hold — select it and say so plainly. `dashboard.recommendation` must **lead with the chosen plan and the
-   financial reason**, then note the alternative's tradeoff (stranding / ESG-mandate cases) — do NOT make
-   "it depends on hold period" the headline. Give each plan a one-line `plans[].thesis` (the recommendation
-   renders these as separated bulleted blocks); keep `plans[].summary_points[]` for the detailed bullets.
-
-   **Value bridge & incremental IRR — CALL the cashflow engine `compute_plan_economics`. NEVER hand-compute IRR, capitalization, or PV (upholds "No LLM arithmetic", principle 1).**
-   For EACH plan, call the `cashflow` MCP tool **`compute_plan_economics`** with the plan's per-year OWNER-SHARE
-   line items and the exit terms; put the returned `cashflow`, `waterfall`, and `irr_incremental` into
-   `economics.plans[]` **verbatim** — do not adjust or recompute them. Copy the waterfall **keys unchanged** —
-   in particular do NOT move `capitalized_fine_avoidance` into `pv_bps_fine_avoidance`.
-   - **BPS fine avoidance is CAPITALIZED, not a PV.** The value bridge / `net_value_creation` uses the
-     **capitalized** avoided fine = exit-year avoided fine ÷ exit cap (the engine's `capitalized_fine_avoidance`,
-     or on older engine builds that same ÷cap value in `pv_bps_fine_avoidance`), consistent with capitalized
-     utility/ancillary. The template labels this bar **"Capitalized BPS Fine Avoidance"** — never call it a
-     "present value" / "PV" in any prose, note, or `data_quality`/`methodology` text. A true discounted-PV of the
-     avoided-fine hold-stream is a *separate, much smaller* context figure (often ~10× smaller); do not conflate
-     the two or describe the ÷cap number as a present value.
-   - Inputs: `flows: [{year, incremental_capex, owner_utility_savings, ancillary_revenue, incentives, bps_fine_avoidance}]`
-     (one row per hold year), `exit_cap_rate`, `exit_year`, optional `discount_rate` (default 0.08 for the fine PV).
-   - `owner_utility_savings` is the **landlord share only** — from each Audette measure's
-     `annual_mean_landlord_utility_cost_savings` (tenant share never capitalizes into the bridge). Apply the
-     utility-rate escalation (recipe-8 defaults 3%/yr elec, 4%/yr gas) when building the per-year `flows`.
-   - `bps_fine_avoidance` is nonzero ONLY when the plan is non-compliant on the **governing** pathway (see 7a).
-   - The engine returns the derived money-math (noi/unlevered/cumulative, terminal exit-value delta =
-     exit-year NOI uplift ÷ cap, capitalized owner savings & ancillary, PV of the fine schedule, net value
-     creation, and IRR). A plan whose owner-share savings never cover its incremental capex comes back with a
-     **null or negative IRR — that is a real, reportable outcome** (report it plainly), not a tool failure.
-   - The decarb engagement does **not** carry the asset's going-in NOI/purchase price — so do **NOT** use
-     `run_dcf` / `run_intervention_irr` (those model a base-DCF + single measure and need going-in NOI);
-     `compute_plan_economics` is the plan-level incremental engine for decarb.
-   - If the tool returns a validation error, FIX the inputs and re-call — never fall back to hand-computing the
-     bridge, and never report "cashflow engine unavailable." The server-side render gate independently
-     recomputes IRR/net-value via this same engine and BLOCKS on divergence, so a hand-entered figure will fail.
-
-   **⚠️ EXTERNAL DELIVERABLE — no internal-process language anywhere in the report data.**
+   **⚠️ EXTERNAL DELIVERABLE — no internal-process language in any `patch_report` edit.**
    The report is sent to external parties (owners, lenders, buyers) who have **no context**
-   for our internal workflow. Nothing you put in ANY field — exec summary, dashboard, plan
+   for our internal workflow. Nothing you patch into ANY field — exec summary, dashboard, plan
    `label`/`name`, `data_quality.summary`/`items[]`, methodology, findings — may reference our
    internal process. Banned terms/patterns: **"Gate 1/2" / "Gate-1"/"Gate-2" / "at Gate…" /
    "locked at gate"**, **"adjudicated" / "adjudication" / "adjudicated_by"**, **"verifier" /
@@ -1026,43 +956,11 @@ gate (resume may have skipped P4's check).
    (475250-EA1)."*; instead of a plan label *"Solar (No ITC) — full Gate-2 roster ✓ Selected"*
    write *"Solar (No ITC) — Recommended"*. Confidence and provenance are welcome; the internal
    machinery that produced them is not.
-
-2. **Render via `fill_report` — the SAME path RSRA uses (default; do not hand-write HTML or draw
-   charts).** Call `fill_report(template: 'decarb', data: <the object from step 1>, title: "<Asset> — Decarbonization Roadmap")`.
-   The server injects the JSON into the template's `<script id="report-data">` block and the
-   template's own JavaScript renders every section and every chart from it — the **decision
-   dashboard + J-curve sparkline**, the **scenario comparison strip**, the **value-creation
-   waterfall SVG** per plan, and the **emissions trajectory with the CRREM pathway curve**.
-   You write NO report HTML and draw NO charts — your only job is to compute the data
-   object. (This mirrors rsra exactly. The old `[[TOKEN]]` / `get_report_template` + agent-fill
-   path is retired — `templates/decarb/layout-agent.html` is now a client-render template.) The
-   render is verifier-gated server-side; if blocked, fix findings and retry. Record
-   `state.report.render_iterations` starting at 0.
-
-3. **Revision loop — DATA-ONLY.** On user revisions, recompute the data object and call
-   `fill_report(same artifact_id, template, updated_data)` — and NOTHING else (increment
-   `state.report.render_iterations`); on approval export **PDF and/or PPTX**. NEVER `save_file` a
-   hand-built report and NEVER hand-edit or reproduce the template's inlined HTML / chart /
-   waterfall renderers to "apply" a revision — the template owns all rendering and is re-fetched
-   fresh on every `fill_report` (so a re-fill also picks up any template fixes; a baked artifact
-   does not). Hand-rebuilding mangles charts, drops blocks, reintroduces overflow, and bypasses the
-   gate. You only ever touch the data payload.
-
-   **Small presentation-layer tweaks → `patch_report`, not a full re-render.** For a minor edit
-   after the report exists — reword a sentence, adjust a `data_quality`/`methodology` note, fix a
-   non-cascading value (address, year built, a citation), or hide a section (set its key to
-   `null`) — call **`patch_report(artifact_id, patch)`** with ONLY the changed fields (a JSON
-   Merge Patch). It loads the persisted data object, merges your delta, and re-renders in place —
-   no recomputation of the whole data object, far cheaper, and it re-runs the same verifier gate.
-   `patch_report` rejects analytical fields (`economics`, `targets`, `dashboard`, …): any change
-   to a headline number — or renaming a plan / reordering sections — still goes through a full
-   `fill_report(same artifact_id, updated_data)` so the figures re-derive from state and re-pass
-   the gate.
-4. **Register the deliverable in Files.** `fill_report` already persists the fully-rendered HTML
+3. **Register the deliverable in Files.** `fill_report` already persists the fully-rendered HTML
    report to `Reports/` for you (server-side) — do **NOT** `save_file` the report HTML yourself
    (you don't hold the rendered ~80KB string, so a manual save would only write a broken stub).
    Just write all export paths (PDF/PPTX) to `state.report.exports`.
-5. **Retain lessons:** call `verifier__retain_shared_expertise` with the generalizable,
+4. **Retain lessons:** call `verifier__retain_shared_expertise` with the generalizable,
    client-anonymous lessons from this engagement (reconciliation patterns, playbook gaps,
    jurisdiction findings). It will refuse content that identifies the client or asset —
    **never rephrase, strip, or restructure content to work around a refusal.** A refusal

@@ -486,11 +486,14 @@ Gather every source; record everything in state as you go.
    Gate 1 alongside new conflicts, not duplicated — plus `verifier__verification_status` and
    `verifier__get_verification_checklist` so known data-quality issues carry into
    reconciliation.
-3. **Audette pulls:** resolve the asset's Audette property, then its building model(s) —
-   **one property may hold several buildings.** Pull `get_building_model_details`,
-   `get_equipment_survey`, and `get_available_measures` for **every** building model on the
-   property, plus any existing carbon-reduction/custom plan surfaced by the model details.
-   Record ALL building uids for the property in `state.audette.building_uid[]`. Do NOT hand-aggregate
+3. **Audette pulls:** the asset's `audette_property_id` is a **PROPERTY uid, NOT a building_model_uid**
+   — one property holds several buildings. **Do NOT call `get_building_model_details` on
+   `audette_property_id`** (it will 404 — a property is not a building). Enumerate the property's
+   buildings from the asset's `metadata.audette_building_uids` (authoritative), or by filtering the
+   Audette properties list on that `property_uid` (each row is one property+building pair). THEN, for
+   **every** building model uid, pull `get_building_model_details`, `get_equipment_survey`, and
+   `get_available_measures`, plus any existing carbon-reduction/custom plan surfaced by the model
+   details. Record ALL building uids for the property in `state.audette.building_uid[]`. Do NOT hand-aggregate
    multi-building properties — `derive_engagement` now aggregates across buildings in the engine
    (sums capex/savings/emissions, GFA-weighted intensity + CRREM, IRR on the combined cashflow).
    Your job is only to assemble the complete building set + each building's two authored plan ids.

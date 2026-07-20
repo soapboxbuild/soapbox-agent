@@ -303,11 +303,11 @@ org memory, the reference library, and the `decarb` report template.
      summary_points, section intros, and executive_summary must be plain and specific — name the plan,
      the number, the driver; skip the adjectives and the meta-commentary. (`dashboard.title` should be
      a neutral label like "Decision summary", never a rhetorical headline.)
-   - **Plan narrative goes in per-plan bullets, not a paragraph wall.** Populate
-     `economics.plans[].summary_points[]` (3–5 short bullets each: what it deploys, headline
-     IRR/value, the key trade-off/sensitivity) so each plan renders as a scannable list under its
-     heading. Keep `executive_summary` to one short context line — do NOT cram both plans into a
-     prose block there.
+   - **Plan narrative goes in per-plan bullets, not a paragraph wall.** `derive_engagement` writes a
+     deterministic `narrative`; if you want richer per-plan bullets, add `economics.plans[].summary_points[]`
+     (3–5 short bullets each: what it deploys, headline IRR/value, the key trade-off/sensitivity) via a
+     `patch_report` call AFTER `derive_engagement` — do NOT hand-assemble the report_data yourself. Keep
+     `executive_summary` to one short context line — do NOT cram both plans into a prose block there.
    - **Utility-rate escalation is applied** to the savings cashflow over the hold (e.g. ~3% elec /
      ~4% gas, or a cited regional forecast) and the assumption is stated — flat-nominal savings
      understate later years and the capitalized exit value.

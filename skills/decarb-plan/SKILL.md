@@ -490,11 +490,10 @@ Gather every source; record everything in state as you go.
    **one property may hold several buildings.** Pull `get_building_model_details`,
    `get_equipment_survey`, and `get_available_measures` for **every** building model on the
    property, plus any existing carbon-reduction/custom plan surfaced by the model details.
-   Record the building uid(s) in `state.audette.building_uid`. When aggregating
-   multi-building properties to the asset level: sum capex/savings/emissions; use
-   **floor-area-weighted averages** for EUI and carbon intensity; never report one building
-   as if it were the whole asset. (Never call bare `list_buildings` on a large account —
-   resolve by property name.)
+   Record ALL building uids for the property in `state.audette.building_uid[]`. Do NOT hand-aggregate
+   multi-building properties — `derive_engagement` now aggregates across buildings in the engine
+   (sums capex/savings/emissions, GFA-weighted intensity + CRREM, IRR on the combined cashflow).
+   Your job is only to assemble the complete building set + each building's two authored plan ids.
 4. **ESPM actuals** where the asset is linked — these sit at the top of the reconciliation
    hierarchy.
 5. **Memory:** `verifier__recall_expertise` for shared engagement lessons + org-bank memory
@@ -895,9 +894,10 @@ Set `phase: "P5"` and save.
 Before dispatching any render, re-run `verifier__verification_status` and re-confirm the
 gate (resume may have skipped P4's check).
 
-0. **Derive engagement economics via the engine.** Call `derive_engagement` with the
-   `building_model_uid` (from `state.audette.building_uid`) and `plan_id` (from
-   `state.audette.custom_plan_id`) — this is the **only** input to the economics/report path;
+0. **Derive engagement economics via the engine.** Call `derive_engagement` with `buildings: [{ building_model_uid, plan_a_id, plan_b_id }]` — one entry
+   per building on the property (from `state.audette.building_uid[]`), each carrying the two custom
+   plan ids the retrofit planning agent authored + wrote back to Audette. For a single-building
+   property, one entry suffices (or the legacy `building_model_uid` + `plan_id` still works). This is the **only** input to the economics/report path;
    scenario and measure selection (which Audette custom plan to derive) must already be settled
    by this point (P3/P4). The server fetches Audette + Costing, runs the cashflow engine, and
    **persists a complete engagement record** — economics (waterfall, cashflow, plans), CRREM

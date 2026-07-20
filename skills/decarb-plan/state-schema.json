@@ -564,7 +564,33 @@
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "description": "Legacy single-building/single-plan id. Superseded by buildings[] for property-scoped two-plan engagements; kept for backward compatibility."
+        },
+        "buildings": {
+          "type": "array",
+          "description": "Per-building Audette plan map for property-scoped derive_engagement. One entry per building on the property; plan_a_id/plan_b_id are the two custom plans written back in P4 (Plan A = capital-light, Plan B = deep). Single-scenario engagements may set only plan_a_id.",
+          "items": {
+            "type": "object",
+            "required": [
+              "building_model_uid",
+              "plan_a_id"
+            ],
+            "properties": {
+              "building_model_uid": {
+                "type": "string"
+              },
+              "plan_a_id": {
+                "type": "string"
+              },
+              "plan_b_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
         },
         "survey_corrections_submitted": {
           "type": "array",

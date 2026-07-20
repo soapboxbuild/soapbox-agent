@@ -834,9 +834,20 @@ Set `phase: "P4"` and save.
 
 ## P4 — Write-Back + Verification
 
-1. **Audette write-back:** `create_custom_plan` with the confirmed measure set — or
-   `update_custom_plan_measures` if `state.audette.custom_plan_id` already exists. Record the
-   plan id in `state.audette.custom_plan_id`.
+1. **Audette write-back — TWO plans per building.** The deliverable is a genuinely differentiated
+   Plan A vs Plan B comparison (GATE 2 rule; recipe 8 "Plans"), and `derive_engagement` reads both
+   plans back **per building** — so you must WRITE both, for EVERY building model on the property.
+   For each `state.audette.building_uid`, author two distinct rosters and write each with
+   `create_custom_plan` (or `update_custom_plan_measures` if that plan already exists on the building):
+   - **Plan A** = the Plan 1 / Operational — Capital-Light roster (controls/RCx, DR, revenue add-ons,
+     lighting/elevator — near-zero net capex, high IRR, CRREM stranding deferred).
+   - **Plan B** = the Plan 2 / Deep Decarbonization roster = Plan A PLUS committed electrification
+     (DHW→HPWH, heating) timed to RUL — large capex, major carbon cut, CRREM-aligned. (A single-scenario
+     engagement writes only Plan A.)
+   Record BOTH ids per building in `state.audette.buildings[]` as
+   `{ building_model_uid, plan_a_id, plan_b_id }` (omit `plan_b_id` for single-scenario). This array is
+   what P5 step 0 passes to `derive_engagement`. (Legacy single-building/single-plan: recording a lone
+   `state.audette.custom_plan_id` still works.)
    - **⚠️ When an Audette measure's modeled economics are demonstrably wrong, CORRECT IT AT SOURCE
      here — never override the number downstream in the report data or engine flows.** The classic
      case: a fuel-switch (ASHP/HPWH) whose Audette `annual_mean_landlord_utility_cost_savings` shows
@@ -894,9 +905,11 @@ Set `phase: "P5"` and save.
 Before dispatching any render, re-run `verifier__verification_status` and re-confirm the
 gate (resume may have skipped P4's check).
 
-0. **Derive engagement economics via the engine.** Call `derive_engagement` with `buildings: [{ building_model_uid, plan_a_id, plan_b_id }]` — one entry
-   per building on the property (from `state.audette.building_uid[]`), each carrying the two custom
-   plan ids the retrofit planning agent authored + wrote back to Audette. For a single-building
+0. **Derive engagement economics via the engine.** Pass `state.audette.buildings[]` verbatim as
+   `derive_engagement`'s `buildings: [{ building_model_uid, plan_a_id, plan_b_id }]` — one entry per
+   building on the property, each carrying the two custom plan ids written back in P4. The engine
+   aggregates across all buildings (sums baselines/measures, property-intensity trajectory,
+   GFA-weighted CRREM, IRR from ONE combined run) — you do NOT hand-aggregate. For a single-building
    property, one entry suffices (or the legacy `building_model_uid` + `plan_id` still works). This is the **only** input to the economics/report path;
    scenario and measure selection (which Audette custom plan to derive) must already be settled
    by this point (P3/P4). The server fetches Audette + Costing, runs the cashflow engine, and

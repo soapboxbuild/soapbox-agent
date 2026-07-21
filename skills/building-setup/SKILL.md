@@ -15,8 +15,7 @@ detects footprints, creates the building(s) in Audette, and verifies + persists 
 account/property linkage so future threads bind correctly. It ends when the asset is linked
 to correctly-created Audette building(s) backed by an enriched, cited building profile.
 
-Out of scope (separate skills/steps): energy-data compilation, equipment survey, full report
-generation.
+Out of scope (separate skills/steps): energy-data compilation, full report generation.
 
 ## Method
 
@@ -59,6 +58,31 @@ Always detect footprints before creating anything in Audette:
 - **Multiple footprints** → one building per footprint, named `"<asset> — Bldg N"`, passing
   height/floors/class from the saved footprint plus the Step-2 profile specs wherever Audette
   accepts them.
+
+### Step 4b — Equipment survey
+
+Populate each building's equipment via `submit_equipment_survey({ building_model_uid, equipment_survey })`,
+extracting from the PCA / Energy Audit / survey docs (Step-2 evidence); unknown stays `null`, never
+invented. The payload validates nothing client-side but the backend inferrer **throws on any missing
+key**, so it must be complete. Follow the AUTHORITATIVE schema in
+`skills/decarb-plan/references/audette-modeling-recipes.md` (§ `submit_equipment_survey` payload).
+Non-negotiables:
+- **All 10 groups present**, each with its `<group>_exists` boolean even when absent (`_exists: false`):
+  `air_handling_equipment`, `central_plant_cooler`, `central_plant_heater`, `central_plant_heat_pump`,
+  `domestic_hot_water_heater`, `terminal_cooler`, `terminal_heater`, `rooftop_unit`, `heat_pump`,
+  `other_equipment`. `other_equipment` needs `clothes_dryers_exists`, `clothes_washers_exists`,
+  `elevators_exists`, `escalator_exists`, `rooftop_photovoltaics_exists`. `domestic_hot_water_heater`
+  also needs `_central_distribution` + `_type` + `_size`.
+- **Capacity UNITS — the #1 survey error:** `air_handling_equipment` and `rooftop_unit` are sized by
+  AIRFLOW in **CFM** via `*_supply_air_rate` (there is NO tons field for them). **EVERY OTHER `*_size`
+  (coolers, heaters, heat pumps, DHW, terminal units) = refrigeration TONS** (1 ton = 12,000 Btu/h;
+  kW ÷ 3.5169; MBH ÷ 12). NEVER put kW/MBH/CFM in a `*_size`, NEVER tons in a `*_supply_air_rate`;
+  `rooftop_photovoltaics_size` = system kW.
+- **Blank size/year = `null`, never `0`** (0 → divide-by-zero in the inferrer).
+- **Enum values are lowercase_snake** (e.g. `central_plant_heater_type`: `gas_boiler` |
+  `condensing_gas_boiler` | `electric_resistance_boiler` | …; `domestic_hot_water_heater_type`:
+  `gas_heater` | `electric_heater` | `indirect_heater`) — full enum lists in the recipe.
+Present the intended survey to the user for confirmation before submitting (they may correct sizing/units).
 
 ### Step 5 — Verify + persist linkage
 

@@ -62,13 +62,19 @@ Always detect footprints before creating anything in Audette:
 
 ### Step 5 — Verify + persist linkage
 
-Confirm each created building UID resolves on the account. Write the correct
-`audette_property_id` back to the asset via `update_asset_fields`:
-- Single building → that building's UID.
-- Multi-building → the **primary** building's UID; note the other UIDs for the user.
+Confirm each created building UID resolves on the account, then **auto-link** the asset by writing
+the **PROPERTY UID** back to `audette_property_id` via `update_asset_fields` (this now persists —
+`audette_property_id` is an allowed field — so no manual linking step is needed):
+- Write the Audette **property_uid** that groups the building(s) — the one returned/used by
+  `create_property_for_building` / `assign_property_to_building`, NOT a `building_model_uid`.
+  This holds for **single and multi-building alike** — even one building belongs to a property.
+- ⚠️ **Never write a building UID into `audette_property_id`.** A property is not a building;
+  downstream tools that treat `audette_property_id` as a property (get_property, list its
+  buildings) will 404 if it's a building UID. Record the individual building_model_uids in
+  `metadata.audette_building_uids` for the roster instead.
 
 This closes the mid-session/stale-link failure mode so the next thread binds correctly at
-session-create.
+session-create — and the asset is linked automatically at the end of setup.
 
 ## Guardrails
 
@@ -89,5 +95,7 @@ session-create.
 - **Overture returns nothing** — use the single point-footprint fallback (Step 3).
 - **No documents and no web coverage** — proceed with whatever resolves, flag the profile as
   thin; do not invent specs to fill it out.
-- **`update_asset_fields` can't persist `audette_property_id`** — fall back to reporting the
-  UID(s) to the user for manual linking, and flag that persistence failed.
+- **Linkage write errors** — `update_asset_fields` DOES persist `audette_property_id` (it is an
+  allowed top-level field), so **auto-link by default** (Step 5). Only if the write returns an
+  actual error: retry once, then report the property UID for manual linking and flag the failure.
+  Do not skip auto-linking pre-emptively — the "can't persist" limitation no longer applies.

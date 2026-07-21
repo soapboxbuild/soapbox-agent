@@ -915,8 +915,10 @@ Set `phase: "P4"` and save.
    submission in `state.audette.survey_corrections_submitted`.
    **BEFORE the first submit, read `references/audette-modeling-recipes.md` recipe 5** — the
    `equipment_survey` arg schema is free-form but the backend inferrer REQUIRES all 10 equipment
-   groups present (each with `<group>_exists`), DHW needs `_central_distribution` +
-   `_average_installation_year` keys, enum values are lowercase_snake (`hydronic_furnace`,
+   groups present (each with `<group>_exists`), DHW needs `_central_distribution` + `_type` +
+   `_size` + `_average_installation_year` keys, every `*_size` is refrigeration TONS (incl. DHW —
+   never gallons/liters; AHU/RTU use `*_supply_air_rate` in CFM), enum values are lowercase_snake
+   (`hydronic_furnace`,
    `gas_heater`, …), and blank sizes/years must be `null` not `0`. Do NOT guess keys — copy the
    recipe's payload template. Hydronic furnaces map to `central_plant_heater_type=hydronic_furnace`
    (native match), never the fan-coil proxy. WSHP/water-loop heat pumps map to the `heat_pump` group

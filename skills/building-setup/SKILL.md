@@ -65,14 +65,15 @@ Populate each building's equipment via `submit_equipment_survey({ building_model
 extracting from the PCA / Energy Audit / survey docs (Step-2 evidence); unknown stays `null`, never
 invented. The payload validates nothing client-side but the backend inferrer **throws on any missing
 key**, so it must be complete. Follow the AUTHORITATIVE schema in
-`skills/decarb-plan/references/audette-modeling-recipes.md` (§ `submit_equipment_survey` payload).
+`skills/decarb-plan/references/audette-modeling-recipes.md` (**recipe 5** — the single source of
+truth for this payload; this section restates its units rule so no cross-skill read is required).
 Non-negotiables:
 - **All 10 groups present**, each with its `<group>_exists` boolean even when absent (`_exists: false`):
   `air_handling_equipment`, `central_plant_cooler`, `central_plant_heater`, `central_plant_heat_pump`,
   `domestic_hot_water_heater`, `terminal_cooler`, `terminal_heater`, `rooftop_unit`, `heat_pump`,
   `other_equipment`. `other_equipment` needs `clothes_dryers_exists`, `clothes_washers_exists`,
   `elevators_exists`, `escalator_exists`, `rooftop_photovoltaics_exists`. `domestic_hot_water_heater`
-  also needs `_central_distribution` + `_type` + `_size`.
+  also needs `_central_distribution` + `_type` + `_size` + `_average_installation_year`.
 - **Capacity UNITS — the #1 survey error. There are exactly TWO units and NOTHING else:**
   - `air_handling_equipment` + `rooftop_unit` → **AIRFLOW in CFM** via `*_supply_air_rate` (no tons
     field exists for them; never convert an RTU to tons).
@@ -81,8 +82,8 @@ Non-negotiables:
     `heat_pump_size`, `terminal_cooler_size`, `terminal_heater_size`, `terminal_heater_cooler_size`,
     **and `domestic_hot_water_heater_size`**. The inferrer's coverage math is entirely in tons and does
     ZERO unit conversion at submit — whatever number you send is read as tons.
-  - **Convert BEFORE submitting:** MBH ÷ 12 = tons; kBtu/h ÷ 12 = tons; kW ÷ 3.5169 = tons; a gas
-    heater/boiler rated in **input BTU/hr** → apply efficiency, then ÷ 12,000.
+  - **Convert BEFORE submitting** (identical to recipe 5): MBH ÷ 12 = tons; kBtu/h ÷ 12 = tons;
+    kW ÷ 3.517 = tons; a gas heater/boiler rated in **input BTU/hr** → apply efficiency, then ÷ 12,000.
   - **DHW is the trap — READ THIS.** `domestic_hot_water_heater_size` is **tons of thermal capacity,
     NOT tank volume.** NEVER submit gallons, liters, or tank size in it (a "50-gal" water heater is
     NOT `50`, and NOT `189`). Use the heater's rated input BTU/hr ÷ 12,000. If the input rating isn't

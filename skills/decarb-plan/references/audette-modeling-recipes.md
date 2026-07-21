@@ -126,86 +126,16 @@ This yields the correct fuel (`NATURAL_GAS` heating + gas DHW), separates coolin
 AC) from heating, and keeps DHW as a distinct gas load — all of which drive the electrification
 measures (heating → air-to-water / heat-pump furnace; DHW → HPWH) and BPS/carbon results.
 
-#### `submit_equipment_survey` payload — AUTHORITATIVE schema (from Audette source, verified 2026-07-04)
+#### `submit_equipment_survey` payload — see the Audette skill (single source of truth)
 
-The tool takes `{ building_model_uid, equipment_survey }`. The `equipment_survey` object's JSON
-schema is free-form (`additionalProperties: true`) — it does NOT validate keys — but the backend
-`EquipmentSurveyDTO.from_dict` inferrer **requires all 10 equipment groups to be present** and
-bracket-accesses specific sub-keys. A missing group or required sub-key throws
-`EquipmentSurveyInfererError` / `KeyError: '<key>'` (this is what repeatedly failed when the agent
-guessed keys like `domestic_hot_water`). Rules:
-
-- **All 10 groups are REQUIRED even when the equipment doesn't exist** — include the group with just
-  its `_exists: false`: `air_handling_equipment`, `central_plant_cooler`, `central_plant_heater`,
-  `central_plant_heat_pump`, `domestic_hot_water_heater`, `terminal_cooler`, `terminal_heater`,
-  `rooftop_unit`, `heat_pump`, `other_equipment`. (`generic_hvac_equipment` list + `equipment_survey_uid`
-  are optional.)
-- **Every group needs its `<group>_exists` boolean.** Type/units fields are optional (default null).
-- **`domestic_hot_water_heater` additionally REQUIRES** `domestic_hot_water_heater_central_distribution`
-  (bool) and `domestic_hot_water_heater_average_installation_year` (key must be present; value may be null).
-- **Enum values are the lowercase_snake_case member name.** Valid values:
-  - `central_plant_heater_type`: `condensing_gas_boiler` | `electric_furnace` | `electric_resistance_boiler` | `gas_boiler` | `gas_furnace` | `high_efficiency_gas_furnace` | **`hydronic_furnace`**
-  - `air_handling_equipment_type`: `make_up_air_unit` | `packaged_air_handling_unit` | `split_air_handling_unit` | `suite_air_exchangers` | `suite_energy_recovery_ventilator` | **`exhaust_only_air_handling_unit`**
-  - `air_handling_equipment_heating_type`: `electric_resistance` | `gas` | `hydronic`; `_cooling_type`: `direct_expansion` | `hydronic`
-  - `terminal_cooler_units`: `cooling_ptac` | **`split_air_conditioner`** | `window_air_conditioner`
-  - `terminal_heater_units`: `condensing_gas_unit_heater` | `electric_baseboard` | `electric_resistance_ptac` | `electric_unit_heater` | `gas_ptac` | `gas_unit_heater`
-  - `domestic_hot_water_heater_type`: `electric_heater` | **`gas_heater`** | `indirect_heater`
-  - `central_plant_*_terminal_units`: `baseboards` | `constant_volume_boxes` | `fan_coil_units` | `variable_air_volume_boxes`
-  - `central_plant_cooler_type`: `air_cooled_chiller` | `water_cooled_chiller`; `central_plant_heat_pump_type`: `air_source_heat_pump` | `ground_source_heat_pump`
-  - `rooftop_unit_heating_type`: `electric_resistance` | `gas`; `rooftop_unit_cooling_type`: `direct_expansion`
-  - `clothes_dryers_type`: `electric` | `gas`; `heat_pump_type`: `water_loop_heat_pump` | `split_air_source_heat_pump`
-- **Sizes/years left blank must be `null`, NOT `0`** — a `0` size triggers a divide-by-zero in the inferrer.
-- **CAPACITY UNITS — the #1 recurring survey error. There are exactly TWO units, and which one
-  depends on the equipment group:**
-  - **RTUs and air-handling units → SUPPLY AIRFLOW in CFM.** The rooftop unit / air-handling unit is
-    sized by its airflow via the `*_supply_air_rate` field (e.g. `air_handling_equipment_supply_air_rate`,
-    `rooftop_unit_supply_air_rate`) — in **CFM**. NEVER convert an RTU to tons; there is no tons field for it.
-  - **EVERY OTHER heating/cooling capacity → EQUIVALENT REFRIGERATION TONS — including DHW** (Audette
-    peculiarity, verified from source 2026-07-07). Every `*_size` field (`central_plant_heater_size`,
-    `central_plant_cooler_size`, `central_plant_heat_pump_size`, `heat_pump_size`, `terminal_cooler_size`,
-    `terminal_heater_size`, `terminal_heater_cooler_size`, **`domestic_hot_water_heater_size`**) is
-    interpreted as **tons of heating/cooling capacity** (1 ton = 12,000 Btu/h) — the internal
-    coverage-ratio math is entirely in tons and does NO unit conversion at submit. Convert BEFORE
-    submitting: MBH ÷ 12 = tons; kBtu/h ÷ 12 = tons; kW ÷ 3.517 = tons; gas DHW/boilers given in
-    input-BTU → apply efficiency then ÷ 12,000. Do **NOT** submit gallons, kBtu, MBH, kW, or CFM in a
-    `*_size` field, and do **NOT** submit tons in a `*_supply_air_rate` (CFM) field.
-  - `*_size` fields left blank must be `null`, NOT `0` (a `0` size divides-by-zero in the inferrer).
-  - (The only self-tagged field is `generic_hvac_equipment[].size_units`: `cfm | mbtu | tons`.)
-  - **Never trust an EXISTING survey's units.** A prior run may have stored kW, kW/10, or tank
-    volume in a `*_size` (e.g. `domestic_hot_water_heater_size: 169` = liters, not tons; a
-    `terminal_heater_size` well below load ÷ 12). On `get_equipment_survey`, audit every `*_size`
-    against this rule and **re-derive in tons + overwrite via `submit_equipment_survey`** when it
-    fails — a complete survey in the wrong units silently corrupts the whole energy model.
-- `other_equipment` REQUIRES: `clothes_dryers_exists`, `clothes_washers_exists`, `elevators_exists`,
-  `escalator_exists`, `rooftop_photovoltaics_exists` (all booleans).
-- **Cross-group validation — a ventilation path is mandatory:** at least ONE of
-  `air_handling_equipment_exists` OR `rooftop_unit_exists` must be `true`, or the survey is rejected.
-  A high-rise WSHP tower has no RTUs but does have ventilation — model its make-up-air units as
-  `air_handling_equipment` (`make_up_air_unit`, heating type per the loop, e.g. `hydronic`) to satisfy
-  this. Do NOT set `rooftop_unit_exists: true` just to pass — a false RTU pulls in a wrong "Hybrid RTU
-  ASHP" measure downstream (a real Cortland Rosslyn error).
-- **Consult THIS enum table before submitting — do not guess enum strings.** The DHW type churn in
-  the field (`electric_heater`→`gas_condensing_boiler`→`gas_boiler`→`gas_heater`) was avoidable: the
-  valid `domestic_hot_water_heater_type` values are exactly `electric_heater | gas_heater |
-  indirect_heater` (a central gas condensing boiler serving DHW is `gas_heater` + `central_distribution: true`).
-
-**Exact A4 / Type-A hydronic-furnace payload** (copy this shape for every residential building; adjust
-sizes/years per building):
-
-```json
-{
-  "air_handling_equipment": { "air_handling_equipment_exists": true, "air_handling_equipment_type": "exhaust_only_air_handling_unit", "air_handling_equipment_heating_type": null, "air_handling_equipment_cooling_type": null, "air_handling_equipment_supply_air_rate": null, "air_handling_equipment_average_installation_year": null },
-  "central_plant_heater": { "central_plant_heater_exists": true, "central_plant_heater_type": "hydronic_furnace", "central_plant_heater_terminal_units": null, "central_plant_heater_average_installation_year": null },
-  "central_plant_cooler": { "central_plant_cooler_exists": false },
-  "central_plant_heat_pump": { "central_plant_heat_pump_exists": false },
-  "domestic_hot_water_heater": { "domestic_hot_water_heater_exists": true, "domestic_hot_water_heater_central_distribution": false, "domestic_hot_water_heater_type": "gas_heater", "domestic_hot_water_heater_size": null, "domestic_hot_water_heater_average_installation_year": null },
-  "terminal_cooler": { "terminal_cooler_exists": true, "terminal_cooler_units": "split_air_conditioner" },
-  "terminal_heater": { "terminal_heater_exists": false },
-  "rooftop_unit": { "rooftop_unit_exists": false },
-  "heat_pump": { "heat_pump_exists": false },
-  "other_equipment": { "clothes_dryers_exists": true, "clothes_dryers_type": "electric", "clothes_washers_exists": true, "elevators_exists": false, "escalator_exists": false, "rooftop_photovoltaics_exists": false }
-}
-```
+The full payload schema — all 10 required groups, every enum value, the **tons** capacity units
+(incl. DHW; airflow in CFM for AHU/RTU), the `null`-not-`0` rule, the mandatory-ventilation-path
+validation, and the *audit-an-existing-survey's-units-and-overwrite* rule — lives in the Audette
+**`audette-equipment-survey`** skill (bundled with the Audette MCP: `references/submission-guide.md`
++ `references/equipment-schema.md`). **Read that skill and copy its payload template before any
+`submit_equipment_survey` call** — do not restate or guess the schema here. This recipe covers only
+the decarb-specific *system→topology mapping* decisions above (5a/5b/5c); the audette skill owns the
+schema, enums, and units.
 
 ### 5b. True in-unit combi with fan-coil distribution (no forced-air furnace)
 

@@ -913,18 +913,16 @@ Set `phase: "P4"` and save.
    and any Gate-1-adjudicated corrections — to Audette via `submit_equipment_survey`. (The inventory
    *knowledge* was gathered in 2D to drive P3 sequencing; this is the deferred *write*.) Record each
    submission in `state.audette.survey_corrections_submitted`.
-   **BEFORE the first submit, read `references/audette-modeling-recipes.md` recipe 5** — the
-   `equipment_survey` arg schema is free-form but the backend inferrer REQUIRES all 10 equipment
-   groups present (each with `<group>_exists`), DHW needs `_central_distribution` + `_type` +
-   `_size` + `_average_installation_year` keys, every `*_size` is refrigeration TONS (incl. DHW —
-   never gallons/liters; AHU/RTU use `*_supply_air_rate` in CFM), enum values are lowercase_snake
-   (`hydronic_furnace`,
-   `gas_heater`, …), and blank sizes/years must be `null` not `0`. Do NOT guess keys — copy the
-   recipe's payload template. Hydronic furnaces map to `central_plant_heater_type=hydronic_furnace`
-   (native match), never the fan-coil proxy. WSHP/water-loop heat pumps map to the `heat_pump` group
-   (`water_loop_heat_pump`), never `central_plant_heat_pump` (recipe 5c). Submit in batches of ≤6
-   buildings per turn (the Audette OAuth token dies on large parallel bursts) and verify each with
-   `get_equipment_survey`.
+   **BEFORE the first submit, read the Audette `audette-equipment-survey` skill** (bundled with the
+   Audette MCP) — it is the single source of truth for the payload: all 10 required groups, enum
+   values, the **tons** capacity units (incl. DHW; airflow in CFM for AHU/RTU), the `null`-not-`0`
+   rule, and the audit-an-existing-survey's-units rule. Copy its payload template; do not guess keys.
+   For the decarb-specific *system→topology mapping* (which is NOT in that skill), see
+   `references/audette-modeling-recipes.md` recipe 5: hydronic furnaces →
+   `central_plant_heater_type=hydronic_furnace` (native match, never the fan-coil proxy);
+   WSHP/water-loop heat pumps → the `heat_pump` group (`water_loop_heat_pump`), never
+   `central_plant_heat_pump` (recipe 5c). Submit in batches of ≤6 buildings per turn (the Audette
+   OAuth token dies on large parallel bursts) and verify each with `get_equipment_survey`.
    **⚠️ UNITS — every `*_size` capacity is in REFRIGERATION TONS, including DHW.** This is an Audette
    peculiarity verified from source: `KW_PER_TON=3.5169`, and the value you submit is stored and
    modelled verbatim as tons with NO conversion. Convert BEFORE submitting: MBH ÷ 12 = tons;

@@ -15,7 +15,9 @@ detects footprints, creates the building(s) in Audette, and verifies + persists 
 account/property linkage so future threads bind correctly. It ends when the asset is linked
 to correctly-created Audette building(s) backed by an enriched, cited building profile.
 
-Out of scope (separate skills/steps): energy-data compilation, full report generation.
+Out of scope (separate skills): **equipment surveys** (the Audette `audette-equipment-survey` skill —
+bundled with the Audette MCP — owns the schema + tons units; use it once buildings exist),
+energy-data compilation, full report generation.
 
 ## Method
 
@@ -58,56 +60,6 @@ Always detect footprints before creating anything in Audette:
 - **Multiple footprints** → one building per footprint, named `"<asset> — Bldg N"`, passing
   height/floors/class from the saved footprint plus the Step-2 profile specs wherever Audette
   accepts them.
-
-### Step 4b — Equipment survey
-
-Populate each building's equipment via `submit_equipment_survey({ building_model_uid, equipment_survey })`,
-extracting from the PCA / Energy Audit / survey docs (Step-2 evidence); unknown stays `null`, never
-invented. The payload validates nothing client-side but the backend inferrer **throws on any missing
-key**, so it must be complete.
-
-⚠️ **NEVER trust an existing survey's units.** First call `get_equipment_survey`. If one already
-exists, do NOT report it as "already correctly sized" and move on — **audit every `*_size` against the
-units rule below**, because prior runs stored wrong units. Tell-tale prior-run errors: a
-`domestic_hot_water_heater_size` that equals the tank volume in liters/gallons (e.g. `169` for 40–50 gal
-tanks); a `terminal_heater_size`/`_cooler_size` far below the load implied by the equipment (e.g. `268`
-when 254 units × 36 MBH ÷ 12 ≈ 762 tons, or `199` when the DX load is 565 tons — those are kW-scaled, not
-tons). When a stored value fails the units check, **re-derive in tons and OVERWRITE via
-`submit_equipment_survey`** (it replaces the survey); do not accept it. A complete-looking survey in the
-wrong units is worse than none — it silently drives the whole energy model.
-
-Follow the AUTHORITATIVE schema in
-`skills/decarb-plan/references/audette-modeling-recipes.md` (**recipe 5** — the single source of
-truth for this payload; this section restates its units rule so no cross-skill read is required).
-Non-negotiables:
-- **All 10 groups present**, each with its `<group>_exists` boolean even when absent (`_exists: false`):
-  `air_handling_equipment`, `central_plant_cooler`, `central_plant_heater`, `central_plant_heat_pump`,
-  `domestic_hot_water_heater`, `terminal_cooler`, `terminal_heater`, `rooftop_unit`, `heat_pump`,
-  `other_equipment`. `other_equipment` needs `clothes_dryers_exists`, `clothes_washers_exists`,
-  `elevators_exists`, `escalator_exists`, `rooftop_photovoltaics_exists`. `domestic_hot_water_heater`
-  also needs `_central_distribution` + `_type` + `_size` + `_average_installation_year`.
-- **Capacity UNITS — the #1 survey error. There are exactly TWO units and NOTHING else:**
-  - `air_handling_equipment` + `rooftop_unit` → **AIRFLOW in CFM** via `*_supply_air_rate` (no tons
-    field exists for them; never convert an RTU to tons).
-  - **EVERY OTHER `*_size` = refrigeration TONS** (1 ton = 12,000 Btu/h). This includes
-    `central_plant_heater_size`, `central_plant_cooler_size`, `central_plant_heat_pump_size`,
-    `heat_pump_size`, `terminal_cooler_size`, `terminal_heater_size`, `terminal_heater_cooler_size`,
-    **and `domestic_hot_water_heater_size`**. The inferrer's coverage math is entirely in tons and does
-    ZERO unit conversion at submit — whatever number you send is read as tons.
-  - **Convert BEFORE submitting** (identical to recipe 5): MBH ÷ 12 = tons; kBtu/h ÷ 12 = tons;
-    kW ÷ 3.517 = tons; a gas heater/boiler rated in **input BTU/hr** → apply efficiency, then ÷ 12,000.
-  - **DHW is the trap — READ THIS.** `domestic_hot_water_heater_size` is **tons of thermal capacity,
-    NOT tank volume.** NEVER submit gallons, liters, or tank size in it (a "50-gal" water heater is
-    NOT `50`, and NOT `189`). Use the heater's rated input BTU/hr ÷ 12,000. If the input rating isn't
-    in the docs, submit `null` and let the model infer DHW size from floor area — that is correct and
-    preferred over guessing from volume.
-  - **NEVER** put kW, MBH, kBtu, CFM, gallons, or liters in any `*_size` field; **NEVER** put tons in
-    a `*_supply_air_rate` (CFM) field. `rooftop_photovoltaics_size` is the lone exception = system kW.
-- **Blank size/year = `null`, never `0`** (0 → divide-by-zero in the inferrer).
-- **Enum values are lowercase_snake** (e.g. `central_plant_heater_type`: `gas_boiler` |
-  `condensing_gas_boiler` | `electric_resistance_boiler` | …; `domestic_hot_water_heater_type`:
-  `gas_heater` | `electric_heater` | `indirect_heater`) — full enum lists in the recipe.
-Present the intended survey to the user for confirmation before submitting (they may correct sizing/units).
 
 ### Step 5 — Verify + persist linkage
 

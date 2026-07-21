@@ -73,11 +73,23 @@ Non-negotiables:
   `other_equipment`. `other_equipment` needs `clothes_dryers_exists`, `clothes_washers_exists`,
   `elevators_exists`, `escalator_exists`, `rooftop_photovoltaics_exists`. `domestic_hot_water_heater`
   also needs `_central_distribution` + `_type` + `_size`.
-- **Capacity UNITS — the #1 survey error:** `air_handling_equipment` and `rooftop_unit` are sized by
-  AIRFLOW in **CFM** via `*_supply_air_rate` (there is NO tons field for them). **EVERY OTHER `*_size`
-  (coolers, heaters, heat pumps, DHW, terminal units) = refrigeration TONS** (1 ton = 12,000 Btu/h;
-  kW ÷ 3.5169; MBH ÷ 12). NEVER put kW/MBH/CFM in a `*_size`, NEVER tons in a `*_supply_air_rate`;
-  `rooftop_photovoltaics_size` = system kW.
+- **Capacity UNITS — the #1 survey error. There are exactly TWO units and NOTHING else:**
+  - `air_handling_equipment` + `rooftop_unit` → **AIRFLOW in CFM** via `*_supply_air_rate` (no tons
+    field exists for them; never convert an RTU to tons).
+  - **EVERY OTHER `*_size` = refrigeration TONS** (1 ton = 12,000 Btu/h). This includes
+    `central_plant_heater_size`, `central_plant_cooler_size`, `central_plant_heat_pump_size`,
+    `heat_pump_size`, `terminal_cooler_size`, `terminal_heater_size`, `terminal_heater_cooler_size`,
+    **and `domestic_hot_water_heater_size`**. The inferrer's coverage math is entirely in tons and does
+    ZERO unit conversion at submit — whatever number you send is read as tons.
+  - **Convert BEFORE submitting:** MBH ÷ 12 = tons; kBtu/h ÷ 12 = tons; kW ÷ 3.5169 = tons; a gas
+    heater/boiler rated in **input BTU/hr** → apply efficiency, then ÷ 12,000.
+  - **DHW is the trap — READ THIS.** `domestic_hot_water_heater_size` is **tons of thermal capacity,
+    NOT tank volume.** NEVER submit gallons, liters, or tank size in it (a "50-gal" water heater is
+    NOT `50`, and NOT `189`). Use the heater's rated input BTU/hr ÷ 12,000. If the input rating isn't
+    in the docs, submit `null` and let the model infer DHW size from floor area — that is correct and
+    preferred over guessing from volume.
+  - **NEVER** put kW, MBH, kBtu, CFM, gallons, or liters in any `*_size` field; **NEVER** put tons in
+    a `*_supply_air_rate` (CFM) field. `rooftop_photovoltaics_size` is the lone exception = system kW.
 - **Blank size/year = `null`, never `0`** (0 → divide-by-zero in the inferrer).
 - **Enum values are lowercase_snake** (e.g. `central_plant_heater_type`: `gas_boiler` |
   `condensing_gas_boiler` | `electric_resistance_boiler` | …; `domestic_hot_water_heater_type`:

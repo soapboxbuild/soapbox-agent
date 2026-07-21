@@ -171,6 +171,11 @@ guessed keys like `domestic_hot_water`). Rules:
     `*_size` field, and do **NOT** submit tons in a `*_supply_air_rate` (CFM) field.
   - `*_size` fields left blank must be `null`, NOT `0` (a `0` size divides-by-zero in the inferrer).
   - (The only self-tagged field is `generic_hvac_equipment[].size_units`: `cfm | mbtu | tons`.)
+  - **Never trust an EXISTING survey's units.** A prior run may have stored kW, kW/10, or tank
+    volume in a `*_size` (e.g. `domestic_hot_water_heater_size: 169` = liters, not tons; a
+    `terminal_heater_size` well below load ÷ 12). On `get_equipment_survey`, audit every `*_size`
+    against this rule and **re-derive in tons + overwrite via `submit_equipment_survey`** when it
+    fails — a complete survey in the wrong units silently corrupts the whole energy model.
 - `other_equipment` REQUIRES: `clothes_dryers_exists`, `clothes_washers_exists`, `elevators_exists`,
   `escalator_exists`, `rooftop_photovoltaics_exists` (all booleans).
 - **Cross-group validation — a ventilation path is mandatory:** at least ONE of

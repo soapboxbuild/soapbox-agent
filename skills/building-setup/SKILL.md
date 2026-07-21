@@ -64,7 +64,19 @@ Always detect footprints before creating anything in Audette:
 Populate each building's equipment via `submit_equipment_survey({ building_model_uid, equipment_survey })`,
 extracting from the PCA / Energy Audit / survey docs (Step-2 evidence); unknown stays `null`, never
 invented. The payload validates nothing client-side but the backend inferrer **throws on any missing
-key**, so it must be complete. Follow the AUTHORITATIVE schema in
+key**, so it must be complete.
+
+⚠️ **NEVER trust an existing survey's units.** First call `get_equipment_survey`. If one already
+exists, do NOT report it as "already correctly sized" and move on — **audit every `*_size` against the
+units rule below**, because prior runs stored wrong units. Tell-tale prior-run errors: a
+`domestic_hot_water_heater_size` that equals the tank volume in liters/gallons (e.g. `169` for 40–50 gal
+tanks); a `terminal_heater_size`/`_cooler_size` far below the load implied by the equipment (e.g. `268`
+when 254 units × 36 MBH ÷ 12 ≈ 762 tons, or `199` when the DX load is 565 tons — those are kW-scaled, not
+tons). When a stored value fails the units check, **re-derive in tons and OVERWRITE via
+`submit_equipment_survey`** (it replaces the survey); do not accept it. A complete-looking survey in the
+wrong units is worse than none — it silently drives the whole energy model.
+
+Follow the AUTHORITATIVE schema in
 `skills/decarb-plan/references/audette-modeling-recipes.md` (**recipe 5** — the single source of
 truth for this payload; this section restates its units rule so no cross-skill read is required).
 Non-negotiables:

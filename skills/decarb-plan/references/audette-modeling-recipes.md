@@ -362,6 +362,15 @@ Rules:
 
 ## 10. Custom & generic measures — lifetime + effects schema (from create_custom_plan.py)
 
+**Verified 2026-07-26 against Audette's own source** (`micro-services` repo,
+`audette-mop-shared/audette/mop_shared/models/enums.py` +
+`product-platform-api/app/custom_plans/measure_effects_parser.py` +
+`product-platform-api/app/data_models/*_effect.py`). This replaces an earlier
+version of this section that had two errors (wrong EndUses list, wrong percent scale) —
+those errors are exactly what caused a v5 plan on 4th & Madison to silently model
+0 kWh savings on first attempt (thread `dbbfac7d`, asset `b577e453`). Don't re-guess
+these values — probing them costs a full session of trial and error.
+
 For `create_custom_plan` / `update_custom_plan_measures`:
 
 - **Every custom measure REQUIRES a non-zero `lifetime`** (int, years). A missing/zero lifetime
@@ -370,16 +379,33 @@ For `create_custom_plan` / `update_custom_plan_measures`:
   BTM solar ≈25, envelope (insulation/glazing) ≈25–30. Lifetime drives the engine's NPV/replacement.
 - **Generic measures (`crm_id="generic"`)** must also carry effect specs (used for e.g. smart
   thermostats, RCx, or any measure without a native CRM):
-  - `consumption_reduction_effects`: `[{endUse, fuel, percentReduction}]`
-  - `load_reduction_effects`: `[{endUse, percentReduction}]`
-  - `fuel_cost_reduction_effects`: `[{fuel, percentReduction, [absoluteReduction]}]`
+  - `consumption_reduction_effects`: `[{endUse, fuel, percentReduction}]` — `endUse` and/or `fuel`
+    (at least one required)
+  - `load_reduction_effects`: `[{endUse, percentReduction}]` — **`endUse` may NOT be `fans`,
+    `pumps`, `process`, or `renewable`**; the engine raises `Load reduction is not currently
+    supported for end use: ...` for those four (they're populated post-load in the SMR pipeline,
+    so there's no "load" to reduce — use `consumption_reduction_effects` for those end uses instead)
+  - `fuel_cost_reduction_effects`: `[{fuel, percentReduction, [absoluteReduction]}]` — **API bug:**
+    the parser does `effect_data["percentReduction"]` unconditionally (no `.get()`), so this key is
+    required in the payload even if you only want `absoluteReduction` to apply. Pass
+    `percentReduction: 0` as a filler in that case. (Server-side: cannot have both a non-zero
+    `absoluteReduction` and non-zero `percentReduction` on the same entry — exactly one takes
+    effect.)
   - `carbon_intensity_reduction_effects`: `[{fuel, percentReduction}]`
-- **`endUse` and `fuel` are CASE-SENSITIVE lowercase_snake enum values — NOT free text.**
-  `'heating'` / `'Heating'` are INVALID. Valid **EndUses**: `electricity`, `natural_gas`, `steam`,
-  `outdoor_air_heating`, `skin_heating`, `outdoor_air_cooling`, `skin_cooling`, `refrigeration`,
-  `domestic_hot_water`, `fans`, `pumps`, `lighting`, `plug_load`, `process`, `renewable`. Valid
-  **fuel**: `electricity`, `natural_gas`, `steam`. For a heating-affecting measure use
-  `outdoor_air_heating` / `skin_heating` (there is NO bare `heating`); cooling → `outdoor_air_cooling`
-  / `skin_cooling`. `percentReduction` is a fraction (e.g. 0.00315 = 0.315%).
+- **`endUse` and `fuel` are CASE-SENSITIVE lowercase_snake enum values — NOT free text, and they are
+  two DIFFERENT enums that don't overlap.** `'heating'` / `'Heating'` are INVALID in either.
+  - Valid **EndUses** (11 values, `enums.py:EndUses`): `outdoor_air_heating`, `skin_heating`,
+    `outdoor_air_cooling`, `skin_cooling`, `refrigeration`, `domestic_hot_water`, `fans`, `pumps`,
+    `lighting`, `plug_load`, `process`, `renewable`. There is **no** bare `heating`/`cooling`/
+    `ventilation` — for a heating-affecting measure use `outdoor_air_heating` / `skin_heating`;
+    cooling → `outdoor_air_cooling` / `skin_cooling`.
+  - Valid **Fuels** (3 values, `enums.py:Fuels`): `electricity`, `natural_gas`, `steam`. These are
+    **not** valid EndUses — `electricity`/`natural_gas`/`steam` only ever go in a `fuel` field,
+    never an `endUse` field (an earlier version of this doc wrongly listed them as EndUses too).
+- **`percentReduction` is a 0–100 percentage number, NOT a fraction.** Every effect model divides
+  by 100 server-side (`self.percent_reduction / 100`) before applying it. So 12% reduction is
+  `"percentReduction": 12`, not `0.12` and not `0.00012`. (An earlier version of this doc claimed
+  it was a fraction like `0.00315` — that was wrong and would silently under-model by 100x, which
+  reads as "0 kWh savings" on small measures.)
 - Prefer a **native CRM id** (e.g. `lighting.led.led_lighting`, `heating-cooling.heatpump.rtu_ashp_electric_backup`)
   over generic whenever one exists — generic is the fallback that needs full effect specs + lifetime.

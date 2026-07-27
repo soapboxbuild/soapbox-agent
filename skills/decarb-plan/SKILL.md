@@ -992,6 +992,42 @@ gate (resume may have skipped P4's check).
    the fix is always in Audette + a re-derive, never a hand-edited figure. Record
    `state.report.render_iterations` starting at 0.
 
+   **⚠️ MANDATORY post-render verification — fetch the ACTUAL rendered output and check it,
+   every single `fill_report` call, no exceptions, before reporting completion to the user.**
+   The server-side render gate only re-checks economics/data correctness — it does NOT catch
+   presentation-layer or cross-field consistency bugs. All of the following shipped live
+   undetected on a real report until caught by hand-inspecting the raw data and the rendered
+   file directly: a CRREM pathway line drawn off the edge of its own chart (an unclamped axis
+   domain scaled a wider-range series past the frame); two unrelated measures sharing an
+   identical, meaningless like-for-like cost (a stray keyword match crosswalked a controls
+   bundle to the same per-unit rate as an actual equipment replacement); a whole Notes
+   subsection silently never populating despite the engine computing real data for it (a
+   projector simply never wired the field through); an auto-generated summary sentence
+   reading "returns a 0.0% incremental IRR" when the true value was null, not zero; a
+   client-requested color/header/section change that was coded and deployed but never actually
+   verified present in the output. **None of these failed the data-correctness gate.** Be
+   AGGRESSIVE and SKEPTICAL — assume something is wrong until you've actually checked, never
+   the reverse, and never accept "the tools can't inspect rendered HTML" as a stopping point —
+   fetch the file's real content (the Files signed URL, or `read_file` against the persisted
+   artifact) and grep/read it directly:
+   - **Cross-check every number that appears more than once** across measures/sections for
+     suspicious duplication (same $/kWh rate, same like-for-like cost, same savings figure on
+     unrelated equipment types) — a real coincidence is rare; a mismatched crosswalk/lookup is
+     common.
+   - **Confirm every conditionally-rendered subsection that SHOULD have data actually shows
+     content** for THIS engagement's real inputs — don't just confirm the code path exists;
+     confirm the populated section is genuinely non-empty in the output. An empty block from
+     broken wiring reads identically to "no data."
+   - **Confirm every narrative/auto-generated sentence is a real, sensible claim** — no bare
+     "0.0%"/"NaN"/"undefined"/"null" leaking through a template string, no numeric value that
+     silently defaulted instead of genuinely computing.
+   - **For any user-requested visual or structural change** (color, header text, section
+     rename/removal, new subsection), confirm it is ACTUALLY present in the rendered output —
+     not merely that the source change was made and deployed.
+   - **Record every discrepancy found as a `verifier__record_finding`** (kind `data-quality` or
+     `presentation`, whichever fits) BEFORE reporting completion — a discrepancy you noticed
+     but didn't record is one that resurfaces unverified on the next revision.
+
 2. **Revision loop — RE-DERIVE, DON'T RECOMPUTE.** On user revisions that change measures,
    costs, or scenario terms, update the Audette custom plan and/or `derive_engagement` args,
    re-call `derive_engagement`, then re-call `fill_report(same artifact_id, template, data: {})`

@@ -520,7 +520,8 @@
         var slot = document.querySelector('.cover-logo-slot');
         if (slot) {
           var h = Number(logo.height_px) > 0 ? Math.min(Number(logo.height_px), 64) : 32;
-          slot.innerHTML = '<span style="display:inline-flex;align-items:center;background:#FFFFFF;border-radius:4px;padding:5px 10px;">'
+          var pill = logo.background === 'transparent' ? 'background:transparent;padding:0;' : 'background:#FFFFFF;border-radius:4px;padding:5px 10px;';
+          slot.innerHTML = '<span style="display:inline-flex;align-items:center;' + pill + '">'
             + cleanSvg.replace('<svg', '<svg style="height:' + h + 'px;width:auto;display:block"') + '</span>';
         }
       }

@@ -809,11 +809,28 @@ do not assemble the Gate-2 roster from an empty or partial register.
    program caps applied, stacking rules respected. Record `{program, basis, rate, quantity,
    estimate, confidence, citation}`. No citation → no estimate. Post-OBBBA federal rules
    (§48E/§179D timing) per the guidance above.
-   **(iii) AUTHOR** — write the estimate into the measure's Audette economics (gross capex,
-   incentive, net capex separately, each with its citation) so `evaluate_measure`, the engine,
-   and every re-render consume it natively. An estimate that is researched but not authored
-   does NOT exist to the economics — the server flags plans whose research found cited
+   **(iii) AUTHOR** — write the estimate into the measure's Audette economics so `evaluate_measure`,
+   the engine, and every re-render consume it natively. An estimate that is researched but not
+   authored does NOT exist to the economics — the server flags plans whose research found cited
    programs while authored incentives total $0.
+   **EXACT MECHANISM (do not paraphrase):** on each measure in `create_custom_plan` /
+   `update_custom_plan_measures` (the P4 write-back), set:
+   - `total_incentives` = the summed vetted per-measure incentive estimate (a dollar figure; use
+     **0** only when research genuinely found none — a real, defensible "no incentive available",
+     never as a skip).
+   - `user_provided_incentives: true` — the flag that tells `derive_engagement` this figure is
+     agent-researched-and-verified, so it **overrides the server's static incentive-rules table**
+     (which is stale/incomplete — that is why we research here). This flag is a **real Audette
+     field that round-trips through derive**; it is what drives the incentive's `medium` confidence
+     in the record. Omitting it silently drops you back to the static table.
+   - (optional enrichment) `incentive_program` (name) and `incentive_citation` (URL) — best-effort;
+     these may not round-trip through Audette persistence, so **also** record the program+citation
+     in `incentive_programs` (P5, below) and in the measure `notes`, which is where the audit trail
+     actually lives.
+   Set `total_incentives` to the **net summed** estimate for the measure — do NOT also separately
+   discount the measure's capex for the same incentive, or you double-count. Gross capex stays the
+   measure's real `measure_cost`/`incremental_cost`; `total_incentives` is the offset the engine
+   nets out in the install-year cashflow.
    Original guardrails: For
    every screened-in measure, proactively search for and quantify:
    - **Incentives** — ⚠️ **federal availability changed under OBBBA (P.L. 119-21, Jul 2025) — do
@@ -952,6 +969,16 @@ Set `phase: "P4"` and save.
      savings land mostly on **tenants** is a red flag; re-check that measure's `landlord_share`.
      (Central-plant-serving-in-unit measures whose savings correctly land on tenants under RUBS are NOT
      the red flag.)
+   - **⚠️ Author the P3 3b incentives ONTO each measure here.** For every measure with a vetted
+     estimate from 3b(ii), set `total_incentives` (summed dollar estimate; 0 only where research
+     found none) and `user_provided_incentives: true` on the measure in `create_custom_plan` /
+     `update_custom_plan_measures`. `derive_engagement` reads these back (uncapped fetch) and
+     **prefers them over its static incentive-rules table** — this is the ONLY way the researched
+     incentive reaches the economics. A plan whose 3b research found cited programs but whose written
+     measures carry `total_incentives: 0` / no flag is a defect (the engine flags it): the research
+     was done but never authored, so the report shows $0 incentives. **Verification cue:** after
+     write-back, re-read the plan and confirm each screened-in measure's `total_incentives` matches
+     its 3b estimate and `user_provided_incentives` is `true`.
    - **⚠️ When an Audette measure's modeled economics are demonstrably wrong, CORRECT IT AT SOURCE
      here — never override the number downstream in the report data or engine flows.** The classic
      case: a fuel-switch (ASHP/HPWH) whose Audette `annual_mean_landlord_utility_cost_savings` shows

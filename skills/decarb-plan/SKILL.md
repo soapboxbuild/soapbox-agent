@@ -979,6 +979,12 @@ Set `phase: "P4"` and save.
      was done but never authored, so the report shows $0 incentives. **Verification cue:** after
      write-back, re-read the plan and confirm each screened-in measure's `total_incentives` matches
      its 3b estimate and `user_provided_incentives` is `true`.
+     **⛔ STRUCTURAL HARD-BLOCK — this is not optional:** `derive_engagement` now REFUSES to derive a
+     record if ANY screened-in measure on the plan lacks an authored incentive decision. Resuming a
+     pre-authored plan does NOT exempt you — if you skip P3 and derive from a stale plan, derive
+     throws and names the offending measures. Every measure must carry either a real
+     `total_incentives` (> 0) or an explicit "researched — none available"
+     (`user_provided_incentives: true` with `total_incentives: 0`). There is no way to render past it.
    - **⚠️ When an Audette measure's modeled economics are demonstrably wrong, CORRECT IT AT SOURCE
      here — never override the number downstream in the report data or engine flows.** The classic
      case: a fuel-switch (ASHP/HPWH) whose Audette `annual_mean_landlord_utility_cost_savings` shows

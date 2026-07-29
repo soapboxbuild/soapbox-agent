@@ -1564,6 +1564,26 @@
     }
 
     /* ════════════════════════════════
+       9b. NOTES — INCENTIVE PROGRAMS + COMPLIANCE
+       (engine-computed; item shape {program, description})
+    ════════════════════════════════ */
+    function renderNotesList(sectionId, listId, block) {
+      var section = document.getElementById(sectionId);
+      var items = (block && block.items) || [];
+      if (!section || items.length === 0) return;
+      var html = '';
+      items.forEach(function(it) {
+        html += '<div class="dq-item"><span><strong>' + esc(it.program || '') + '</strong>'
+              + (it.description ? ' — ' + esc(it.description) : '') + '</span></div>';
+      });
+      setHtml(listId, html);
+      showEl(listId);
+      section.style.display = '';
+    }
+    renderNotesList('incentive-programs-section', 'incentive-programs-items', data.incentive_programs);
+    renderNotesList('compliance-notes-section', 'compliance-notes-items', data.compliance_notes);
+
+    /* ════════════════════════════════
        10. METHODOLOGY & SOURCES
     ════════════════════════════════ */
     var methodSection = document.getElementById('methodology-section');
@@ -1868,6 +1888,21 @@
     <h2 class="section-title">Data Quality</h2></div>
     <p class="section-intro" id="dq-summary" style="display:none"></p>
     <div class="dq-grid" id="dq-items" style="display:none"><!-- JS --></div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       9b. NOTES — INCENTIVES & COMPLIANCE
+  ════════════════════════════════════ -->
+  <div id="incentive-programs-section" data-section="incentive-programs" class="section" style="display:none">
+    <div class="section-head"><div class="section-label">Notes</div>
+    <h2 class="section-title">Incentive Programs</h2></div>
+    <div class="dq-grid" id="incentive-programs-items" style="display:none"><!-- JS --></div>
+  </div>
+
+  <div id="compliance-notes-section" data-section="compliance-notes" class="section" style="display:none">
+    <div class="section-head"><div class="section-label">Notes</div>
+    <h2 class="section-title">Compliance Notes</h2></div>
+    <div class="dq-grid" id="compliance-notes-items" style="display:none"><!-- JS --></div>
   </div>
 
   <!-- ══════════════════════════════════

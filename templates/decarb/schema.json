@@ -811,6 +811,60 @@
           "type": "array"
         }
       }
+    },
+    "incentive_programs": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Engine-computed incentive/rebate programs that matched this plan's measures (Notes section). Populated by derive_engagement — do not hand-author.",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Program name (e.g. 'IRA §48E ITC', 'DC BEPS')."
+              },
+              "description": {
+                "type": "string",
+                "description": "One-sentence client-facing description. EXTERNAL DELIVERABLE: no internal-process language."
+              }
+            },
+            "required": [
+              "program"
+            ]
+          }
+        }
+      }
+    },
+    "compliance_notes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Engine-computed building-performance-standard compliance status notes (Notes section). Populated by derive_engagement — do not hand-author.",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Program name (e.g. 'IRA §48E ITC', 'DC BEPS')."
+              },
+              "description": {
+                "type": "string",
+                "description": "One-sentence client-facing description. EXTERNAL DELIVERABLE: no internal-process language."
+              }
+            },
+            "required": [
+              "program"
+            ]
+          }
+        }
+      }
     }
   }
 }

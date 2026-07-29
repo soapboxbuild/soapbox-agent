@@ -875,6 +875,18 @@ Present each adjudication/decision to the user via `ask_user_question` (one call
 1. **Roster** — every measure under all four screening labels
    (recommended / defensive / screened-out / needs-data), each with its reason, including the
    named failing test for screened-out measures.
+1b. **Landlord/tenant savings attribution — an EXPLICIT per-measure user decision, never
+   silently inherited.** For every recommended/defensive measure, present the PROPOSED owner
+   share of its savings (from the Gate-1 2C capture map, keyed to the measure's end-use:
+   common-area/house-metered ≈0.9–1.0, in-unit/tenant-metered ≈0.0–0.1, central-plant-serving-
+   in-unit = RUBS-recovery ≈0.10, VNM solar 0.80) with its one-line basis (lease structure /
+   metering / RUBS evidence), and ask the user to CONFIRM or OVERRIDE each — one
+   `ask_user_question` per measure or per end-use group with identical splits (options: the
+   proposed share first, then plausible alternates, allow_other for a custom %). Record the
+   confirmed value per measure in `state.measures.landlord_share_confirmed[{measure, share,
+   basis, confirmed_by:'user'}]` — P4 authors Audette `landlord_share_*` from THESE confirmed
+   values, never directly from the unconfirmed map. A post-Gate-2 change to any share reopens
+   this step for that measure only.
 2. **Phased roadmap** — per-phase capex, NOI delta, and exit impact. **Engine numbers only.**
 3. **Target-gap statement** — `state.measures.gap_statement`, with defensive closures priced.
 
@@ -907,7 +919,8 @@ Set `phase: "P4"` and save.
      `annual_mean_landlord_utility_cost_savings` / `annual_mean_tenant_utility_cost_savings` from each
      plan measure's authored `landlord_share`, so the owner/tenant split is fixed HERE, measure by
      measure. On each measure in `create_custom_plan` / `update_custom_plan_measures` set the
-     `landlord_share_*` fields to that measure's locked 2C capture (Gate 1), using the **end-use →
+     `landlord_share_*` fields to that measure's USER-CONFIRMED share from GATE 2 step 1b
+     (`state.measures.landlord_share_confirmed`) — which was seeded from the locked 2C capture (Gate 1), using the **end-use →
      `landlord_share` default map in recipe 2a** as the floor: common-area / house-metered / amenity /
      BTM-solar-on-house-meter → **0.9–1.0**; in-unit / tenant-metered → **0.0–0.1**; central plant
      serving in-unit residential load → split by served load (RUBS-recovery ≈0.10 net owner where RUBS

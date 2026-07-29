@@ -77,6 +77,31 @@ the **PROPERTY UID** back to `audette_property_id` via `update_asset_fields` (th
 This closes the mid-session/stale-link failure mode so the next thread binds correctly at
 session-create — and the asset is linked automatically at the end of setup.
 
+### Step 6 — Calibration check (mandatory before declaring setup complete)
+
+A created building is a PHYSICS MODEL until it is checked against real consumption. Never
+end setup without one of these two outcomes recorded:
+
+1. **Utility data available** (ESPM link, uploaded bills, or an EPA energy export on the asset):
+   compare the model's first-year total — `get_building_model_report` →
+   `baseline_crp.first_year_energy_consumption_total` (kWh) — against the actual annual
+   whole-building consumption for the most recent complete year.
+   - **Within ±15%** → record `metadata.audette_calibration = {status:'calibrated', modeled_kwh,
+     actual_kwh, delta_pct, actuals_source, checked_at}` via `update_asset_fields`.
+   - **Outside ±15%** → do NOT silently accept. State the delta, check the usual causes in
+     order (GFA basis wrong, vacancy mismatch, equipment survey gaps, actuals that are
+     themselves bad — Audette's own QA has found "assured" actuals wrong at portfolio scale),
+     fix what is fixable (equipment survey, GFA), re-check once, and record
+     `status:'miscalibrated'` with the residual delta + suspected cause if still outside.
+     A miscalibrated model is usable for screening but NOT for capital planning — say so.
+2. **No utility data** → record `status:'uncalibrated (physics-only)'` with a one-line note of
+   what data would calibrate it. Every downstream consumer (RSRA, portfolio-analysis,
+   decarb-plan P2) reads this field instead of assuming the model was ever validated.
+
+decarb-plan's P2 (2B baseline+calibration) performs the deeper, locked calibration for capital
+planning — this step is the earlier, cheaper tripwire so an uncalibrated model never travels
+unlabeled.
+
 ## Guardrails
 
 - **No fabrication** — every profile attribute comes from a document, listing, record, or

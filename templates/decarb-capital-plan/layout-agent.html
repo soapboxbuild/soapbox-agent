@@ -205,6 +205,16 @@
     table.data-table tr.totals-row td { font-weight: 700; border-top: 1px solid var(--border-rule); border-bottom: none; }
     .group-header { font-size: 11px; font-weight: 700; color: var(--bronze); text-transform: uppercase; letter-spacing: 0.03em; margin: var(--space-6) 0 var(--space-4); }
     .table-scroll { overflow-x: auto; }
+    /* Measures table (landscape page): a FIXED column layout so long measure names wrap inside a
+       bounded first column instead of stretching every row taller and pushing the table off the
+       8.5in page height. Column widths come from the <colgroup> the renderer emits; here we only
+       pin table-layout, a slightly smaller type scale, and tighter cell padding to reclaim vertical
+       room. break-word lets an over-long unbroken token in the name column wrap rather than widen it. */
+    table.data-table.measures-fixed { table-layout: fixed; font-size: 10px; }
+    table.data-table.measures-fixed th, table.data-table.measures-fixed td { padding: 4px 6px; }
+    table.data-table.measures-fixed td:first-child, table.data-table.measures-fixed th:first-child { overflow-wrap: break-word; }
+    table.data-table.measures-fixed td:first-child .consideration-detail,
+    table.data-table.measures-fixed td:first-child div { overflow-wrap: break-word; }
 
     /* ─── Financial ─── */
     .financial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-6); margin-bottom: var(--space-8); }
@@ -691,7 +701,15 @@
     var considered = data.measures_considered || [];
     if (items.length || considered.length) {
       var TLfL = 0, TIncr = 0, TIncent = 0, TNet = 0, TEnergy = 0, TCO2 = 0, TLL = 0, TTen = 0, TAnc = 0;
-      var html = '<table class="data-table"><thead><tr>'
+      var html = '<table class="data-table measures-fixed">'
+        // Fixed column widths (must sum to 100): a wide Measure column so names wrap in ~2 lines
+        // rather than stretching rows tall, Status/Year narrow, the 10 numeric columns even.
+        + '<colgroup>'
+        + '<col style="width:18%"><col style="width:8%"><col style="width:4%">'
+        + '<col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%">'
+        + '<col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%">'
+        + '</colgroup>'
+        + '<thead><tr>'
         + '<th>Measure</th><th>Status</th><th class="num">Year</th>'
         + '<th class="num">Like-for-Like Cost</th><th class="num">Incremental Cost</th><th class="num">Incentives</th><th class="num">Net Total Cost</th>'
         + '<th class="num">Energy Savings (MWh)</th><th class="num">Emissions Savings (tCO2e)</th><th class="num">Landlord Utility Savings</th><th class="num">Tenant Utility Savings</th><th class="num">Ancillary Revenue</th><th class="num">Return on Cost</th>'
@@ -1160,6 +1178,78 @@
           }).join(''));
         }
       }
+    }
+
+    /* ════════════════════════════════
+       NOTES PAGINATION — the Notes section is the one variable-length page; its content
+       (implementation considerations + incentive programs + compliance notes) can exceed one
+       8.5x11 page. The rest of the template is fixed one-div-per-page, and a single .page div is
+       print-locked (break-inside:avoid) so an over-long Notes page would clip rather than flow.
+       Split it here: flatten the Notes content into atomic units (subsection titles + each item),
+       then reflow them across as many cloned Notes pages as needed, measuring real rendered height
+       so each page stays within 11in. Runs BEFORE page numbering so continuation pages are counted.
+    ════════════════════════════════ */
+    paginateNotes();
+    function paginateNotes() {
+      var page = document.getElementById('notes-section');
+      if (!page || page.style.display === 'none') return;
+      // px-per-inch probe (zoom/DPI-robust) — the portrait page cap is 11in tall.
+      var probe = document.createElement('div');
+      probe.style.cssText = 'width:1in;height:1in;position:absolute;visibility:hidden;left:-9999px';
+      document.body.appendChild(probe);
+      var pxIn = probe.getBoundingClientRect().width || 96; probe.remove();
+      var MAXH = 11 * pxIn + 3; // border-box min-height is exactly 11in; small slack for rounding
+      var content = page.querySelector('.page-content');
+      if (!content) return;
+
+      // Flatten: keep the leading eyebrow + section title as page-1 chrome; collect every other
+      // renderable node (subsection titles, narratives, and each .consideration-item pulled out of
+      // its items container) as an ordered list of atomic units to reflow.
+      var leadingHTML = '';
+      var units = [];
+      Array.prototype.slice.call(content.children).forEach(function(child) {
+        if (child.classList.contains('section-eyebrow') || child.classList.contains('section-title')) { leadingHTML += child.outerHTML; return; }
+        if (child.style && child.style.display === 'none') return; // hidden block (no data)
+        Array.prototype.slice.call(child.children).forEach(function(el) {
+          if (el.id === 'implementation-considerations' || el.id === 'incentives-items' || el.id === 'compliance-items') {
+            Array.prototype.slice.call(el.children).forEach(function(item) { units.push(item.outerHTML); });
+          } else if (!(el.style && el.style.display === 'none')) {
+            units.push(el.outerHTML);
+          }
+        });
+      });
+      if (!units.length) return;
+
+      var makePage = function(isCont) {
+        var clone = page.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.style.display = '';
+        var c = clone.querySelector('.page-content');
+        c.innerHTML = leadingHTML;
+        if (isCont) { var t = c.querySelector('.section-title'); if (t) t.textContent = 'Notes (continued)'; }
+        return clone;
+      };
+      var isTitle = function(html) { return /class="[^"]*subsection-title/.test(html); };
+
+      var cur = makePage(false), curContent = cur.querySelector('.page-content');
+      page.parentNode.insertBefore(cur, page);
+      for (var i = 0; i < units.length; i++) {
+        curContent.insertAdjacentHTML('beforeend', units[i]);
+        // A unit that overflows moves to a fresh page — but only if the current page already holds
+        // more than just the leading chrome, otherwise a single oversized unit would loop forever.
+        var flowCount = curContent.querySelectorAll('.consideration-item, .subsection-title, .narrative').length;
+        if (cur.getBoundingClientRect().height > MAXH && flowCount > 1) {
+          curContent.removeChild(curContent.lastElementChild);
+          var carry = [units[i]];
+          // Don't strand a subsection title alone at the bottom of a page — carry it forward too.
+          var tail = curContent.lastElementChild;
+          if (tail && tail.classList.contains('subsection-title')) { carry.unshift(tail.outerHTML); curContent.removeChild(tail); }
+          cur = makePage(true); curContent = cur.querySelector('.page-content');
+          page.parentNode.insertBefore(cur, page);
+          carry.forEach(function(h) { curContent.insertAdjacentHTML('beforeend', h); });
+        }
+      }
+      page.parentNode.removeChild(page); // drop the original single Notes page; clones replace it
     }
 
     /* ════════════════════════════════

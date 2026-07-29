@@ -757,15 +757,48 @@
       if (typeof f.body === 'string' && FONT.test(f.body)) root.setProperty('--brand-font-body', f.body);
       if (typeof f.display === 'string' && FONT.test(f.display)) root.setProperty('--brand-font-display', f.display);
       var logo = t.logo || {};
-      var svgOk = typeof logo.svg === 'string' && logo.svg.indexOf('<svg') !== -1
-        && logo.svg.toLowerCase().indexOf('script') === -1 && logo.svg.toLowerCase().indexOf('onload') === -1
-        && logo.svg.toLowerCase().indexOf('onerror') === -1 && logo.svg.toLowerCase().indexOf('href') === -1;
-      if (svgOk) {
+      /* Allowlist SVG sanitizer — a denylist is bypassable (any on* attribute,
+         foreignObject, javascript: URLs, CSS url()). Parse, walk, and rebuild:
+         only known-safe shape/gradient elements and presentational attributes
+         survive; anything else is dropped. Parse failure or a non-svg root → no logo. */
+      function sanitizeSvg(src) {
+        if (typeof src !== 'string' || src.length > 200000) return null;
+        var TAGS = { svg:1, g:1, path:1, polygon:1, rect:1, circle:1, ellipse:1, line:1, polyline:1, defs:1, title:1, desc:1, lineargradient:1, radialgradient:1, stop:1, clippath:1 };
+        var ATTRS = { id:1, fill:1, stroke:1, 'stroke-width':1, 'stroke-linecap':1, 'stroke-linejoin':1, viewbox:1, width:1, height:1, points:1, d:1, cx:1, cy:1, r:1, rx:1, ry:1, x:1, y:1, x1:1, x2:1, y1:1, y2:1, transform:1, opacity:1, 'fill-opacity':1, 'stroke-opacity':1, 'fill-rule':1, 'clip-rule':1, 'clip-path':1, offset:1, 'stop-color':1, 'stop-opacity':1, gradientunits:1, gradienttransform:1, xmlns:1 };
+        var docp;
+        try { docp = new DOMParser().parseFromString(src, 'image/svg+xml'); } catch (e) { return null; }
+        var rootEl = docp.documentElement;
+        if (!rootEl || rootEl.nodeName.toLowerCase() !== 'svg' || docp.querySelector('parsererror')) return null;
+        var walk = function (el) {
+          var kids = Array.prototype.slice.call(el.childNodes);
+          for (var i = 0; i < kids.length; i++) {
+            var n = kids[i];
+            if (n.nodeType === 1) {
+              if (!TAGS[n.nodeName.toLowerCase()]) { el.removeChild(n); continue; }
+              var atts = Array.prototype.slice.call(n.attributes);
+              for (var j = 0; j < atts.length; j++) {
+                var an = atts[j].name.toLowerCase(), av = String(atts[j].value);
+                if (!ATTRS[an] || an.indexOf('on') === 0 || /javascript:|url\s*\(/i.test(av)) n.removeAttribute(atts[j].name);
+              }
+              walk(n);
+            } else if (n.nodeType !== 3) { el.removeChild(n); } /* drop comments/CDATA/PIs */
+          }
+        };
+        var rootAtts = Array.prototype.slice.call(rootEl.attributes);
+        for (var k = 0; k < rootAtts.length; k++) {
+          var rn = rootAtts[k].name.toLowerCase(), rv = String(rootAtts[k].value);
+          if (!ATTRS[rn] || rn.indexOf('on') === 0 || /javascript:|url\s*\(/i.test(rv)) rootEl.removeAttribute(rootAtts[k].name);
+        }
+        walk(rootEl);
+        return new XMLSerializer().serializeToString(rootEl);
+      }
+      var cleanSvg = sanitizeSvg(logo.svg);
+      if (cleanSvg && cleanSvg.indexOf('<svg') !== -1) {
         var slot = document.querySelector('.doc-header-logos');
         if (slot) {
           var h = Number(logo.height_px) > 0 ? Math.min(Number(logo.height_px), 64) : 32;
           slot.innerHTML = '<span style="display:inline-flex;align-items:center;background:#FFFFFF;border-radius:4px;padding:5px 10px;">'
-            + logo.svg.replace('<svg', '<svg style="height:' + h + 'px;width:auto;display:block"') + '</span>';
+            + cleanSvg.replace('<svg', '<svg style="height:' + h + 'px;width:auto;display:block"') + '</span>';
         }
       }
       var pn = document.querySelector('.doc-header-property-name');

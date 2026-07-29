@@ -786,7 +786,23 @@ do not assemble the Gate-2 roster from an empty or partial register.
      INCREMENTAL (premium) as the CapEx basis, since the like-for-like is a sunk baseline.** If the unit
      has life left, `like_for_like_cost = 0` and the full capex is incremental. Never hand-adjust this in
      the report — it flows: Audette RUL + Costing `like_for_like`/`incremental` → measure record → engine.
-3b. **Incentives + revenue — search and apply by DEFAULT (never skip, never ask first).** For
+3b. **INCENTIVE ESTIMATION STAGE — a mandatory P3 stage, not a side-task (never skip, never
+   ask first).** Three sub-steps per screened-in measure, in order:
+   **(i) RESEARCH** — cited programs only (the server also runs `research_incentive_category`
+   at derive time for the report's notes, but that surfaces programs — it never estimates or
+   applies dollars; that is THIS stage's job). Use `incentives__research_incentive_category` /
+   `incentives__search_incentive_programs` plus the sources below.
+   **(ii) ESTIMATE** — turn each applicable cited program into a dollar estimate with an
+   explicit basis: rate × the measure's real applicable quantity (kW, kWh saved, tons, SF),
+   program caps applied, stacking rules respected. Record `{program, basis, rate, quantity,
+   estimate, confidence, citation}`. No citation → no estimate. Post-OBBBA federal rules
+   (§48E/§179D timing) per the guidance above.
+   **(iii) AUTHOR** — write the estimate into the measure's Audette economics (gross capex,
+   incentive, net capex separately, each with its citation) so `evaluate_measure`, the engine,
+   and every re-render consume it natively. An estimate that is researched but not authored
+   does NOT exist to the economics — the server flags plans whose research found cited
+   programs while authored incentives total $0.
+   Original guardrails: For
    every screened-in measure, proactively search for and quantify:
    - **Incentives** — ⚠️ **federal availability changed under OBBBA (P.L. 119-21, Jul 2025) — do
      NOT apply pre-2025 IRA assumptions:**

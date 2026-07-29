@@ -722,6 +722,14 @@ These gate every IRR, so they must be adjudicated and **LOCKED here** — once l
 re-enters a superseded value (past runs drifted 15%→5% / 2031→2034). Record the locked values with
 `adjudicated_by: "user"` in `state.baseline` / `state.kickoff`.
 
+**(c2) CRREM benchmark property type — confirm, don't assume.** The CRREM pathway defaults to
+the Audette archetype's mapping, but the RIGHT benchmark can differ: a warehouse with a material
+refrigeration load (walk-in coolers/freezers per the PCA) belongs on `refrigerated_warehouse_cool`
+(~7× the dry-warehouse curve), not `shipping/distribution_warehouse`; mixed-use, medical vs general
+office, etc. Present the proposed CRREM property type + the alternative(s) (`list_property_types`)
+and confirm with the user. Record `state.targets.crrem_property_type` = the confirmed CRREM type;
+it becomes P5's `derive_engagement crrem_property_type`. Skip only if the archetype is unambiguous.
+
 **(d) Target trajectory** — computed from `kickoff.target.type`, engine math only:
 
 | Target type | How the trajectory is computed |
@@ -788,10 +796,14 @@ do not assemble the Gate-2 roster from an empty or partial register.
      the report — it flows: Audette RUL + Costing `like_for_like`/`incremental` → measure record → engine.
 3b. **INCENTIVE ESTIMATION STAGE — a mandatory P3 stage, not a side-task (never skip, never
    ask first).** Three sub-steps per screened-in measure, in order:
-   **(i) RESEARCH** — cited programs only (the server also runs `research_incentive_category`
-   at derive time for the report's notes, but that surfaces programs — it never estimates or
-   applies dollars; that is THIS stage's job). Use `incentives__research_incentive_category` /
-   `incentives__search_incentive_programs` plus the sources below.
+   **(i) RESEARCH** — cited programs only. **The server does NOT research incentives at derive
+   time** (it only matches a small static rule table). YOU run the incentives MCP here and carry
+   the results to the report: use `incentives__research_incentive_category` (capital/tax/
+   financing/operational/revenue) / `incentives__search_incentive_programs` plus the sources
+   below. Keep each program's `{program, description}` (name + eligibility/rate + citation) —
+   in P5 you pass this list to `derive_engagement` as **`incentive_programs`**, which is what
+   populates the report's Incentive Programs (Notes) section. If you skip this, that section
+   is blank (found live: Stowe had zero incentive analysis and an empty Notes page).
    **(ii) ESTIMATE** — turn each applicable cited program into a dollar estimate with an
    explicit basis: rate × the measure's real applicable quantity (kW, kWh saved, tons, SF),
    program caps applied, stacking rules respected. Record `{program, basis, rate, quantity,
@@ -889,6 +901,14 @@ Present each adjudication/decision to the user via `ask_user_question` (one call
    this step for that measure only.
 2. **Phased roadmap** — per-phase capex, NOI delta, and exit impact. **Engine numbers only.**
 3. **Target-gap statement** — `state.measures.gap_statement`, with defensive closures priced.
+4. **RECOMMENDED BUNDLE — the user selects it (do NOT auto-pick by NPV).** The report presents
+   ONE recommended plan that drives all the economics; the other plans' measures render as
+   "Alternative — not modeled in financials". After the plans are modeled (so real IRR/net-value
+   per plan is shown), ask the user via `ask_user_question` **which bundle is the recommended
+   one**, options = each plan with its headline IRR + net value + whether it clears the
+   hurdle (`state.kickoff.irr_hurdle`). If NEITHER plan clears the hurdle, say so plainly in the
+   question — the user may still pick the capital-light one. Record `state.report.recommended_plan`
+   = the chosen plan's exact label; it becomes P5's `derive_engagement recommended_plan`.
 
 The user confirms or edits the selection. Apply every edit via
 `retrofit__update_measure_state` (never by editing state alone — the register is the system
@@ -1011,6 +1031,22 @@ gate (resume may have skipped P4's check).
      source}` — `source` is a verbatim citation to the program document/table. NEVER estimate or
      recall a threshold from memory: no citation → no threshold (the chart simply omits the line).
      Analyst-supplied thresholds are disclosed in the report's data-quality notes automatically.
+   - `recommended_plan`: the plan the USER selected at Gate 2 (`state.report.recommended_plan`) —
+     its exact label. It drives ALL report economics (bridge, cashflow, KPIs) and its measures are
+     the modeled set; the other plan's measures render as "Alternative — not modeled in financials".
+     Omit only for a genuine single-plan engagement. Do NOT let the server pick by NPV — the
+     recommendation is the user's call.
+   - `crrem_property_type`: the Gate-1-confirmed CRREM benchmark type (`state.targets.crrem_property_type`)
+     when it differs from the raw archetype — e.g. `refrigerated_warehouse_cool` for a refrigerated
+     warehouse. Omit to use the archetype default.
+   - `incentive_programs`: the cited programs from your P3 3b incentive research (`[{program,
+     description}]`). REQUIRED to populate the report's Incentive Programs (Notes) section — the
+     server does NOT research incentives itself. Omit only if research genuinely found none.
+   - `implementation_considerations` (+ optional `implementation_narrative`): the non-financial
+     decision factors for the Notes section — solar-model trade-offs (PPA lease vs owned BTM +
+     green lease), roof-replacement timing when the PCA flags limited roof life before rooftop
+     solar, interconnection/permitting lead times, etc. `[{title, detail}]`, grounded in the
+     asset's real docs — this is decision-useful content, not boilerplate.
    - Rendering to the **decarb-capital-plan** template additionally consumes: exit panes and the
      value bridge (both derive from the exit args above), `measures_considered` (server-extracted;
      nothing for you to pass), and the same `bps_thresholds`.

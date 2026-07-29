@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decarbonization Capital Plan</title>
+  <!--
+    CLIENT-RENDER TEMPLATE (decarb-capital-plan / layout-agent.html)
+    -----------------------------------------------------------------
+    "Research Desk" redesign (2026-07-27), paginated pass — same render
+    architecture as before (server injects JSON into #report-data, this
+    file's own JS renders every section — the agent writes no HTML and draws
+    no charts). Pages are sized to true US Letter (8.5in x 11in) with a
+    running header/footer on every interior page; the Measures page alone is
+    landscape (11in x 8.5in) to fit its combined cost+impact table borrowed
+    from decarb's own two-table roadmap. This is an on-screen/HTML sizing
+    convention only — real per-page print orientation in an exported PDF
+    would need the export pipeline (Playwright print) to honor it, not
+    something this static template can force on its own.
+
+    Elements deliberately borrowed from templates/decarb/layout-agent.html
+    (used as the quality/content bar):
+    the combined Cost+Impact measures table, and the gridded/axis-labeled
+    trajectory chart style (now shared by both the EUI and GHGi charts via
+    buildAxisChart()). See schema.json for the full data contract.
+
+    Visual tokens (colors, spacing, typography scale) originate from the base
+    design system this template was forked from; org design-system tokens
+    (presentation.brand.tokens) override them at runtime via the standalone
+    brand applicator script after the report-data island. Font FAMILIES are the
+    documented fallback stack (Arial/Helvetica, Times New Roman); a brand
+    tokens.fonts.import_url (Google Fonts only) may be injected at runtime.
+
+    All charts are hand-rolled inline SVG (no chart library — same constraint
+    as the single-file prohibition above). The CRREM compliance line is drawn
+    ONLY from impact.crrem.pathway, verbatim from the engine — never estimated
+    or hand-drawn (a fabricated compliance curve is a known past incident).
+  -->
+  <style>
+    :root {
+      /* ─── Default brand tokens (base palette; org brand tokens override
+           these custom properties at runtime — see the brand applicator) ─── */
+      --bronze:        #8F5A39;
+      --bronze-deep:   #543722;
+      --bronze-dark:   #694029;
+      --bronze-mid:    #A17052;
+      --travertine:    #F4EFE7;
+      --black:         #000000;
+      --off-black:     #202020;
+      --white:         #FFFFFF;
+      --sky-blue:      #A6D7F0;
+      --deep-blue:     #173359;
+
+      --ink:           #231F20;
+      --grey-700:      #565A5D;
+      --grey-500:      #707477;
+      --grey-400:      #989CA0;
+      --grey-300:      #C5C7C9;
+      --grey-200:      #E2E4E5;
+      --grey-100:      #F5F7F8;
+
+      --mi-navy:       #00458A;
+      --mi-blue:       #0092F9;
+      --mi-forest:     #004F31;
+      --mi-red:        #C00000;
+
+      --text-primary:  var(--black);
+      --text-body:     var(--ink);
+      --text-muted:    var(--grey-400);
+      --surface-page:  var(--white);
+      --surface-alt:   var(--travertine);
+      --surface-subtle:var(--grey-100);
+      --border-hairline: var(--grey-200);
+      --border-rule:   var(--black);
+
+      --chart-positive: var(--mi-forest);
+      --chart-negative: var(--mi-red);
+      --chart-series-1: var(--mi-navy);
+      --chart-series-2: var(--mi-blue);
+      --chart-bau: var(--grey-400);
+      --chart-net: var(--bronze);
+
+      --font-data: Arial, Helvetica, sans-serif;
+      --font-sans: Arial, Helvetica, sans-serif;
+      --font-serif: "Times New Roman", Times, serif;
+
+      --radius-none: 0px;
+      --radius-pill: 999px;
+      --border-width-accent-bar: 6px;
+      --space-4: 8px;
+      --space-6: 16px;
+      --space-8: 24px;
+      --space-9: 32px;
+      --page-margin-print: 0.5in;
+      --rail-width: 0.9in;
+      --page-w-portrait: 8.5in;
+      --page-w-landscape: 11in;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--surface-subtle);
+      color: var(--text-body);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .report { margin: 0 auto; }
+
+    /* ─── Interior page shell: US Letter portrait, left index rail + content column ─── */
+    .page {
+      display: flex;
+      width: var(--page-w-portrait);
+      min-height: 11in;
+      margin: 0 auto var(--space-8);
+      background: var(--surface-page);
+      border: 1px solid var(--border-hairline);
+    }
+    .page.landscape { width: var(--page-w-landscape); min-height: 8.5in; }
+    .page-body { flex: 1; min-width: 0; padding: var(--space-8) var(--page-margin-print); display: flex; flex-direction: column; }
+    .page-content { flex: 1; }
+
+    .rail {
+      flex-shrink: 0; width: var(--rail-width);
+      background: var(--deep-blue); color: var(--white);
+      padding: var(--space-8) var(--space-6);
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .rail-index { display: flex; flex-direction: column; gap: var(--space-6); }
+    .rail-item { font-size: 10px; letter-spacing: 0.04em; }
+    .rail-item .rail-num { display: block; font-family: var(--font-data); font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.35); }
+    .rail-item .rail-label { display: block; margin-top: 2px; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+    .rail-item.current .rail-num { color: var(--bronze-mid); }
+    .rail-item.current .rail-label { color: var(--white); font-weight: 700; }
+    .rail-item.current { position: relative; }
+    .rail-item.current::before { content: '>'; position: absolute; left: -14px; color: var(--bronze-mid); font-weight: 700; }
+    .rail-brand { font-size: 9px; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); writing-mode: vertical-rl; text-orientation: mixed; text-transform: uppercase; }
+
+    /* ─── Running header/footer, every interior page ─── */
+    .page-header-run { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: var(--space-4); margin-bottom: var(--space-8); border-bottom: 1px solid var(--border-hairline); }
+    .phr-brand { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bronze); font-weight: 700; }
+    .phr-property { font-size: 10px; color: var(--text-muted); }
+    .page-footer-run { display: flex; justify-content: space-between; padding-top: var(--space-4); margin-top: var(--space-8); border-top: 1px solid var(--border-hairline); font-size: 9px; color: var(--text-muted); }
+
+    /* ─── Cover+Summary: big full-width header (biggest in the document), rail starts below it ─── */
+    .cover-page {
+      display: flex; flex-direction: column;
+      width: var(--page-w-portrait); min-height: 11in; margin: 0 auto var(--space-8);
+      background: var(--surface-page);
+      border: 1px solid var(--border-hairline);
+    }
+    /* Header is FULLY deep-blue — the same --deep-blue surface the interior-page rail already
+       uses (.rail below, line ~127), so the cover's brand surface is consistent with the rest of
+       the document rather than introducing a second dark brand color. White text tokens below
+       mirror that existing rail white-on-deep-blue contrast pattern.
+       The header used to carry an extra cover-header-bar column reserving var(--rail-width) of
+       blank space on the left — a leftover from when the bar and content were different colors
+       (a visible two-tone "sidebar + panel" split). Now that both are the same deep-blue, that
+       column was pure dead space rather than a visible sidebar, so it's removed; the header's
+       left margin is just its own padding now, same as the rest of the page. */
+    .cover-header { display: flex; background: var(--deep-blue); }
+    .cover-header-content { flex: 1; min-width: 0; padding: calc(var(--space-9) * 1.2) var(--page-margin-print) var(--space-9); }
+    .cover-logo { width: 190px; height: auto; margin-bottom: var(--space-8); display: block; }
+    .cover-logo-slot { margin-bottom: var(--space-8); }
+    .cover-logo-slot:empty { display: none; }
+    .cover-eyebrow { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--white); font-weight: 700; margin-bottom: var(--space-6); }
+    .cover-title { font-family: var(--font-serif); font-size: 42px; font-weight: 400; color: var(--white); margin-bottom: var(--space-4); max-width: 720px; }
+    .cover-address { font-size: 16px; color: rgba(255,255,255,0.7); margin-bottom: var(--space-9); }
+    .cover-meta-bar { display: flex; flex-wrap: wrap; gap: var(--space-8); padding-top: var(--space-8); border-top: 1px solid rgba(255,255,255,0.25); }
+    .cover-meta-item .cover-meta-label { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 2px; }
+    .cover-meta-item .cover-meta-value { font-size: 14px; font-weight: 600; color: var(--white); }
+    .cover-body-row { flex: 1; display: flex; border-top: 1px solid var(--border-hairline); }
+
+    /* ─── Section shell ─── */
+    .section-eyebrow { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bronze); font-weight: 700; margin-bottom: var(--space-4); }
+    .section-title { font-family: var(--font-serif); font-size: 24px; font-weight: 400; color: var(--text-primary); margin-bottom: var(--space-8); padding-bottom: var(--space-4); border-bottom: 2px solid var(--black); }
+    .subsection-title { font-family: var(--font-serif); font-size: 16px; font-weight: 600; color: var(--text-primary); margin: var(--space-8) 0 var(--space-4); }
+    .subsection-title:first-of-type { margin-top: 0; }
+    .narrative { font-size: 14px; line-height: 1.6; white-space: pre-line; margin-bottom: var(--space-8); }
+    .narrative:last-child { margin-bottom: 0; }
+
+    /* ─── Exhibit framing (numbered chart/table figures, pitchbook convention) ─── */
+    .exhibit { border: 1px solid var(--border-hairline); padding: var(--space-8); margin: var(--space-8) 0; }
+    .exhibit:first-of-type { margin-top: 0; }
+    .exhibit-label { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--bronze); font-weight: 700; margin-bottom: 2px; }
+    .exhibit-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-6); }
+    .exhibit-note { font-size: 10px; color: var(--text-muted); margin-top: var(--space-4); }
+    .exhibit-note.flag { color: var(--bronze); }
+
+    /* ─── KPI tiles ─── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-6); margin-top: var(--space-8); }
+    .kpi-tile { background: var(--surface-alt); padding: var(--space-6); border-left: 3px solid var(--bronze); }
+    .kpi-label { font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-4); }
+    .kpi-value { font-family: var(--font-data); font-size: 24px; font-weight: 700; color: var(--text-primary); }
+    .kpi-sublabel { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ─── Tables (Measures) ─── */
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: var(--space-8); }
+    table.data-table th { text-align: left; font-size: 9px; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; padding: var(--space-4) var(--space-4); border-bottom: 1px solid var(--border-rule); vertical-align: bottom; }
+    table.data-table td { padding: var(--space-4); border-bottom: 1px solid var(--border-hairline); }
+    table.data-table td.num, table.data-table th.num { text-align: right; font-family: var(--font-data); }
+    table.data-table tr.totals-row td { font-weight: 700; border-top: 1px solid var(--border-rule); border-bottom: none; }
+    .group-header { font-size: 11px; font-weight: 700; color: var(--bronze); text-transform: uppercase; letter-spacing: 0.03em; margin: var(--space-6) 0 var(--space-4); }
+    .table-scroll { overflow-x: auto; }
+
+    /* ─── Financial ─── */
+    .financial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-6); margin-bottom: var(--space-8); }
+    .financial-tile { padding: var(--space-6); background: var(--surface-alt); }
+    .financial-tile .fin-label { font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-4); }
+    .financial-tile .fin-value { font-family: var(--font-data); font-size: 22px; font-weight: 700; color: var(--text-primary); }
+    .financial-tile .fin-sublabel { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .chart-legend { display: flex; gap: var(--space-8); margin-top: var(--space-6); flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+    .legend-swatch { width: 10px; height: 10px; flex-shrink: 0; }
+    .legend-swatch.line { height: 2px; width: 16px; }
+
+    /* ─── Impact bars (legacy, still used for measures section absent trajectory) ─── */
+    .impact-row { display: flex; gap: var(--space-8); margin-bottom: var(--space-8); flex-wrap: wrap; }
+    .impact-metric { flex: 1; min-width: 220px; padding: var(--space-6); border: 1px solid var(--border-hairline); }
+    .impact-metric-title { font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-6); }
+    .impact-reduction-pct { font-size: 28px; font-weight: 700; color: var(--mi-forest); font-family: var(--font-data); }
+    .regulatory-badge { display: inline-block; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; margin-bottom: var(--space-4); }
+    .regulatory-badge.compliant { background: #E7F3EC; color: var(--mi-forest); }
+    .regulatory-badge.non-compliant { background: #FBEAEA; color: var(--mi-red); }
+    .regulatory-badge.not-applicable { background: var(--grey-100); color: var(--text-muted); }
+
+    /* ─── Implementation ─── */
+    .consideration-item { padding: var(--space-6) 0; border-bottom: 1px solid var(--border-hairline); }
+    .consideration-item:last-child { border-bottom: none; }
+    .consideration-title { font-weight: 700; font-size: 13px; margin-bottom: var(--space-4); }
+    .consideration-detail { font-size: 13px; color: var(--text-body); line-height: 1.5; }
+
+    @media print {
+      body { background: #fff; }
+      .page, .cover-page { border: none; margin: 0; }
+      .page, .cover-page { break-inside: avoid; break-after: page; }
+      .page.landscape { break-after: page; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="report">
+  <div class="cover-page" id="cover">
+   <div class="cover-header">
+    <div class="cover-header-content">
+    <!-- Cover logo slot — empty by default; the org brand applicator (script after the
+         report-data island) injects a sanitized tokens.logo.svg here when present. -->
+    <div class="cover-logo-slot" id="cover-logo-slot"></div>
+    <div class="cover-eyebrow" id="cover-for"></div>
+    <h1 class="cover-title" id="cover-property-name">Property Name</h1>
+    <p class="cover-address" id="cover-property-address">Address</p>
+    <div class="cover-meta-bar">
+      <div class="cover-meta-item"><div class="cover-meta-label">Type</div><div class="cover-meta-value" id="cover-meta-type">—</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Size</div><div class="cover-meta-value" id="cover-meta-size">—</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Built</div><div class="cover-meta-value" id="cover-meta-built">—</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Prepared By</div><div class="cover-meta-value" id="cover-meta-by">—</div></div>
+      <div class="cover-meta-item"><div class="cover-meta-label">Date</div><div class="cover-meta-value" id="cover-meta-date">—</div></div>
+    </div>
+    </div>
+   </div>
+   <div class="cover-body-row">
+    <div class="rail">
+      <div class="rail-index">
+        <div class="rail-item current"><span class="rail-num">01</span><span class="rail-label">Summary</span></div>
+        <div class="rail-item"><span class="rail-num">02</span><span class="rail-label">Measures</span></div>
+        <div class="rail-item"><span class="rail-num">03</span><span class="rail-label">Financial</span></div>
+        <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
+        <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
+      </div>
+      <div class="rail-brand">Capital Plan</div>
+    </div>
+    <div class="page-body">
+      <div class="page-content">
+        <div class="section-eyebrow">Section 01</div>
+        <h2 class="section-title">Summary</h2>
+        <div class="narrative" id="summary-narrative"></div>
+        <div class="kpi-grid" id="summary-kpi-grid"></div>
+      </div>
+      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+    </div>
+   </div>
+  </div>
+
+  <div class="page landscape" id="measures-section">
+    <div class="rail">
+      <div class="rail-index">
+        <div class="rail-item"><span class="rail-num">01</span><span class="rail-label">Summary</span></div>
+        <div class="rail-item current"><span class="rail-num">02</span><span class="rail-label">Measures</span></div>
+        <div class="rail-item"><span class="rail-num">03</span><span class="rail-label">Financial</span></div>
+        <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
+        <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
+      </div>
+      <div class="rail-brand">Capital Plan</div>
+    </div>
+    <div class="page-body">
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property page-prop-name">—</span></div>
+      <div class="page-content">
+        <div class="section-eyebrow">Section 02</div>
+        <h2 class="section-title">Measures</h2>
+        <div class="table-scroll" id="measures-groups"></div>
+      </div>
+      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+    </div>
+  </div>
+
+  <div class="page" id="financial-section">
+    <div class="rail">
+      <div class="rail-index">
+        <div class="rail-item"><span class="rail-num">01</span><span class="rail-label">Summary</span></div>
+        <div class="rail-item"><span class="rail-num">02</span><span class="rail-label">Measures</span></div>
+        <div class="rail-item current"><span class="rail-num">03</span><span class="rail-label">Financial</span></div>
+        <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
+        <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
+      </div>
+      <div class="rail-brand">Capital Plan</div>
+    </div>
+    <div class="page-body">
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property page-prop-name">—</span></div>
+      <div class="page-content">
+        <div class="section-eyebrow">Section 03</div>
+        <h2 class="section-title">Financial</h2>
+
+        <div class="exhibit" id="exhibit-waterfall" style="display:none">
+          <div class="exhibit-label">Exhibit 3.1</div>
+          <div class="exhibit-title">Value Creation Bridge</div>
+          <svg id="waterfall-chart" viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet" style="width:100%;height:260px"></svg>
+          <div class="exhibit-note" id="waterfall-note">Cumulative operating flows over the hold plus capitalized exit value uplift at the presumed exit cap.</div>
+        </div>
+
+        <div class="exhibit" id="exhibit-cashflow" style="display:none">
+          <div class="exhibit-label">Exhibit 3.2</div>
+          <div class="exhibit-title">Annual Cashflow</div>
+          <div class="table-scroll">
+            <table class="data-table" id="cashflow-table"><thead id="cashflow-thead"></thead><tbody id="cashflow-tbody"></tbody></table>
+          </div>
+          <div class="exhibit-note" id="cashflow-note"></div>
+        </div>
+      </div>
+      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+    </div>
+  </div>
+
+  <div class="page" id="impact-section">
+    <div class="rail">
+      <div class="rail-index">
+        <div class="rail-item"><span class="rail-num">01</span><span class="rail-label">Summary</span></div>
+        <div class="rail-item"><span class="rail-num">02</span><span class="rail-label">Measures</span></div>
+        <div class="rail-item"><span class="rail-num">03</span><span class="rail-label">Financial</span></div>
+        <div class="rail-item current"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
+        <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
+      </div>
+      <div class="rail-brand">Capital Plan</div>
+    </div>
+    <div class="page-body">
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property page-prop-name">—</span></div>
+      <div class="page-content">
+        <div class="section-eyebrow">Section 04</div>
+        <h2 class="section-title">Impact</h2>
+        <div class="impact-row">
+          <div class="impact-metric" id="impact-carbon"></div>
+          <div class="impact-metric" id="impact-energy"></div>
+        </div>
+
+        <div class="exhibit" id="exhibit-eui" style="display:none">
+          <div class="exhibit-label">Exhibit 4.1</div>
+          <div class="exhibit-title">EUI Trajectory</div>
+          <div id="eui-chart-block"></div>
+        </div>
+
+        <div class="exhibit" id="exhibit-ghgi" style="display:none">
+          <div class="exhibit-label">Exhibit 4.2</div>
+          <div class="exhibit-title">GHG Intensity vs. Compliance Pathway</div>
+          <div id="ghgi-chart-block"></div>
+          <div class="exhibit-note flag" id="trajectory-flag" style="display:none"></div>
+        </div>
+
+        <div class="impact-metric" id="impact-regulatory" style="display:none"></div>
+      </div>
+      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+    </div>
+  </div>
+
+  <div class="page" id="notes-section" style="display:none">
+    <div class="rail">
+      <div class="rail-index">
+        <div class="rail-item"><span class="rail-num">01</span><span class="rail-label">Summary</span></div>
+        <div class="rail-item"><span class="rail-num">02</span><span class="rail-label">Measures</span></div>
+        <div class="rail-item"><span class="rail-num">03</span><span class="rail-label">Financial</span></div>
+        <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
+        <div class="rail-item current"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
+      </div>
+      <div class="rail-brand">Capital Plan</div>
+    </div>
+    <div class="page-body">
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property page-prop-name">—</span></div>
+      <div class="page-content">
+        <div class="section-eyebrow">Section 05</div>
+        <h2 class="section-title">Notes</h2>
+        <div id="implementation-block" style="display:none">
+          <h3 class="subsection-title">Implementation Considerations</h3>
+          <div class="narrative" id="implementation-narrative"></div>
+          <div id="implementation-considerations"></div>
+        </div>
+        <div id="incentives-block" style="display:none">
+          <h3 class="subsection-title">Incentive Programs</h3>
+          <p class="narrative" id="incentives-summary" style="display:none"></p>
+          <div id="incentives-items"></div>
+        </div>
+        <div id="compliance-block" style="display:none">
+          <h3 class="subsection-title">Compliance Notes</h3>
+          <p class="narrative" id="compliance-summary" style="display:none"></p>
+          <div id="compliance-items"></div>
+        </div>
+      </div>
+      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+    </div>
+  </div>
+</div>
+
+<script id="report-data" type="application/json">
+{}
+</script>
+
+<script>
+/* ORG BRAND APPLICATOR — standalone so it runs regardless of the main renderer's fate.
+   presentation.brand.tokens is the org design-system overlay injected server-side
+   (portfolios.brand_tokens, imported from the org's Claude Design project). All values
+   are data (colors, font stacks, an inline logo SVG) — never executed.
+   Ported from templates/decarb/layout-agent.html; only the MAP and the logo slot are
+   adapted to THIS template's CSS custom properties. */
+(function () {
+  function apply() {
+    try {
+      var el = document.getElementById('report-data');
+      if (!el) return;
+      var data = JSON.parse(el.textContent || '{}');
+      var brand = (data.presentation && data.presentation.brand) || {};
+      var t = brand.tokens;
+      if (!t || typeof t !== 'object') return;
+      var root = document.documentElement.style;
+      var c = t.colors || {};
+      var MAP = {
+        /* accent — this template's bronze family carries eyebrows, exhibit labels,
+           KPI tile bars, and the net bar in the value bridge */
+        '--bronze': c.accent, '--bronze-mid': c.accent_2 || c.accent,
+        '--bronze-dark': c.accent_2 || c.accent, '--chart-net': c.accent,
+        /* primary — the dark brand surface (cover header + interior-page rail) */
+        '--deep-blue': c.primary,
+        /* page / panel / muted / border equivalents */
+        '--surface-subtle': c.page_bg, '--surface-alt': c.panel,
+        '--text-muted': c.muted,
+        '--border-hairline': c.border, '--border-rule': c.border_soft,
+        /* chart series — the trajectory/waterfall literals were converted to these
+           :root vars (with the original values as defaults) so brand can restyle them */
+        '--chart-series-1': c.plan1, '--chart-series-2': c.plan2,
+        '--chart-bau': c.bau,
+        '--chart-positive': c.positive, '--chart-negative': c.negative
+      };
+      var HEX = /^#[0-9A-Fa-f]{3,8}$|^rgba?\([0-9.,\s%]+\)$/;
+      Object.keys(MAP).forEach(function (k) {
+        var v = MAP[k];
+        if (typeof v === 'string' && HEX.test(v.trim())) root.setProperty(k, v.trim());
+      });
+      var f = t.fonts || {};
+      if (typeof f.import_url === 'string' && /^https:\/\/fonts\.googleapis\.com\//.test(f.import_url)) {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet'; link.href = f.import_url;
+        document.head.appendChild(link);
+      }
+      var FONT = /^[-\w"'(), .]+$/;
+      if (typeof f.body === 'string' && FONT.test(f.body)) {
+        root.setProperty('--font-sans', f.body);
+        root.setProperty('--font-data', f.body);
+      }
+      if (typeof f.display === 'string' && FONT.test(f.display)) root.setProperty('--font-serif', f.display);
+      var logo = t.logo || {};
+      /* Allowlist SVG sanitizer — a denylist is bypassable (any on* attribute,
+         foreignObject, javascript: URLs, CSS url()). Parse, walk, and rebuild:
+         only known-safe shape/gradient elements and presentational attributes
+         survive; anything else is dropped. Parse failure or a non-svg root → no logo. */
+      function sanitizeSvg(src) {
+        if (typeof src !== 'string' || src.length > 200000) return null;
+        var TAGS = { svg:1, g:1, path:1, polygon:1, rect:1, circle:1, ellipse:1, line:1, polyline:1, defs:1, title:1, desc:1, lineargradient:1, radialgradient:1, stop:1, clippath:1 };
+        var ATTRS = { id:1, fill:1, stroke:1, 'stroke-width':1, 'stroke-linecap':1, 'stroke-linejoin':1, viewbox:1, width:1, height:1, points:1, d:1, cx:1, cy:1, r:1, rx:1, ry:1, x:1, y:1, x1:1, x2:1, y1:1, y2:1, transform:1, opacity:1, 'fill-opacity':1, 'stroke-opacity':1, 'fill-rule':1, 'clip-rule':1, 'clip-path':1, offset:1, 'stop-color':1, 'stop-opacity':1, gradientunits:1, gradienttransform:1, xmlns:1 };
+        var docp;
+        try { docp = new DOMParser().parseFromString(src, 'image/svg+xml'); } catch (e) { return null; }
+        var rootEl = docp.documentElement;
+        if (!rootEl || rootEl.nodeName.toLowerCase() !== 'svg' || docp.querySelector('parsererror')) return null;
+        var walk = function (el) {
+          var kids = Array.prototype.slice.call(el.childNodes);
+          for (var i = 0; i < kids.length; i++) {
+            var n = kids[i];
+            if (n.nodeType === 1) {
+              if (!TAGS[n.nodeName.toLowerCase()]) { el.removeChild(n); continue; }
+              var atts = Array.prototype.slice.call(n.attributes);
+              for (var j = 0; j < atts.length; j++) {
+                var an = atts[j].name.toLowerCase(), av = String(atts[j].value);
+                if (!ATTRS[an] || an.indexOf('on') === 0 || /javascript:|url\s*\(/i.test(av)) n.removeAttribute(atts[j].name);
+              }
+              walk(n);
+            } else if (n.nodeType !== 3) { el.removeChild(n); } /* drop comments/CDATA/PIs */
+          }
+        };
+        var rootAtts = Array.prototype.slice.call(rootEl.attributes);
+        for (var k = 0; k < rootAtts.length; k++) {
+          var rn = rootAtts[k].name.toLowerCase(), rv = String(rootAtts[k].value);
+          if (!ATTRS[rn] || rn.indexOf('on') === 0 || /javascript:|url\s*\(/i.test(rv)) rootEl.removeAttribute(rootAtts[k].name);
+        }
+        walk(rootEl);
+        return new XMLSerializer().serializeToString(rootEl);
+      }
+      var cleanSvg = sanitizeSvg(logo.svg);
+      if (cleanSvg && cleanSvg.indexOf('<svg') !== -1) {
+        /* This template's cover logo slot — sits on the dark cover header, so the logo
+           gets a white pill behind it (same treatment decarb uses on its dark header). */
+        var slot = document.querySelector('.cover-logo-slot');
+        if (slot) {
+          var h = Number(logo.height_px) > 0 ? Math.min(Number(logo.height_px), 64) : 32;
+          slot.innerHTML = '<span style="display:inline-flex;align-items:center;background:#FFFFFF;border-radius:4px;padding:5px 10px;">'
+            + cleanSvg.replace('<svg', '<svg style="height:' + h + 'px;width:auto;display:block"') + '</span>';
+        }
+      }
+    } catch (e) { console.error('org-brand applicator failed (report renders unbranded):', e && e.message); }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply);
+  else apply();
+})();
+</script>
+
+<script>
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { populateReport(); });
+  } else {
+    populateReport();
+  }
+
+  function populateReport() {
+    var dataEl = document.getElementById('report-data');
+    if (!dataEl) return;
+
+    var data;
+    try {
+      data = JSON.parse(dataEl.textContent);
+    } catch (e) {
+      console.error('decarb-capital-plan: failed to parse report-data JSON', e);
+      return;
+    }
+
+    var prop  = data.property || {};
+    var sum   = data.summary || {};
+    var meas  = data.measures || {};
+    var fin   = data.financial || {};
+    var imp   = data.impact || {};
+    var impl  = data.implementation || {};
+    var incentivePrograms = data.incentive_programs || {};
+    var complianceNotes = data.compliance_notes || {};
+
+    /* ── Helpers (verbatim from templates/decarb/layout-agent.html — same
+         data-formatting conventions across every Soapbox report template) ── */
+    function safe(val) { return (val !== undefined && val !== null && val !== '') ? String(val) : '—'; }
+    function esc(val) {
+      var s = (val !== undefined && val !== null && val !== '') ? String(val) : '—';
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function num(v) { return isFinite(Number(v)) ? Number(v) : null; }
+    // report_date arrives as a full ISO timestamp (e.g. "2026-07-27T21:45:18.177Z") — the cover
+    // is a date field, not a timestamp; show just the date, not the time-of-day.
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso).slice(0, 10);
+      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+    }
+    function fmtCurrency(n) {
+      if (typeof n !== 'number' || !isFinite(n)) return '—';
+      var sign = n < 0 ? '−' : '';
+      var a = Math.abs(n);
+      if (a >= 1000000) { var m = a / 1000000; return sign + '$' + (m >= 10 ? Math.round(m) : parseFloat(m.toFixed(1))) + 'M'; }
+      if (a >= 1000) { var k = a / 1000; return sign + '$' + (k >= 100 ? Math.round(k) : parseFloat(k.toFixed(1))) + 'K'; }
+      return sign + '$' + Math.round(a);
+    }
+    function fmt2sig(n) {
+      if (typeof n !== 'number' || !isFinite(n)) return '—';
+      if (n === 0) return '0';
+      var neg = n < 0, a = Math.abs(n);
+      var mag = Math.floor(Math.log10(a));
+      var round = Math.pow(10, mag - 1);
+      var r = Math.round(a / round) * round;
+      var out = (r >= 1000) ? Math.round(r).toLocaleString('en-US') : parseFloat(r.toPrecision(2)).toString();
+      return (neg ? '−' : '') + out;
+    }
+    function fmtPct(dec) {
+      if (typeof dec !== 'number' || !isFinite(dec)) return '—';
+      var p = dec * 100;
+      return (Math.abs(p) >= 10 ? Math.round(p) : parseFloat(p.toFixed(1))) + '%';
+    }
+    function formatEnergyKwh(kwh) {
+      if (typeof kwh !== 'number' || !isFinite(kwh)) return { value: '—', unit: 'kWh/yr' };
+      var a = Math.abs(kwh);
+      if (a >= 1e6) return { value: fmt2sig(kwh / 1e6), unit: 'GWh/yr' };
+      if (a >= 1e3) return { value: fmt2sig(kwh / 1e3), unit: 'MWh/yr' };
+      return { value: fmt2sig(kwh), unit: 'kWh/yr' };
+    }
+    /* Chart series colors resolve from :root custom properties (brand-overridable via the
+       org brand applicator above); the pre-conversion literal values remain the fallbacks. */
+    var rootCS = null;
+    try { rootCS = getComputedStyle(document.documentElement); } catch (e) { rootCS = null; }
+    function chartColor(name, fallback) {
+      var v = rootCS ? rootCS.getPropertyValue(name) : '';
+      if (!v) { try { v = document.documentElement.style.getPropertyValue(name); } catch (e2) { v = ''; } }
+      v = v ? String(v).trim() : '';
+      return v || fallback;
+    }
+    var COLOR_POS = chartColor('--chart-positive', '#004F31');
+    var COLOR_NEG = chartColor('--chart-negative', '#C00000');
+    var COLOR_S1  = chartColor('--chart-series-1', '#00458A');
+    var COLOR_S2  = chartColor('--chart-series-2', '#0092F9');
+    var COLOR_BAU = chartColor('--chart-bau', '#989CA0');
+    var COLOR_NET = chartColor('--chart-net', '#8F5A39');
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    function setHtml(id, val) { var el = document.getElementById(id); if (el) el.innerHTML = val; }
+    function showEl(id) { var el = document.getElementById(id); if (el) el.style.display = ''; }
+    function capitalise(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+    /* ════════════════════════════════
+       COVER
+    ════════════════════════════════ */
+    /* De-branded identity: the client name comes ONLY from the data (prepared_for) —
+       no hardcoded firm name anywhere. Fallback is empty, never a placeholder brand. */
+    var preparedFor = (data.prepared_for != null && String(data.prepared_for).trim()) ? String(data.prepared_for).trim() : '';
+    setText('cover-for', preparedFor);
+    document.querySelectorAll('.phr-brand').forEach(function(el) { el.textContent = preparedFor; });
+    setText('cover-property-name', safe(prop.name));
+    setText('cover-property-address', safe(prop.address));
+    setText('cover-meta-type', safe(capitalise(prop.type)));
+    var sizeStr = prop.units ? (prop.units + ' units')
+                : prop.gfa_sqft ? (prop.gfa_sqft.toLocaleString('en-US') + ' sqft')
+                : '—';
+    setText('cover-meta-size', sizeStr);
+    setText('cover-meta-built', prop.year_built ? String(prop.year_built) : '—');
+    setText('cover-meta-by', safe(data.prepared_by || 'Soapbox'));
+    setText('cover-meta-date', fmtDate(data.report_date));
+
+    /* Running header/footer property name — every interior page shares this class. */
+    var propNameRunning = safe(prop.name);
+    document.querySelectorAll('.page-prop-name').forEach(function(el) { el.textContent = propNameRunning; });
+
+    /* ════════════════════════════════
+       01. SUMMARY
+    ════════════════════════════════ */
+    setHtml('summary-narrative', esc(sum.narrative || '').replace(/\n/g, '<br>'));
+    var kpiTiles = [];
+    if (fin.total_investment != null) kpiTiles.push({ label: 'Total Incremental Investment', value: fmtCurrency(num(fin.total_investment)) });
+    if (fin.total_incentives != null) kpiTiles.push({ label: 'Incentives', value: fmtCurrency(num(fin.total_incentives)) });
+    if (fin.net_investment != null) kpiTiles.push({ label: 'Net Investment', value: fmtCurrency(num(fin.net_investment)), sublabel: 'after incentives' });
+    var carbonPctForKpi = (imp.carbon && imp.carbon.reduction_pct != null) ? num(imp.carbon.reduction_pct)
+      : (imp.carbon && imp.carbon.baseline_tco2e != null && imp.carbon.post_retrofit_tco2e != null)
+        ? (num(imp.carbon.baseline_tco2e) - num(imp.carbon.post_retrofit_tco2e)) / num(imp.carbon.baseline_tco2e)
+        : null;
+    if (carbonPctForKpi != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(carbonPctForKpi) });
+    var energyPctForKpi = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.post_retrofit_kwh != null && num(imp.energy.baseline_kwh) > 0)
+      ? (num(imp.energy.baseline_kwh) - num(imp.energy.post_retrofit_kwh)) / num(imp.energy.baseline_kwh)
+      : null;
+    if (energyPctForKpi != null) kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(energyPctForKpi) });
+    if (fin.simple_payback_years != null) kpiTiles.push({ label: 'Simple Payback', value: fmt2sig(num(fin.simple_payback_years)) + ' yrs' });
+    if (fin.exit_year != null) kpiTiles.push({ label: 'Presumed Exit Year', value: String(fin.exit_year) });
+    if (fin.exit_cap != null) kpiTiles.push({ label: 'Presumed Exit Cap', value: fmtPct(num(fin.exit_cap)) });
+    if (kpiTiles.length) {
+      setHtml('summary-kpi-grid', kpiTiles.map(function(k) {
+        return '<div class="kpi-tile">'
+          + '<div class="kpi-label">' + esc(k.label) + '</div>'
+          + '<div class="kpi-value">' + esc(k.value) + '</div>'
+          + (k.sublabel ? '<div class="kpi-sublabel">' + esc(k.sublabel) + '</div>' : '')
+          + '</div>';
+      }).join(''));
+    }
+
+    /* ════════════════════════════════
+       02. MEASURES — combined Cost + Impact table, borrowed field-for-field from
+       decarb's own two-table roadmap (Cost & Capital / Impact & Return), merged
+       into one wide table since this single-package report has no plan-vs-plan comparison to keep them
+       apart for. Return on Cost = (landlord savings + ancillary revenue) / net
+       total cost — same definition decarb uses.
+    ════════════════════════════════ */
+    var items = meas.items || [];
+    var considered = data.measures_considered || [];
+    if (items.length || considered.length) {
+      var TLfL = 0, TIncr = 0, TIncent = 0, TNet = 0, TEnergy = 0, TCO2 = 0, TLL = 0, TTen = 0, TAnc = 0;
+      var html = '<table class="data-table"><thead><tr>'
+        + '<th>Measure</th><th>Status</th><th class="num">Year</th>'
+        + '<th class="num">Like-for-Like Cost</th><th class="num">Incremental Cost</th><th class="num">Incentives</th><th class="num">Net Total Cost</th>'
+        + '<th class="num">Energy Savings (MWh)</th><th class="num">Emissions Savings (tCO2e)</th><th class="num">Landlord Utility Savings</th><th class="num">Tenant Utility Savings</th><th class="num">Ancillary Revenue</th><th class="num">Return on Cost</th>'
+        + '</tr></thead><tbody>';
+      items.forEach(function(m) {
+        var lfl = num(m.like_for_like_cost), incr = num(m.incremental_cost);
+        var incent = num(m.incentives) || 0;
+        var netCost = incr != null ? incr - incent : null;
+        var energyMwh = num(m.energy_savings_kwh) != null ? num(m.energy_savings_kwh) / 1000 : null;
+        var co2 = num(m.emissions_savings_tco2e), ll = num(m.landlord_utility_savings);
+        var ten = num(m.tenant_utility_savings), anc = num(m.ancillary_revenue);
+        var roc = (netCost && netCost !== 0) ? ((ll || 0) + (anc || 0)) / netCost : null;
+        if (lfl != null) TLfL += lfl; if (incr != null) TIncr += incr;
+        if (incent != null) TIncent += incent; if (netCost != null) TNet += netCost;
+        if (energyMwh != null) TEnergy += energyMwh;
+        if (co2 != null) TCO2 += co2; if (ll != null) TLL += ll;
+        if (ten != null) TTen += ten; if (anc != null) TAnc += anc;
+        html += '<tr>'
+          + '<td><strong>' + esc(m.name) + '</strong></td>'
+          + '<td>' + esc(m.status || 'Recommended') + '</td>'
+          + '<td class="num">' + (m.install_year != null ? String(m.install_year) : '—') + '</td>'
+          + '<td class="num">' + (lfl != null ? fmtCurrency(lfl) : '—') + '</td>'
+          + '<td class="num">' + (incr != null ? fmtCurrency(incr) : '—') + '</td>'
+          + '<td class="num">' + (incent ? fmtCurrency(incent) : '—') + '</td>'
+          + '<td class="num">' + (netCost != null ? fmtCurrency(netCost) : '—') + '</td>'
+          + '<td class="num">' + (energyMwh != null ? fmt2sig(energyMwh) : '—') + '</td>'
+          + '<td class="num">' + (co2 != null ? fmt2sig(co2) : '—') + '</td>'
+          + '<td class="num">' + (ll != null ? fmtCurrency(ll) : '—') + '</td>'
+          + '<td class="num">' + (ten != null ? fmtCurrency(ten) : '—') + '</td>'
+          + '<td class="num">' + (anc ? fmtCurrency(anc) : '—') + '</td>'
+          + '<td class="num">' + (roc != null ? fmtPct(roc) : '—') + '</td>'
+          + '</tr>';
+      });
+      // Totals row must live in the SAME <table> as the measure rows, not a second
+      // independent <table> — two separate tables each auto-size their own column
+      // widths from their own content, so a short totals row ("Total", blank year
+      // cell) renders with different column widths than the real rows above it and
+      // the columns visually drift out of alignment. A trailing <tr> inside the same
+      // <tbody> shares one column-width calculation, guaranteeing alignment.
+      if (items.length) {
+        var TRoc = (TNet && TNet !== 0) ? (TLL + TAnc) / TNet : null;
+        html += '<tr class="totals-row">'
+          + '<td>Total</td><td></td><td></td>'
+          + '<td class="num">' + fmtCurrency(TLfL) + '</td>'
+          + '<td class="num">' + fmtCurrency(TIncr) + '</td>'
+          + '<td class="num">' + fmtCurrency(TIncent) + '</td>'
+          + '<td class="num">' + fmtCurrency(TNet) + '</td>'
+          + '<td class="num">' + fmt2sig(TEnergy) + '</td>'
+          + '<td class="num">' + fmt2sig(TCO2) + '</td>'
+          + '<td class="num">' + fmtCurrency(TLL) + '</td>'
+          + '<td class="num">' + fmtCurrency(TTen) + '</td>'
+          + '<td class="num">' + fmtCurrency(TAnc) + '</td>'
+          + '<td class="num">' + (TRoc != null ? fmtPct(TRoc) : '—') + '</td>'
+          + '</tr>';
+      }
+      // Analyzed-but-not-recommended measures (data.measures_considered) — appended AFTER
+      // the totals row so they visibly sit outside the recommended package's totals, in
+      // muted styling. Only the fields their (thin) shape carries are shown; every other
+      // cell stays em-dash rather than implying a figure that was never computed.
+      considered.forEach(function(cm) {
+        var cCost = num(cm.incremental_cost), cCO2 = num(cm.emissions_savings_tco2e);
+        html += '<tr style="color:var(--text-muted)">'
+          + '<td><strong style="font-weight:600">' + esc(cm.name) + '</strong>'
+          + (cm.reason ? '<div style="font-size:10px;margin-top:2px">' + esc(cm.reason) + '</div>' : '')
+          + '</td>'
+          + '<td>Analyzed — not recommended</td>'
+          + '<td class="num">—</td>'
+          + '<td class="num">—</td>'
+          + '<td class="num">' + (cCost != null ? fmtCurrency(cCost) : '—') + '</td>'
+          + '<td class="num">—</td>'
+          + '<td class="num">—</td>'
+          + '<td class="num">—</td>'
+          + '<td class="num">' + (cCO2 != null ? fmt2sig(cCO2) : '—') + '</td>'
+          + '<td class="num">—</td>'
+          + '<td class="num">—</td>'
+          + '<td class="num">—</td>'
+          + '<td class="num">—</td>'
+          + '</tr>';
+      });
+      html += '</tbody></table>';
+      setHtml('measures-groups', html);
+    }
+
+    /* ════════════════════════════════
+       03. FINANCIAL (single package — no A/B comparison)
+    ════════════════════════════════ */
+    // KPI tiles removed per request — Total Incremental Investment/Incentives/Net
+    // Investment/Simple Payback already live in the Summary KPI grid; IRR (the one figure
+    // unique to this section) is folded into the cashflow table's note line below instead.
+    var cashflow = fin.cashflow || [];
+    if (cashflow.length >= 1) {
+      showEl('exhibit-cashflow');
+      // Annual Cashflow — a full table, not a chart+collapsible: every real per-year figure
+      // the engine produced, shown directly. The Fine Avoidance column only appears when at
+      // least one year actually carries a non-zero fine_avoidance_usd; Implied Value Uplift
+      // is always shown (— when the engine didn't produce it for a year).
+      var hasFineCol = cashflow.some(function(c) { var fv = num(c.fine_avoidance_usd); return fv != null && fv !== 0; });
+      setHtml('cashflow-thead', '<tr>'
+        + '<th class="num">Year</th><th class="num">Incremental Capex</th><th class="num">Incentives</th><th class="num">Utility Savings</th><th class="num">Cumulative</th>'
+        + (hasFineCol ? '<th class="num">Fine Avoidance</th>' : '')
+        + '<th class="num">Implied Value Uplift</th>'
+        + '</tr>');
+      setHtml('cashflow-tbody', cashflow.map(function(c) {
+        function cell(v) {
+          if (v == null) return '<td class="num">—</td>';
+          var n = num(v);
+          return '<td class="num">' + (n != null ? fmtCurrency(n) : '—') + '</td>';
+        }
+        return '<tr><td class="num">' + esc(String(c.year)) + '</td>'
+          + cell(c.incremental_capex_usd) + cell(c.incentives_usd) + cell(c.utility_savings_usd) + cell(c.cumulative_usd)
+          + (hasFineCol ? cell(c.fine_avoidance_usd) : '')
+          + cell(c.value_uplift_usd)
+          + '</tr>';
+      }).join(''));
+      var noteParts = [];
+      if (cashflow.length === 1) {
+        // Single-point series: today's engine collapses every measure to one install year,
+        // so there's no real multi-year curve yet — say so rather than imply a full 10-year run.
+        noteParts.push('Single-year figure — the underlying engagement model does not yet stage this package across multiple install years.');
+      }
+      if (fin.simple_payback_years != null) noteParts.push('Simple payback ' + fmt2sig(num(fin.simple_payback_years)) + ' yrs');
+      if (fin.irr_pct != null) {
+        var irrVal = num(fin.irr_pct);
+        // A high, unstable-looking rate here is a real feature of small, unevenly-spaced
+        // operating cashflows (capex-heavy years far apart), not a computation error — but an
+        // unqualified triple-digit IRR reads as implausible. Caveat rather than hide it.
+        var irrNote = 'IRR (excl. exit) ' + fmt2sig(irrVal) + '%' + (Math.abs(irrVal) >= 75 ? ' — sparse, unevenly-staged cashflow, treat as directional' : '');
+        noteParts.push(irrNote);
+      }
+      if (fin.npv != null) noteParts.push('NPV ' + fmtCurrency(num(fin.npv)));
+      noteParts.push('Implied value uplift = that year’s NOI impact ÷ presumed exit cap.');
+      setText('cashflow-note', noteParts.join(' · '));
+      document.getElementById('cashflow-note').style.display = noteParts.length ? '' : 'none';
+    }
+
+    var bridge = fin.bridge;
+    var wf = fin.waterfall;
+    if (bridge || wf) {
+      showEl('exhibit-waterfall');
+      var steps = [], net, netLabel;
+      if (bridge) {
+        // Value Creation Bridge — cumulative operating flows over the hold plus the
+        // capitalized exit value uplift at the presumed exit cap. Fixed bar order;
+        // Fine Avoidance only appears when it's actually non-zero.
+        if (num(bridge.incremental_capex) != null) steps.push({ label: 'Incremental Capex', v: num(bridge.incremental_capex) });
+        if (num(bridge.cumulative_utility_savings) != null) steps.push({ label: 'Cumulative Energy Savings', v: num(bridge.cumulative_utility_savings) });
+        if (num(bridge.incentives) != null) steps.push({ label: 'Incentives', v: num(bridge.incentives) });
+        if (num(bridge.fine_avoidance)) steps.push({ label: 'Fine Avoidance', v: num(bridge.fine_avoidance) });
+        if (num(bridge.exit_value_uplift) != null) steps.push({ label: 'Exit Value Uplift', v: num(bridge.exit_value_uplift) });
+        net = num(bridge.net);
+        netLabel = 'Net';
+      } else {
+        // Backward compat: the pre-bridge operating-basis waterfall shape.
+        // Order: capital outlay first, then incentives as a positive capital impact offsetting it,
+        // then the recurring operating savings — reads as "what it costs, what comes back
+        // immediately, what it earns over time." Incentives always included when the field is
+        // present at all (even $0) — an explicit $0 bar is honest information (no program
+        // currently applies), not something to hide the way an absent field would be.
+        if (wf.incremental_capex) steps.push({ label: 'Incremental Capex', v: num(wf.incremental_capex) });
+        if (wf.incentives != null) steps.push({ label: 'Incentives', v: num(wf.incentives) });
+        if (wf.cumulative_utility_savings) steps.push({ label: 'Cumulative Utility Savings', v: num(wf.cumulative_utility_savings) });
+        // Real final-year cumulative cash position from the modeled cashflow series — NOT a sum
+        // of the steps above (the engine's cashflow reflects year-by-year timing the simple
+        // sum can't capture) and never an exit-capitalized figure.
+        net = num(wf.net_position);
+        netLabel = 'Net Position';
+        setText('waterfall-note', 'Operating basis — no disposition or exit value assumed.');
+      }
+      var W2 = 800, H2 = 260, PADX = 56, PADXR = 16, PADY = 40, barGap = 14;
+      var n = steps.length + 1;
+      var barW = (W2 - PADX - PADXR - barGap * (n - 1)) / n;
+      var running = 0, ranges = [];
+      steps.forEach(function(s) {
+        var start = running; running += s.v;
+        ranges.push({ label: s.label, from: start, to: running, v: s.v });
+      });
+      var allVals = ranges.reduce(function(acc, r) { return acc.concat([r.from, r.to]); }, [0, net]);
+      var minV2 = Math.min.apply(null, allVals), maxV2 = Math.max.apply(null, allVals);
+      var pad2 = (maxV2 - minV2) * 0.15 || 1;
+      minV2 -= pad2; maxV2 += pad2;
+      var range2 = (maxV2 - minV2) || 1;
+      function yv(v) { return H2 - PADY - ((v - minV2) / range2) * (H2 - 2 * PADY); }
+      // Gridlines + y-axis labels, borrowed from decarb's floating-bar waterfall.
+      var grid2 = '', yLabs2 = '';
+      for (var gi = 0; gi <= 4; gi++) {
+        var gv = minV2 + range2 * gi / 4;
+        grid2 += '<line x1="' + PADX + '" y1="' + yv(gv).toFixed(1) + '" x2="' + (W2 - PADXR) + '" y2="' + yv(gv).toFixed(1) + '" stroke="#F1F1EC" stroke-width="1"/>';
+        yLabs2 += '<text x="' + (PADX - 6) + '" y="' + (yv(gv) + 3).toFixed(1) + '" font-size="9" fill="#989CA0" text-anchor="end">' + fmtCurrency(gv) + '</text>';
+      }
+      var bars = grid2 + yLabs2, conn = '';
+      ranges.forEach(function(r, i) {
+        var bx = PADX + i * (barW + barGap);
+        var top = yv(Math.max(r.from, r.to)), bot = yv(Math.min(r.from, r.to));
+        var color = r.v >= 0 ? COLOR_POS : COLOR_NEG;
+        bars += '<rect x="' + bx + '" y="' + top + '" width="' + barW + '" height="' + Math.max(1, bot - top) + '" fill="' + color + '" />';
+        bars += '<text x="' + (bx + barW / 2) + '" y="' + (H2 - 12) + '" font-size="11" fill="#565A5D" text-anchor="middle">' + r.label + '</text>';
+        bars += '<text x="' + (bx + barW / 2) + '" y="' + (Math.min(top, bot) - 6) + '" font-size="13" fill="#231F20" text-anchor="middle" font-weight="bold">' + fmtCurrency(r.v) + '</text>';
+        // Dashed connector from this bar's running level to the next bar's start.
+        if (i < ranges.length - 1) {
+          var yl = yv(r.to);
+          conn += '<line x1="' + (bx + barW).toFixed(1) + '" y1="' + yl.toFixed(1) + '" x2="' + (bx + barW + barGap).toFixed(1) + '" y2="' + yl.toFixed(1) + '" stroke="#989CA0" stroke-width="1" stroke-dasharray="2,2"/>';
+        }
+      });
+      var lastX = PADX + steps.length * (barW + barGap);
+      var lastLevel = ranges.length ? ranges[ranges.length - 1].to : 0;
+      conn += '<line x1="' + (PADX + (steps.length - 1) * (barW + barGap) + barW).toFixed(1) + '" y1="' + yv(lastLevel).toFixed(1) + '" x2="' + lastX.toFixed(1) + '" y2="' + yv(lastLevel).toFixed(1) + '" stroke="#989CA0" stroke-width="1" stroke-dasharray="2,2"/>';
+      var netTop = yv(Math.max(0, net)), netBot = yv(Math.min(0, net));
+      bars += conn;
+      bars += '<rect x="' + lastX + '" y="' + netTop + '" width="' + barW + '" height="' + Math.max(1, netBot - netTop) + '" fill="' + COLOR_NET + '" />';
+      bars += '<text x="' + (lastX + barW / 2) + '" y="' + (H2 - 12) + '" font-size="11" fill="#565A5D" text-anchor="middle">' + netLabel + '</text>';
+      bars += '<text x="' + (lastX + barW / 2) + '" y="' + (Math.min(netTop, netBot) - 6) + '" font-size="13" fill="#231F20" text-anchor="middle" font-weight="bold">' + fmtCurrency(net) + '</text>';
+      bars += '<line x1="' + PADX + '" y1="' + yv(0) + '" x2="' + (W2 - PADXR) + '" y2="' + yv(0) + '" stroke="#C5C7C9" stroke-width="1" />';
+      document.getElementById('waterfall-chart').innerHTML = bars;
+    }
+
+    /* ════════════════════════════════
+       04. IMPACT (carbon, energy, trajectory, regulatory)
+    ════════════════════════════════ */
+    var carbon = imp.carbon || {};
+    if (carbon.baseline_tco2e != null && carbon.post_retrofit_tco2e != null) {
+      var cBase = num(carbon.baseline_tco2e), cPost = num(carbon.post_retrofit_tco2e);
+      var cPct = carbon.reduction_pct != null ? num(carbon.reduction_pct) : (cBase ? (cBase - cPost) / cBase : null);
+      var cMax = Math.max(cBase, cPost) || 1;
+      setHtml('impact-carbon',
+        '<div class="impact-metric-title">Carbon (tCO2e/yr)</div>'
+        + (cPct != null ? '<div class="impact-reduction-pct">' + fmtPct(cPct) + '</div><div class="exhibit-note">10-year reduction, incl. grid decarbonization</div>' : '')
+        + '<div style="margin-top:12px">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((cBase / cMax) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cBase) + '</div></div>'
+        + '<div style="display:flex;align-items:center;gap:8px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Post-retrofit (10-yr)</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((cPost / cMax) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cPost) + '</div></div>'
+        + '</div>');
+    }
+    var energy = imp.energy || {};
+    if (energy.baseline_kwh != null && energy.post_retrofit_kwh != null) {
+      var eBase = num(energy.baseline_kwh), ePost = num(energy.post_retrofit_kwh);
+      var eMax = Math.max(eBase, ePost) || 1;
+      var eBaseF = formatEnergyKwh(eBase), ePostF = formatEnergyKwh(ePost);
+      var ePct = eBase ? (eBase - ePost) / eBase : null;
+      var euiLine = (energy.eui_baseline != null && energy.eui_target != null)
+        ? '<div class="exhibit-note">EUI: ' + fmt2sig(num(energy.eui_baseline)) + ' → ' + fmt2sig(num(energy.eui_target)) + ' kWh/m²/yr</div>' : '';
+      setHtml('impact-energy',
+        '<div class="impact-metric-title">Energy (site)</div>'
+        + (ePct != null ? '<div class="impact-reduction-pct">' + fmtPct(ePct) + '</div><div class="exhibit-note">10-year reduction, measures only</div>' : '')
+        + '<div style="margin-top:12px">'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((eBase / eMax) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + eBaseF.value + ' ' + eBaseF.unit + '</div></div>'
+        + '<div style="display:flex;align-items:center;gap:8px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Post-retrofit (10-yr)</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((ePost / eMax) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + ePostF.value + ' ' + ePostF.unit + '</div></div>'
+        + '</div>'
+        + euiLine);
+    }
+
+    /* Shared axis-chart builder — gridlines, y-axis tick labels, x-axis year labels,
+       one or more polylines, a legend row, and notes — borrowed directly from decarb's
+       drawTrajectory() grid/axis/legend treatment, generalized so both the EUI chart
+       (single series) and the GHGi chart (BAU/Planned/CRREM) share the same visual
+       grammar rather than looking like two different chart styles on one exhibit. */
+    function buildAxisChart(containerId, series, opts) {
+      opts = opts || {};
+      var W = opts.W || 760, H = opts.H || 210;
+      var X1 = 46, X2 = W - 16, Y1 = 14, Y2 = H - 30;
+      var years = opts.years || [];
+      var yMin = years.length ? years[0] : 0, yMax = years.length ? years[years.length - 1] : 1;
+      function px(yr) { return X1 + (yMax === yMin ? 0 : (yr - yMin) / (yMax - yMin)) * (X2 - X1); }
+
+      var allV = [];
+      series.forEach(function(s) { s.points.forEach(function(p) { if (p.y != null) allV.push(p.y); }); });
+      if (!allV.length) { setHtml(containerId, ''); return; }
+      // BPS thresholds participate in the y-domain so a limit above/below every plotted
+      // series still lands inside the frame (never clipped off the top or bottom).
+      var thresholds = (opts.thresholds || []).filter(function(t) { return t && num(t.value) != null; });
+      thresholds.forEach(function(t) { allV.push(num(t.value)); });
+      var vMin, vMax;
+      if (opts.zeroBased) { vMin = 0; vMax = Math.max.apply(null, allV) * 1.15 || 1; }
+      else {
+        // Zoomed to the modeled range (NOT forced to include zero) — this is a trend line,
+        // not a bar chart, and a real ~15-20% intensity decline reads as visually flat if
+        // the axis spans down to 0. Padded 15% each side so no line ever touches the frame.
+        var raw0 = Math.min.apply(null, allV), raw1 = Math.max.apply(null, allV);
+        var pad = (raw1 - raw0) * 0.15 || Math.abs(raw0 || 1) * 0.05;
+        vMin = raw0 - pad; vMax = raw1 + pad;
+      }
+      var vRange = (vMax - vMin) || 1;
+      function py(v) { return Y2 - (v - vMin) / vRange * (Y2 - Y1); }
+
+      var grid = '', yLabs = '';
+      for (var i = 0; i <= 4; i++) {
+        var gy = vMin + vRange * i / 4;
+        grid += '<line x1="' + X1 + '" y1="' + py(gy).toFixed(1) + '" x2="' + X2 + '" y2="' + py(gy).toFixed(1) + '" stroke="#F1F1EC" stroke-width="1"/>';
+        yLabs += '<text x="' + (X1 - 6) + '" y="' + (py(gy) + 3).toFixed(1) + '" font-size="9" fill="#989CA0" text-anchor="end">' + fmt2sig(gy) + '</text>';
+      }
+      var xLabs = '';
+      var skip = years.length > 10 ? 2 : 1;
+      years.forEach(function(y, idx) {
+        if (idx % skip !== 0 && y !== yMax) return;
+        xLabs += '<text x="' + px(y).toFixed(1) + '" y="' + (Y2 + 14) + '" font-size="9" fill="#989CA0" text-anchor="middle">' + y + '</text>';
+      });
+
+      var lines = '';
+      series.forEach(function(s) {
+        // Clamp to the chart's own year domain (yMin/yMax, from the trajectory horizon) — a
+        // series that spans a wider range (e.g. CRREM's pathway commonly runs 2020-2050, far
+        // beyond a ~10-year trajectory horizon) would otherwise project points way outside
+        // X1..X2 via px()'s unclamped linear extrapolation, drawing lines that bled off the
+        // page edge (found live on a client report — the CRREM dashed line ran off both charts).
+        var pts = s.points.filter(function(p) { return p.y != null && p.x >= yMin && p.x <= yMax; });
+        if (pts.length < 2) return;
+        var poly = pts.map(function(p) { return px(p.x).toFixed(1) + ',' + py(p.y).toFixed(1); }).join(' ');
+        lines += '<polyline points="' + poly + '" fill="none" stroke="' + s.color + '" stroke-width="' + (s.width || 2.25) + '"' + (s.dash ? ' stroke-dasharray="' + s.dash + '"' : '') + '/>';
+        if (s.dots !== false) {
+          pts.forEach(function(p) { lines += '<circle cx="' + px(p.x).toFixed(1) + '" cy="' + py(p.y).toFixed(1) + '" r="3" fill="' + s.color + '"/>'; });
+        }
+      });
+
+      // Stranding-year overlay: opts.strandingYear is computed by the caller from the two REAL
+      // series (first year the planned/actual line crosses above the CRREM target — see
+      // computeStrandingYear below), never estimated here. Only drawn when it falls inside the
+      // chart's own plotted horizon; a crossing outside that range is silently omitted rather
+      // than drawn off-frame (same overflow bug this clamp is fixing above).
+      var stranding = '';
+      if (opts.strandingYear != null && opts.strandingYear >= yMin && opts.strandingYear <= yMax) {
+        var sx = px(opts.strandingYear).toFixed(1);
+        stranding = '<line x1="' + sx + '" y1="' + Y1 + '" x2="' + sx + '" y2="' + Y2 + '" stroke="' + COLOR_NEG + '" stroke-width="1.25" stroke-dasharray="3,3"/>'
+          + '<text x="' + sx + '" y="' + (Y1 + 9) + '" font-size="9" fill="' + COLOR_NEG + '" text-anchor="middle" font-weight="bold">Stranding ' + opts.strandingYear + '</text>';
+      }
+
+      // BPS threshold overlays — horizontal dashed line at the threshold value (already
+      // folded into the y-domain above) with a small right-aligned label. The value arrives
+      // in the SAME unit the chart already plots — never converted here.
+      var thrSvg = '';
+      thresholds.forEach(function(t) {
+        var tv = num(t.value);
+        var ty = py(tv);
+        thrSvg += '<line x1="' + X1 + '" y1="' + ty.toFixed(1) + '" x2="' + X2 + '" y2="' + ty.toFixed(1) + '" stroke="' + COLOR_NEG + '" stroke-width="1" stroke-dasharray="6,3"/>';
+        if (t.label) {
+          thrSvg += '<text x="' + X2 + '" y="' + (ty - 4).toFixed(1) + '" font-size="9" fill="' + COLOR_NEG + '" text-anchor="end">' + esc(t.label) + '</text>';
+        }
+      });
+
+      var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;overflow:hidden">'
+        + grid + yLabs + xLabs + lines + thrSvg + stranding
+        + '<line x1="' + X1 + '" y1="' + Y2 + '" x2="' + X2 + '" y2="' + Y2 + '" stroke="#C5C7C9" stroke-width="1"/>'
+        + (opts.yAxisLabel ? '<text x="12" y="' + ((Y1 + Y2) / 2).toFixed(0) + '" font-size="9" fill="#707477" text-anchor="middle" transform="rotate(-90,12,' + ((Y1 + Y2) / 2).toFixed(0) + ')">' + esc(opts.yAxisLabel) + '</text>' : '')
+        + '</svg>';
+
+      var leg = series.map(function(s) {
+        var swatch = s.dash
+          ? 'background:repeating-linear-gradient(90deg,' + s.color + ' 0 5px,transparent 5px 9px)'
+          : 'background:' + s.color;
+        return '<div class="legend-item"><span class="legend-swatch line" style="' + swatch + '"></span>' + esc(s.label) + '</div>';
+      }).join('');
+
+      var notesHtml = (opts.notes || []).map(function(n) { return '<div class="exhibit-note">' + n + '</div>'; }).join('');
+
+      setHtml(containerId, svg + '<div class="chart-legend">' + leg + '</div>' + notesHtml);
+    }
+
+    // First year the real (planned/actual) series exceeds the real CRREM target series, matched
+    // by exact year — deterministic from the two fetched series, never an estimate. Returns null
+    // when no matched-year crossing exists (compliant throughout, or CRREM has no value at any
+    // year the actual series covers).
+    function computeStrandingYear(actualPts, crremPts) {
+      var crremByYear = {};
+      (crremPts || []).forEach(function(p) { if (p.y != null) crremByYear[p.x] = p.y; });
+      for (var i = 0; i < actualPts.length; i++) {
+        var yr = actualPts[i].x, av = actualPts[i].y, cv = crremByYear[yr];
+        if (av != null && cv != null && av > cv) return yr;
+      }
+      return null;
+    }
+
+    var traj = imp.trajectory || [];
+    var bpsThresholds = Array.isArray(imp.bps_thresholds) ? imp.bps_thresholds : [];
+    if (traj.length >= 1) {
+      var tYears = traj.map(function(t) { return t.year; });
+
+      var crremPath = (imp.crrem && imp.crrem.pathway) ? imp.crrem.pathway : null;
+      var crremLabel = 'CRREM pathway' + (imp.crrem && imp.crrem.meta && imp.crrem.meta.region ? ' (' + imp.crrem.meta.region + ')' : '');
+
+      var euiSeries = [{ label: 'EUI (kWh/m²/yr)', color: COLOR_S2, points: traj.map(function(t) { return { x: t.year, y: num(t.eui_kwh_m2) }; }) }];
+      if (crremPath && crremPath.length && crremPath.some(function(p) { return p.eui_kwh_m2yr != null; })) {
+        euiSeries.push({ label: crremLabel, color: COLOR_NET, dash: '5,4', dots: false,
+          points: crremPath.filter(function(p) { return num(p.eui_kwh_m2yr) != null; }).map(function(p) { return { x: p.year, y: num(p.eui_kwh_m2yr) }; }) });
+      }
+      if (euiSeries[0].points.some(function(p) { return p.y != null; })) {
+        showEl('exhibit-eui');
+        var euiStranding = euiSeries[1] ? computeStrandingYear(euiSeries[0].points, euiSeries[1].points) : null;
+        buildAxisChart('eui-chart-block', euiSeries, { years: tYears, yAxisLabel: 'kWh/m²/yr', H: 190, zeroBased: true, strandingYear: euiStranding, thresholds: bpsThresholds.filter(function(t) { return t.metric === 'eui'; }) });
+      }
+
+      var ghgiSeries = [
+        { label: 'Business-as-Usual', color: COLOR_BAU, dash: '4,3', points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_bau_kgco2_m2) }; }) },
+        { label: 'Planned (GHGi)', color: COLOR_S1, points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_kgco2_m2) }; }) }
+      ];
+      if (crremPath && crremPath.length && crremPath.some(function(p) { return p.carbon_kgco2_m2yr != null; })) {
+        ghgiSeries.push({ label: crremLabel, color: COLOR_NET, dash: '5,4', dots: false,
+          points: crremPath.filter(function(p) { return num(p.carbon_kgco2_m2yr) != null; }).map(function(p) { return { x: p.year, y: num(p.carbon_kgco2_m2yr) }; }) });
+      }
+      if (ghgiSeries[1].points.some(function(p) { return p.y != null; })) {
+        showEl('exhibit-ghgi');
+        var ghgiStranding = ghgiSeries[2] ? computeStrandingYear(ghgiSeries[1].points, ghgiSeries[2].points) : null;
+        buildAxisChart('ghgi-chart-block', ghgiSeries, { years: tYears, yAxisLabel: 'kgCO2e/m²/yr', H: 210, zeroBased: true, strandingYear: ghgiStranding, thresholds: bpsThresholds.filter(function(t) { return t.metric === 'ghgi'; }) });
+      }
+
+      // Flag a degenerate (all-same-year) trajectory honestly rather than let it pass as a
+      // real staged curve — today's engine stages every measure to a single install year.
+      var uniqueYearsWithChange = traj.filter(function(t, i) { return i === 0 || t.ghgi_kgco2_m2 !== traj[0].ghgi_kgco2_m2; }).length;
+      if (traj.length > 1 && uniqueYearsWithChange <= 1) {
+        setText('trajectory-flag', 'Flat across the modeled horizon — this reflects the current engagement model staging every measure to a single install year, not a real multi-year rollout curve.');
+        document.getElementById('trajectory-flag').style.display = '';
+      }
+    }
+
+    var reg = imp.regulatory;
+    if (reg && reg.applicable_standard) {
+      var statusClass = reg.compliance_status || 'not-applicable';
+      var fineLine = reg.annual_fine_avoided_usd != null
+        ? '<div class="exhibit-note"><strong>Annual fine avoided: ' + fmtCurrency(num(reg.annual_fine_avoided_usd)) + '/yr</strong></div>' : '';
+      showEl('impact-regulatory');
+      setHtml('impact-regulatory',
+        '<span class="regulatory-badge ' + esc(statusClass) + '">' + esc((statusClass || '').replace(/-/g, ' ')) + '</span>'
+        + '<div class="impact-metric-title" style="margin-top:8px">' + esc(reg.applicable_standard) + '</div>'
+        + fineLine
+        + (reg.note ? '<div class="narrative" style="margin-top:8px;font-size:12px">' + esc(reg.note) + '</div>' : ''));
+    }
+
+    /* ════════════════════════════════
+       05. NOTES — implementation considerations, incentive programs, and compliance notes.
+       Each sub-block (and the section itself) only shows when its data is actually present —
+       never fabricated. Incentive programs are sourced from real, cited incentive-rule matches
+       (see derive-decarb-engagement.ts's incentive_programs aggregation) — never hand-estimated
+       here. Data Quality was dropped as its own subsection (client preference); any estimate/
+       ambiguity caveat that used to live there is now folded into the relevant incentive
+       program's own description instead, so it's still disclosed, just not in its own section.
+    ════════════════════════════════ */
+    var hasNarrative = impl.narrative && String(impl.narrative).trim();
+    var considerations = impl.considerations || [];
+    var incentiveItems = incentivePrograms.items || [];
+    var hasIncentivePrograms = incentivePrograms.summary || incentiveItems.length;
+    var complianceItems = complianceNotes.items || [];
+    var hasImpl = hasNarrative || considerations.length;
+    var hasCompliance = complianceNotes.summary || complianceItems.length;
+    if (hasImpl || hasIncentivePrograms || hasCompliance) {
+      showEl('notes-section');
+      if (hasImpl) {
+        showEl('implementation-block');
+        if (hasNarrative) setHtml('implementation-narrative', esc(impl.narrative).replace(/\n/g, '<br>'));
+        if (considerations.length) {
+          setHtml('implementation-considerations', considerations.map(function(c) {
+            return '<div class="consideration-item"><div class="consideration-title">' + esc(c.title) + '</div><div class="consideration-detail">' + esc(c.detail) + '</div></div>';
+          }).join(''));
+        }
+      }
+      if (hasIncentivePrograms) {
+        showEl('incentives-block');
+        if (incentivePrograms.summary) { setHtml('incentives-summary', esc(incentivePrograms.summary)); showEl('incentives-summary'); }
+        if (incentiveItems.length) {
+          setHtml('incentives-items', incentiveItems.map(function(it) {
+            return '<div class="consideration-item"><div class="consideration-title">' + esc(it.program || it.title || '') + '</div><div class="consideration-detail">' + esc(it.description || it.detail || '') + '</div></div>';
+          }).join(''));
+        }
+      }
+      if (hasCompliance) {
+        showEl('compliance-block');
+        if (complianceNotes.summary) { setHtml('compliance-summary', esc(complianceNotes.summary)); showEl('compliance-summary'); }
+        if (complianceItems.length) {
+          setHtml('compliance-items', complianceItems.map(function(it) {
+            return '<div class="consideration-item"><div class="consideration-title">' + esc(it.program || it.title || '') + '</div><div class="consideration-detail">' + esc(it.description || it.detail || '') + '</div></div>';
+          }).join(''));
+        }
+      }
+    }
+
+    /* ════════════════════════════════
+       RUNNING PAGE NUMBERS — computed last, over whatever pages ended up visible
+       (Implementation/Compliance Notes are conditional on the data actually having them).
+    ════════════════════════════════ */
+    var visiblePages = Array.prototype.filter.call(document.querySelectorAll('.page, .cover-page'), function(p) { return p.style.display !== 'none'; });
+    visiblePages.forEach(function(p, i) {
+      var el = p.querySelector('.page-num-run');
+      if (el) el.textContent = 'Page ' + (i + 1) + ' of ' + visiblePages.length;
+    });
+  }
+</script>
+
+</body>
+</html>

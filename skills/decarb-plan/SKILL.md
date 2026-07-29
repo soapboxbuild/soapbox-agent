@@ -1028,14 +1028,20 @@ gate (resume may have skipped P4's check).
    verification by hand-editing numbers. Once `ok: true`, continue to step 1.
 
 1. **Render via `fill_report` — the SAME path RSRA uses (default; do not hand-write HTML or draw
-   charts).** Call `fill_report(template: 'decarb', data: {}, title: "<Asset> — Decarbonization
-   Roadmap")`. You author **no report_data** — the server detects the persisted decarb engagement
-   record for this asset and projects the entire deliverable from it (property, baseline,
-   economics, targets/CRREM pathway, trajectory, dashboard, narrative, sources), discarding
-   whatever you pass as `data`. The template's own JavaScript then renders every section and
-   chart from that projected data — the **decision dashboard + J-curve sparkline**, per-plan
-   **value-creation waterfall SVG**, and the **emissions trajectory with the CRREM pathway
-   curve**. You write NO report HTML, draw NO charts, and compute NO data object — your only
+   charts).** Call `fill_report(template: 'decarb-capital-plan', data: {}, title: "<Asset> —
+   Decarbonization Roadmap")`. There is now **ONE** decarb report — the single-recommended-plan
+   capital plan. (`template: 'decarb'` also resolves to it, but name the canonical template.)
+   You author **no report_data** — the server detects the persisted decarb engagement record for
+   this asset and projects the entire deliverable from it, discarding whatever you pass as `data`.
+   **The report presents ONE recommended plan** (the value-driving plan — highest net value) and
+   drives ALL economics, the value bridge, and the year-by-year cashflow from that single plan.
+   Measures that belong to OTHER modeled scenarios are still listed in the measures table, marked
+   **"Alternative — not modeled in financials"** — included for comparison, excluded from the
+   headline economics. The template's own JavaScript renders every section and chart from the
+   projected data — the **decision dashboard**, the **value-creation waterfall / exit bridge**,
+   the **year-by-year cashflow**, and the **emissions trajectory with the CRREM pathway curve**.
+   (You still author BOTH Audette plans in P4 and derive both — that is what populates the
+   alternatives; the report just presents the recommended one as the headline.) You write NO report HTML, draw NO charts, and compute NO data object — your only
    job upstream of this call was step 0. The render is verifier-gated server-side (it
    independently recomputes economics via the same engine and blocks on divergence); if blocked,
    the fix is always in Audette + a re-derive, never a hand-edited figure. Record

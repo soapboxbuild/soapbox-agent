@@ -757,7 +757,7 @@
           + '<td><strong style="font-weight:600">' + esc(cm.name) + '</strong>'
           + (cm.reason ? '<div style="font-size:10px;margin-top:2px">' + esc(cm.reason) + '</div>' : '')
           + '</td>'
-          + '<td>Analyzed — not recommended</td>'
+          + '<td>' + esc(cm.status || 'Alternative — not modeled in financials') + '</td>'
           + '<td class="num">—</td>'
           + '<td class="num">—</td>'
           + '<td class="num">' + (cCost != null ? fmtCurrency(cCost) : '—') + '</td>'

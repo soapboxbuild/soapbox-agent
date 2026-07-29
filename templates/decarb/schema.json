@@ -673,6 +673,64 @@
               "thesis": {
                 "type": "string",
                 "description": "One-line plain-language thesis for this plan (what it does + the headline financial/compliance outcome). Rendered as a separated bulleted block in the Recommendation. Keep to one sentence; summary_points[] carries the detail."
+              },
+              "sensitivity": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Engine-computed IRR sensitivity band. Populated by derive_engagement (owner savings ±15%, exit cap ±50bps) — never hand-authored.",
+                "properties": {
+                  "adverse": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "properties": {
+                      "irr_incremental": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "irr_excl_exit": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "net_value_creation": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    }
+                  },
+                  "favorable": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "properties": {
+                      "irr_incremental": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "irr_excl_exit": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "net_value_creation": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    }
+                  },
+                  "assumptions": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }

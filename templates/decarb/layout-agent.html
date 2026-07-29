@@ -1464,6 +1464,16 @@
                + '<span class="plan-net">Net value creation <strong>' + fmtSignedCurrency(net) + '</strong>'
                + (plan.irr_incremental != null ? ' · IRR ' + fmtPct(Number(plan.irr_incremental)) : '') + '</span>'
                + '</div>';
+      /* Engine-computed sensitivity band (adverse ↔ favorable) — renders only when the
+         payload carries plans[].sensitivity. Shows the IRR as a RANGE with its assumptions
+         so a single point estimate never reads as false precision. */
+      var sensLine = '';
+      var sv = plan.sensitivity;
+      if (sv && sv.adverse && sv.favorable && sv.adverse.irr_incremental != null && sv.favorable.irr_incremental != null) {
+        sensLine = '<div style="font-size:11.5px;color:#64748B;margin:2px 0 8px 0">Sensitivity: IRR '
+                 + fmtPct(Number(sv.adverse.irr_incremental)) + ' – ' + fmtPct(Number(sv.favorable.irr_incremental))
+                 + (sv.assumptions ? ' <span style="color:#94A3B8">(' + esc(String(sv.assumptions)) + ')</span>' : '') + '</div>';
+      }
       /* Optional plain-language bullets describing the plan — keeps the narrative scannable
          instead of a paragraph wall. Renders only when summary_points[] is supplied. */
       var bullets = '';
@@ -1472,7 +1482,7 @@
                 + plan.summary_points.map(function(pt){ return '<li>' + esc(String(pt)) + '</li>'; }).join('')
                 + '</ul>';
       }
-      return head + bullets + svg;
+      return head + sensLine + bullets + svg;
     }
 
     /* ════════════════════════════════

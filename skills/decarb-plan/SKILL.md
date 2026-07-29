@@ -788,11 +788,21 @@ do not assemble the Gate-2 roster from an empty or partial register.
      the report — it flows: Audette RUL + Costing `like_for_like`/`incremental` → measure record → engine.
 3b. **Incentives + revenue — search and apply by DEFAULT (never skip, never ask first).** For
    every screened-in measure, proactively search for and quantify:
-   - **Incentives** — federal (IRA §48/48E ITC, §179D deduction, §45L, and direct-pay / elective-pay
-     eligibility for this ownership type), state/local programs, and utility rebates. Sources:
-     `retrofit__search_reference_library` (jurisdiction rules gathered in P1), the Costing MCP
-     (`get_der_economics` carries ITC/DER incentives), and `brave-search` (DSIRE, utility program
-     pages) as a labeled fallback.
+   - **Incentives** — ⚠️ **federal availability changed under OBBBA (P.L. 119-21, Jul 2025) — do
+     NOT apply pre-2025 IRA assumptions:**
+     - **§48E ITC (solar/wind): terminated** except two paths — construction began on/before
+       **Jul 4, 2026** (safe-harbored, 4-yr in-service window), or the system is **placed in
+       service by Dec 31, 2027**. A 2028+ solar install year gets **NO federal ITC** — $0 is the
+       correct figure; never add one. For a 2026–2027 in-service date, verify timing + FEOC
+       (foreign-entity) sourcing rules before crediting it.
+     - **§48E for storage/geothermal**: NOT terminated by the solar/wind provision (later
+       phase-down; FEOC rules apply) — still worth checking.
+     - **§179D deduction: dead for projects whose construction begins after Jun 30, 2026** —
+       for measures installing after that, do not include it.
+     - Therefore **state/local programs and utility rebates are now the PRIMARY incentive
+       sources** for most new measures. Sources: `retrofit__search_reference_library`
+       (jurisdiction rules gathered in P1), the Costing MCP (`get_der_economics` carries
+       DER incentives), and `brave-search` (DSIRE, utility program pages) as a labeled fallback.
    - **Revenue** — grid services / demand-response, SRECs/RECs, and net-metering / VNM export
      credits (solar VNM already enters at the 80% owner capture above).
    Write them into the measure's **Audette economics**: incentives REDUCE net CapEx — record

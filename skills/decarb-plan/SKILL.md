@@ -975,6 +975,16 @@ gate (resume may have skipped P4's check).
      regime (0 ONLY when genuinely none applies) — this drives the fine-avoidance stream.
    - `crrem_region` + `country`: the CRREM region resolved for the asset's location (climate zone +
      grid region) and its country — **without `crrem_region` the compliance curve is omitted.**
+   - `bps_thresholds`: BPS threshold lines for the EUI/GHGi charts, REQUIRED whenever the asset
+     sits in a BPS jurisdiction whose numeric target you have established with a real citation
+     (e.g. DC BEPS property-type Source-EUI/score targets — there is no server-side registry for
+     these yet; only WA CBPS is auto-stamped). Each entry `{metric:'eui'|'ghgi', value, label,
+     source}` — `source` is a verbatim citation to the program document/table. NEVER estimate or
+     recall a threshold from memory: no citation → no threshold (the chart simply omits the line).
+     Analyst-supplied thresholds are disclosed in the report's data-quality notes automatically.
+   - Rendering to the **decarb-capital-plan** template additionally consumes: exit panes and the
+     value bridge (both derive from the exit args above), `measures_considered` (server-extracted;
+     nothing for you to pass), and the same `bps_thresholds`.
    The engine aggregates across all buildings (sums baselines/measures, property-intensity trajectory,
    GFA-weighted CRREM, IRR from ONE combined run) — you do NOT hand-aggregate. Scenario and measure
    selection (which Audette custom plans to derive) must already be settled by this point (P3/P4).

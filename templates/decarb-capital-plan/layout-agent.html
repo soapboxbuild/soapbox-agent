@@ -180,6 +180,11 @@
     .section-title { font-family: var(--font-serif); font-size: 24px; font-weight: 400; color: var(--text-primary); margin-bottom: var(--space-8); padding-bottom: var(--space-4); border-bottom: 2px solid var(--black); }
     .subsection-title { font-family: var(--font-serif); font-size: 16px; font-weight: 600; color: var(--text-primary); margin: var(--space-8) 0 var(--space-4); }
     .subsection-title:first-of-type { margin-top: 0; }
+    .exec-summary { border-left: 3px solid var(--bronze); padding: 0 0 0 var(--space-5); margin-bottom: var(--space-8); }
+    .exec-summary-eyebrow { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bronze); font-weight: 700; margin-bottom: var(--space-3); }
+    .exec-summary-headline { font-family: var(--font-serif); font-size: 20px; line-height: 1.4; color: var(--text-primary); margin-bottom: var(--space-4); }
+    .exec-summary-row { font-size: 12.5px; line-height: 1.6; color: var(--text-muted); margin-bottom: var(--space-2); }
+    .exec-summary-row strong { color: var(--text-primary); font-weight: 600; }
     .narrative { font-size: 14px; line-height: 1.6; white-space: pre-line; margin-bottom: var(--space-8); }
     .narrative:last-child { margin-bottom: 0; }
 
@@ -288,6 +293,7 @@
       <div class="page-content">
         <div class="section-eyebrow">Section 01</div>
         <h2 class="section-title">Summary</h2>
+        <div id="exec-summary" style="display:none"></div>
         <div class="narrative" id="summary-narrative"></div>
         <div class="kpi-grid" id="summary-kpi-grid"></div>
       </div>
@@ -675,6 +681,33 @@
     /* ════════════════════════════════
        01. SUMMARY
     ════════════════════════════════ */
+    // ── Executive summary ────────────────────────────────────────────────────────────────────
+    // Authored interactively with the user as the LAST step of the workflow, then persisted on the
+    // record. Rendered only when it exists — an empty shell is worse than no section, and the client
+    // asked for something punchy they can read in ten seconds.
+    var xs = data.executive_summary_block;
+    if (xs && (xs.headline || xs.crrem_status || xs.recommendation)) {
+      var xsRows = '';
+      if (xs.crrem_status) {
+        xsRows += '<div class="exec-summary-row"><strong>Compliance:</strong> ' + esc(xs.crrem_status)
+          + '</div>';
+      }
+      // Neutral label: "crossed in X" asserts a crossing, which is wrong for an asset that stays
+      // below the pathway for the whole hold. The agent supplies this ONLY when there is a real
+      // divergence to name, and the wording stays true either way.
+      if (xs.divergence_year != null) {
+        xsRows += '<div class="exec-summary-row"><strong>Pathway divergence:</strong> <strong>' + esc(xs.divergence_year) + '</strong></div>';
+      }
+      if (xs.recommendation) xsRows += '<div class="exec-summary-row"><strong>Recommendation:</strong> ' + esc(xs.recommendation) + '</div>';
+      if (Array.isArray(xs.limitations) && xs.limitations.length) {
+        xsRows += '<div class="exec-summary-row"><strong>Data limitations:</strong> ' + xs.limitations.map(function(l) { return esc(l); }).join('; ') + '</div>';
+      }
+      setHtml('exec-summary', '<div class="exec-summary">'
+        + '<div class="exec-summary-eyebrow">Executive Summary</div>'
+        + (xs.headline ? '<div class="exec-summary-headline">' + esc(xs.headline) + '</div>' : '')
+        + xsRows + '</div>');
+      showEl('exec-summary');
+    }
     setHtml('summary-narrative', esc(sum.narrative || '').replace(/\n/g, '<br>'));
     var kpiTiles = [];
     if (fin.total_investment != null) kpiTiles.push({ label: 'Total Incremental Investment', value: fmtCurrency(num(fin.total_investment)) });
@@ -889,7 +922,14 @@
       // included, and the uplift is where the return actually is. Showing one without the other
       // invites the wrong conclusion (user directive, 2026-07-30).
       if (fin.irr_incl_exit_pct != null) {
-        noteParts.push('IRR (incl. exit) ' + fmt2sig(num(fin.irr_incl_exit_pct)) + '%');
+        // State the client's hurdle alongside their own rate, with an explicit verdict — Bain asked
+        // to screen on 15%, and a bare rate leaves the reader to do the comparison.
+        var inclTxt = 'IRR (incl. exit) ' + fmt2sig(num(fin.irr_incl_exit_pct)) + '%';
+        if (fin.irr_hurdle_pct != null) {
+          inclTxt += ' vs ' + fmt2sig(num(fin.irr_hurdle_pct)) + '% hurdle'
+            + (fin.meets_irr_hurdle === true ? ' — clears' : fin.meets_irr_hurdle === false ? ' — below' : '');
+        }
+        noteParts.push(inclTxt);
       }
       if (fin.npv != null) noteParts.push('NPV ' + fmtCurrency(num(fin.npv)));
       noteParts.push('Implied value uplift = that year’s NOI impact ÷ presumed exit cap.');

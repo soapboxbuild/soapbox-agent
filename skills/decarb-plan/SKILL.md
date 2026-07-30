@@ -1135,6 +1135,12 @@ gate (resume may have skipped P4's check).
      rebates listed in the notes with no corresponding measure economics, Bain/Evergreen
      2026-07-30). Before you call `derive_engagement`, check each listed program against the
      per-measure `total_incentives` you authored in P4 and reconcile every mismatch.
+   - `irr_hurdle_pct`: the client's OWN IRR hurdle as a percent, when they have stated one (Bain: 15).
+     The report prints an explicit pass/fail against the incl.-exit incremental IRR — that is the rate
+     a hurdle screens on an exit-framed plan. Never assume a hurdle; if the client hasn't given one,
+     omit it rather than inventing a benchmark.
+   - `executive_summary`: do NOT pass this on the first derive. It is authored interactively in **P6**,
+     after the report has rendered and the wording has been agreed with the user.
    - `implementation_considerations` (+ optional `implementation_narrative`): the non-financial
      decision factors for the Notes section — solar-model trade-offs (PPA lease vs owned BTM +
      green lease), roof-replacement timing when the PCA flags limited roof life before rooftop
@@ -1179,7 +1185,8 @@ gate (resume may have skipped P4's check).
    charts).** Call `fill_report(template: 'decarb-capital-plan', data: {}, title: "<Asset> —
    Decarbonization Roadmap")`. There is now **ONE** decarb report — the single-recommended-plan
    capital plan. (`template: 'decarb'` also resolves to it, but name the canonical template.)
-   ⛔ **RENDER ONCE.** Do not render until the plan is FINAL — Gate 2 settled, all Audette
+   ⛔ **RENDER ONCE** (P6's agreed-summary re-render is the one sanctioned second render — see P6).
+   Do not render until the plan is FINAL — Gate 2 settled, all Audette
    write-backs complete, and `derive_engagement` run on the final plans. A render is the last step,
    not a progress check. Rendering early forces a re-render after every subsequent Audette edit or
    re-derive: one live run rendered, re-derived, rendered, edited an Audette plan, and rendered
@@ -1292,6 +1299,55 @@ Named blockers, never silent: Audette/verifier/renderer outages halt the phase w
 standing reconnect message; the state file always reflects the last completed step. The
 render gate fails CLOSED. Conflicting data discovered after Gate 1 reopens Gate 1 rather
 than silently updating the baseline.
+
+## P6 — Executive Summary (INTERACTIVE, and the last thing you do)
+
+The client asked for this directly (Bain delivery meeting, 2026-07-30): *"would be great to have
+some executive summary page in the beginning where it's a little easy and punchy — everything we
+just said about, hey, is CRREM aligned on a GHG basis until X, and the misaligned year."*
+
+**This phase runs AFTER the report has rendered, and it is a conversation, not a generation step.**
+An executive summary cannot be written before the numbers exist, and it must not be written *at* the
+user — it is the one part of the deliverable whose wording is a judgement call about what matters,
+so you develop it WITH them.
+
+**Sequence:**
+
+1. **Draft from the derived record.** Read the rendered figures. Every number you use must already
+   appear in the record — the compliance basis and divergence year come from
+   `impact.trajectory` vs `impact.crrem.pathway`, not from eyeballing the chart. Never introduce a
+   figure here that appears nowhere else in the report.
+2. **Say the honest thing.** If the asset does not merit much spend, write that. From the same
+   meeting, asked how blunt to be: *"there's the version where the exec summary says this is not a
+   particularly valuable asset to be spending a lot of time on — you should do this, and everything
+   else should be fine for the rest of the hold period."* The client's answer was to state the facts
+   plainly, including when a bundle falls below their hurdle. A padded list of marginal measures is
+   worse than a one-line "do this and move on".
+3. **Show the user the draft in chat and ask what they'd change.** Use `ask_user_question` for a
+   genuine either/or (framing, emphasis, how blunt); otherwise just present the text and invite
+   edits. **Do not proceed to render on the first draft.**
+4. **Iterate until they approve.** Their wording wins over yours — they know the client relationship.
+5. **Persist it and re-render ONCE.** Pass the agreed text to `derive_engagement` as
+   `executive_summary` `{headline, crrem_status, divergence_year, recommendation, limitations[]}`,
+   then `fill_report` with the SAME `artifact_id`. It lives on the record, so it survives the next
+   regeneration instead of being lost.
+
+**This is the one expected exception to RENDER ONCE.** The P5 render plus this final agreed-summary
+render is two — that is by design. Any render beyond those two means something upstream changed and
+should have been settled before P5.
+
+**Content rules:**
+- `divergence_year` only when there is a real divergence to name. An asset that stays below the
+  pathway for the whole hold has none — omit it rather than asserting a crossing that never happens.
+- `crrem_status` must name the BASIS (energy vs GHG intensity) and the pathway. "CRREM aligned" alone
+  is ambiguous: an asset can sit comfortably below on EUI while approaching the curve on GHGi, which
+  is exactly the case that prompted this request.
+- `limitations` is not boilerplate. Say what a reader would otherwise assume wrongly — e.g. "metered
+  energy data available from 2026 only", or an exit cap still awaiting survey confirmation.
+- If the plan misses the client's `irr_hurdle_pct`, say so in the headline. The report already prints
+  the pass/fail; the summary should not imply a rosier verdict than the cashflow page.
+
+## Failure modes
 
 In practice:
 

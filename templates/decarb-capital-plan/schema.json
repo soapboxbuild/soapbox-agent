@@ -364,6 +364,14 @@
         "irr_incl_exit_pct": {
           "type": "number",
           "description": "Incremental IRR INCLUDING the capitalized exit value uplift, as a percentage. Always report alongside irr_pct (which excludes exit) \u2014 on an exit-framed plan the two can differ in sign."
+        },
+        "irr_hurdle_pct": {
+          "type": "number",
+          "description": "Client's IRR hurdle as a percent."
+        },
+        "meets_irr_hurdle": {
+          "type": "boolean",
+          "description": "Whether the incl.-exit incremental IRR clears the hurdle."
         }
       }
     },
@@ -707,6 +715,31 @@
                 "description": "How this building performs against the program's real, cited target/threshold."
               }
             }
+          }
+        }
+      }
+    },
+    "executive_summary_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Executive summary, authored interactively with the user as the final workflow step. Rendered above the Summary narrative on page 1.",
+      "properties": {
+        "headline": {
+          "type": "string"
+        },
+        "crrem_status": {
+          "type": "string"
+        },
+        "divergence_year": {
+          "type": "number"
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }

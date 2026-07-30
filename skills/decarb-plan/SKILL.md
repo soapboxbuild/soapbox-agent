@@ -771,8 +771,23 @@ do not assemble the Gate-2 roster from an empty or partial register.
    `run_measure_design_analysis`. Read `retrofit__get_retrofit_playbook('baseline-discipline')`
    and **mark all modeled savings as provisional** per that playbook — modeled numbers are not
    measured numbers and are labeled as such through to the report.
-3. **CapEx source — Soapbox Costing.** Before economics, source each screened-in measure's
-   CapEx from the costing skill (Soapbox Costing MCP, `costing.mcp.soapbox.build`):
+3. **CapEx source — Soapbox Costing. ⛔ NON-NEGOTIABLE — no hand-estimated costs, ever.**
+   EVERY measure cost figure — capex, like-for-like, and incremental — MUST come from a
+   `costing__get_measure_capex` / `get_der_economics` call. This applies the FIRST time you touch a
+   measure's cost, including any exploratory/Gate-2 `compute_plan_economics` pass — NOT just at
+   authoring. Hard prohibitions (these are the exact ways this has gone wrong repeatedly):
+   - **NEVER invent a $/SF (or $/ton, $/unit) rate** or a "standard replacement" baseline from your
+     own knowledge and put it in a table or the engine. If a number didn't come from the costing MCP
+     (or a document/quote actually on file), it does not go in.
+   - **NEVER compute `incremental = gross − like_for_like` by subtracting a baseline YOU estimated.**
+     `get_measure_capex` returns `like_for_like` and `incremental` as SEPARATE fields already —
+     read them and use them verbatim. There is nothing for you to subtract and no sign to flip.
+   - If you catch yourself typing a "$/SF", a "standard re-roof at $X", or a "like-for-like of $Y"
+     that you did not get from `get_measure_capex`, STOP and call `get_measure_capex` first.
+   - For a purely-additive premium measure with no costing crosswalk (e.g. an R-50 insulation adder),
+     get the PREMIUM itself from costing (or a real on-file quote) and author it DIRECTLY as
+     `incremental_cost` with `like_for_like_cost = 0` — do not reconstruct a gross+baseline pair.
+   Then, mechanically (source fields from the tool, do not adjust):
    `get_measure_capex` → capex low/base/high + `cost_breakdown` + `contingency_pct` + `escalation`
    + `references`; `estimate_service_upgrade` for any fuel-switch/electrification measure → the
    `electrical_capacity` UNVERIFIED range (never collapse it to a point estimate); `get_der_economics`

@@ -1330,8 +1330,11 @@
       showEl('measure-descriptions-section');
       showEl('measure-descriptions-block');
       setHtml('measure-descriptions-items', measureDescItems.map(function(it) {
-        var stale = it.not_in_recommended_plan
-          ? '<div class="consideration-detail" style="color:var(--bronze-mid);font-style:italic">No longer in the recommended plan — retained for reference.</div>' : '';
+        // The projector can only match a description to a measure BY NAME (Audette custom-plan
+        // measures carry no stable id), so a renamed measure is indistinguishable from a removed
+        // one. Word it as something to check, never as a claim that the measure was dropped.
+        var stale = it.unmatched_measure
+          ? '<div class="consideration-detail" style="color:var(--bronze-mid);font-style:italic">No measure of this name in the recommended plan — confirm this scope is current.</div>' : '';
         return '<div class="consideration-item"><div class="consideration-title">' + esc(it.measure || '') + '</div>'
           + '<div class="consideration-detail">' + esc(it.description || '').replace(/\n/g, '<br>') + '</div>' + stale + '</div>';
       }).join(''));

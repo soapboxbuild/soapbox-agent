@@ -650,9 +650,9 @@
                 "type": "string",
                 "description": "What the work actually is, in the client's terms — equipment, location, dependencies. Not the economics."
               },
-              "not_in_recommended_plan": {
+              "unmatched_measure": {
                 "type": "boolean",
-                "description": "Set by the projector when this description no longer matches any measure in the recommended plan (e.g. the Audette plan was edited after the conversation). Rendered as a label, not dropped."
+                "description": "Set by the projector when no measure of this name is in the recommended plan (e.g. the Audette plan was renamed or the measure dropped after the conversation). Rendered as a \"confirm this scope is current\" note, not dropped."
               }
             }
           }

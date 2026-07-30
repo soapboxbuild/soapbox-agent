@@ -870,6 +870,13 @@
         var irrNote = 'IRR (excl. exit) ' + fmt2sig(irrVal) + '%' + (Math.abs(irrVal) >= 75 ? ' — sparse, unevenly-staged cashflow, treat as directional' : '');
         noteParts.push(irrNote);
       }
+      // BOTH IRRs, always. Excluding exit alone is misleading on an exit-framed deliverable: this
+      // plan reads -3.5% on operating cashflow but +31% once the capitalized exit uplift is
+      // included, and the uplift is where the return actually is. Showing one without the other
+      // invites the wrong conclusion (user directive, 2026-07-30).
+      if (fin.irr_incl_exit_pct != null) {
+        noteParts.push('IRR (incl. exit) ' + fmt2sig(num(fin.irr_incl_exit_pct)) + '%');
+      }
       if (fin.npv != null) noteParts.push('NPV ' + fmtCurrency(num(fin.npv)));
       noteParts.push('Implied value uplift = that year’s NOI impact ÷ presumed exit cap.');
       setText('cashflow-note', noteParts.join(' · '));

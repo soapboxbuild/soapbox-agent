@@ -344,6 +344,10 @@
               "description": "The modeled cashflow series' real final-year cumulative value (negative = still in payback at that point)."
             }
           }
+        },
+        "irr_incl_exit_pct": {
+          "type": "number",
+          "description": "Incremental IRR INCLUDING the capitalized exit value uplift, as a percentage. Always report alongside irr_pct (which excludes exit) \u2014 on an exit-framed plan the two can differ in sign."
         }
       }
     },

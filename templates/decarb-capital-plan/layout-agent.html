@@ -684,11 +684,25 @@
       : (imp.carbon && imp.carbon.baseline_tco2e != null && imp.carbon.post_retrofit_tco2e != null)
         ? (num(imp.carbon.baseline_tco2e) - num(imp.carbon.post_retrofit_tco2e)) / num(imp.carbon.baseline_tco2e)
         : null;
-    if (carbonPctForKpi != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(carbonPctForKpi) });
+    // Emissions headline is MEASURES-ONLY (reduction_pct). Grid decarbonization is reported as its
+    // own tile when the projector supplies it — never rolled into the headline, which previously
+    // produced an implausible combined 97% that also double-counted solar's own avoided emissions.
+    if (carbonPctForKpi != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(carbonPctForKpi), sublabel: 'measures only' });
+    if (imp.carbon && imp.carbon.grid_decarb_reduction_pct != null && num(imp.carbon.grid_decarb_reduction_pct) > 0) {
+      kpiTiles.push({ label: '+ Grid Decarbonization', value: fmtPct(num(imp.carbon.grid_decarb_reduction_pct)), sublabel: 'additional, incl. grid' });
+    }
+    // Energy: BOTH figures. post_retrofit_kwh is efficiency + electrification only (on-site solar
+    // GENERATION is not a consumption cut); net_purchased_kwh is net of that generation.
     var energyPctForKpi = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.post_retrofit_kwh != null && num(imp.energy.baseline_kwh) > 0)
       ? (num(imp.energy.baseline_kwh) - num(imp.energy.post_retrofit_kwh)) / num(imp.energy.baseline_kwh)
       : null;
-    if (energyPctForKpi != null) kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(energyPctForKpi) });
+    if (energyPctForKpi != null) kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(energyPctForKpi), sublabel: 'efficiency measures' });
+    var netPurchPctForKpi = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.net_purchased_kwh != null && num(imp.energy.baseline_kwh) > 0)
+      ? (num(imp.energy.baseline_kwh) - num(imp.energy.net_purchased_kwh)) / num(imp.energy.baseline_kwh)
+      : null;
+    if (netPurchPctForKpi != null && (energyPctForKpi == null || Math.abs(netPurchPctForKpi - energyPctForKpi) > 0.005)) {
+      kpiTiles.push({ label: 'Net Purchased Energy', value: fmtPct(netPurchPctForKpi), sublabel: 'incl. on-site solar' });
+    }
     if (fin.simple_payback_years != null) kpiTiles.push({ label: 'Simple Payback', value: fmt2sig(num(fin.simple_payback_years)) + ' yrs' });
     if (fin.exit_year != null) kpiTiles.push({ label: 'Presumed Exit Year', value: String(fin.exit_year) });
     if (fin.exit_cap != null) kpiTiles.push({ label: 'Presumed Exit Cap', value: fmtPct(num(fin.exit_cap)) });
@@ -951,13 +965,22 @@
       var cBase = num(carbon.baseline_tco2e), cPost = num(carbon.post_retrofit_tco2e);
       var cPct = carbon.reduction_pct != null ? num(carbon.reduction_pct) : (cBase ? (cBase - cPost) / cBase : null);
       var cMax = Math.max(cBase, cPost) || 1;
+      // Headline is MEASURES-ONLY. When the projector also supplies the grid-decarbonized figure,
+      // it renders as its OWN labeled bar underneath — the two contributions stay visibly
+      // separate rather than compounding into one inflated headline (Bain/Evergreen 2026-07-30).
+      var cCombined = carbon.combined_post_retrofit_tco2e != null ? num(carbon.combined_post_retrofit_tco2e) : null;
+      var cMaxAll = Math.max(cBase, cPost, cCombined != null ? cCombined : 0) || 1;
       setHtml('impact-carbon',
         '<div class="impact-metric-title">Carbon (tCO2e/yr)</div>'
-        + (cPct != null ? '<div class="impact-reduction-pct">' + fmtPct(cPct) + '</div><div class="exhibit-note">10-year reduction, incl. grid decarbonization</div>' : '')
+        + (cPct != null ? '<div class="impact-reduction-pct">' + fmtPct(cPct) + '</div><div class="exhibit-note">10-year reduction from measures only</div>' : '')
         + '<div style="margin-top:12px">'
-        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((cBase / cMax) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cBase) + '</div></div>'
-        + '<div style="display:flex;align-items:center;gap:8px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Post-retrofit (10-yr)</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((cPost / cMax) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cPost) + '</div></div>'
-        + '</div>');
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((cBase / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cBase) + '</div></div>'
+        + '<div style="display:flex;align-items:center;gap:8px;font-size:12px' + (cCombined != null ? ';margin-bottom:6px' : '') + '"><div style="width:90px;flex-shrink:0;color:#707477">After measures</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((cPost / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cPost) + '</div></div>'
+        + (cCombined != null
+            ? '<div style="display:flex;align-items:center;gap:8px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">+ grid decarb.</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);opacity:0.55;width:' + ((cCombined / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cCombined) + '</div></div>'
+            : '')
+        + '</div>'
+        + (cCombined != null ? '<div class="exhibit-note">Grid decarbonization (Cambium projection) is shown separately — it is a projection of the regional grid, not an action taken at this asset.</div>' : ''));
     }
     var energy = imp.energy || {};
     if (energy.baseline_kwh != null && energy.post_retrofit_kwh != null) {
@@ -965,16 +988,30 @@
       var eMax = Math.max(eBase, ePost) || 1;
       var eBaseF = formatEnergyKwh(eBase), ePostF = formatEnergyKwh(ePost);
       var ePct = eBase ? (eBase - ePost) / eBase : null;
+      // "Show both": the headline is the building's own CONSUMPTION reduction (efficiency +
+      // electrification). On-site solar GENERATION doesn't reduce consumption — it offsets
+      // purchased energy — so it gets its own bar/EUI figure instead of inflating the headline
+      // (it was driving a 75% "site energy reduction" and EUI 100->26; Bain/Evergreen 2026-07-30).
+      var eNet = energy.net_purchased_kwh != null ? num(energy.net_purchased_kwh) : null;
+      var showNet = eNet != null && Math.abs(eNet - ePost) > 1;
+      var eMaxAll = Math.max(eBase, ePost, eNet != null ? eNet : 0) || 1;
+      var eNetF = eNet != null ? formatEnergyKwh(eNet) : null;
       var euiLine = (energy.eui_baseline != null && energy.eui_target != null)
-        ? '<div class="exhibit-note">EUI: ' + fmt2sig(num(energy.eui_baseline)) + ' → ' + fmt2sig(num(energy.eui_target)) + ' kWh/m²/yr</div>' : '';
+        ? '<div class="exhibit-note">EUI: ' + fmt2sig(num(energy.eui_baseline)) + ' → ' + fmt2sig(num(energy.eui_target)) + ' kWh/m²/yr'
+          + (showNet && energy.net_purchased_eui != null ? ' · net of on-site solar ' + fmt2sig(num(energy.net_purchased_eui)) + ' kWh/m²/yr' : '')
+          + '</div>' : '';
       setHtml('impact-energy',
         '<div class="impact-metric-title">Energy (site)</div>'
-        + (ePct != null ? '<div class="impact-reduction-pct">' + fmtPct(ePct) + '</div><div class="exhibit-note">10-year reduction, measures only</div>' : '')
+        + (ePct != null ? '<div class="impact-reduction-pct">' + fmtPct(ePct) + '</div><div class="exhibit-note">10-year consumption reduction, efficiency measures only</div>' : '')
         + '<div style="margin-top:12px">'
-        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((eBase / eMax) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + eBaseF.value + ' ' + eBaseF.unit + '</div></div>'
-        + '<div style="display:flex;align-items:center;gap:8px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Post-retrofit (10-yr)</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((ePost / eMax) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + ePostF.value + ' ' + ePostF.unit + '</div></div>'
+        + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((eBase / eMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + eBaseF.value + ' ' + eBaseF.unit + '</div></div>'
+        + '<div style="display:flex;align-items:center;gap:8px;font-size:12px' + (showNet ? ';margin-bottom:6px' : '') + '"><div style="width:90px;flex-shrink:0;color:#707477">After measures</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((ePost / eMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + ePostF.value + ' ' + ePostF.unit + '</div></div>'
+        + (showNet
+            ? '<div style="display:flex;align-items:center;gap:8px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Net purchased</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);opacity:0.55;width:' + ((eNet / eMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + eNetF.value + ' ' + eNetF.unit + '</div></div>'
+            : '')
         + '</div>'
-        + euiLine);
+        + euiLine
+        + (showNet ? '<div class="exhibit-note">Net purchased is after on-site solar generation offsets grid draw; the array does not reduce the building\'s own consumption.</div>' : ''));
     }
 
     /* Shared axis-chart builder — gridlines, y-axis tick labels, x-axis year labels,

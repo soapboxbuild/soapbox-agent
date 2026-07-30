@@ -1130,7 +1130,7 @@ ship with the FIRST render, so this phase adds **no** extra render.
    either/ors; otherwise present the set and invite edits.
 4. **Iterate until they approve. Their wording wins.**
 5. **Carry them into P5** — pass the agreed set to `derive_engagement` as `measure_descriptions`
-   (see the P5 arg list). Include `measure_id` for each one.
+   (see the P5 arg list), using each measure's exact name from the plan.
 
 **Content rules:**
 - **No boilerplate.** A description that would read identically on any building is worse than none —
@@ -1138,10 +1138,10 @@ ship with the FIRST render, so this phase adds **no** extra render.
   description, say so to the user and let them supply it; don't fill the space.
 - **One per recommended measure**, ordered to match the measures table.
 - Alternatives (measures in the non-recommended plan) do NOT get descriptions — they are not the ask.
-- If a measure changes in Audette after this conversation, come back and update its description. The
-  report labels a description that no longer matches any measure in the recommended plan rather than
-  presenting it as current scope — that label appearing in a delivered report means this step was
-  skipped, not that the label did its job.
+- If a measure changes in Audette after this conversation — **including a rename** — come back and
+  update its description. Matching is by name, so a rename reads exactly like a removal: the report
+  flags any description with no matching measure name as scope to confirm. That flag appearing in a
+  delivered report means this step was skipped, not that the flag did its job.
 
 Set `phase: "P5"` and save.
 
@@ -1201,11 +1201,14 @@ gate (resume may have skipped P4's check).
      inventing a benchmark. A live run modelled 12% against a client whose stated screen was 15% and
      the client noticed in the delivery meeting ("a little low for us usually") — the locked kickoff
      value is the only source.
-   - `measure_descriptions`: the set agreed with the user in **P4b** — `[{measure, measure_id,
-     description}]`, one per recommended measure, ordered to match the measures table. Unlike
-     `executive_summary` this IS passed on the first derive, so Section 05 ships with the first
-     render. Always include `measure_id`: keyed on name alone, a description is orphaned the moment
-     the Audette plan is edited, and the report will label it as no longer matching the plan.
+   - `measure_descriptions`: the set agreed with the user in **P4b** — `[{measure, description}]`,
+     one per recommended measure, ordered to match the measures table. Unlike `executive_summary`
+     this IS passed on the first derive, so Section 05 ships with the first render. `measure` must be
+     the measure name EXACTLY as it appears in the plan: descriptions are matched back by NAME
+     (Audette's custom-plan builder gives every hand-authored measure the id `generic`, so there is
+     no stable per-measure id to key on — `measure_id` is accepted but matches nothing today). Rename
+     a measure in Audette and its description no longer matches; the report then flags that scope to
+     be confirmed rather than presenting it as current.
    - `executive_summary`: do NOT pass this on the first derive. It is authored interactively in **P6**,
      after the report has rendered and the wording has been agreed with the user.
    - `implementation_considerations` (+ optional `implementation_narrative`): the non-financial

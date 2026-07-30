@@ -739,14 +739,15 @@
         // 2026-07-30). Status now 11% (fits "Recommended" on one line) and Year 6%; the 10 numeric
         // columns absorb the difference at 6.6% each.
         + '<colgroup>'
-        + '<col style="width:17%"><col style="width:11%"><col style="width:6%">'
-        + '<col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%">'
-        + '<col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%">'
+        + '<col style="width:15%"><col style="width:9%"><col style="width:5%">'
+        + '<col style="width:5.9%"><col style="width:5.9%"><col style="width:5.9%"><col style="width:5.9%">'
+        + '<col style="width:5.9%"><col style="width:5.9%"><col style="width:5.9%"><col style="width:5.9%"><col style="width:5.9%">'
+        + '<col style="width:5.9%"><col style="width:6.5%"><col style="width:5.9%">'
         + '</colgroup>'
         + '<thead><tr>'
         + '<th>Measure</th><th>Status</th><th class="num">Year</th>'
         + '<th class="num">Like-for-Like Cost</th><th class="num">Incremental Cost</th><th class="num">Incentives</th><th class="num">Net Total Cost</th>'
-        + '<th class="num">Energy Savings (MWh)</th><th class="num">Emissions Savings (tCO2e)</th><th class="num">Landlord Utility Savings</th><th class="num">Tenant Utility Savings</th><th class="num">Ancillary Revenue</th><th class="num">Return on Cost</th>'
+        + '<th class="num">Energy Savings (MWh)</th><th class="num">Emissions Savings (tCO2e)</th><th class="num">Landlord Utility Savings</th><th class="num">Tenant Utility Savings</th><th class="num">Ancillary Revenue</th><th class="num">Payback (yrs)</th><th class="num">Abatement Cost ($/tCO2e)</th><th class="num">Return on Cost</th>'
         + '</tr></thead><tbody>';
       items.forEach(function(m) {
         var lfl = num(m.like_for_like_cost), incr = num(m.incremental_cost);
@@ -774,6 +775,13 @@
           + '<td class="num">' + (ll != null ? fmtCurrency(ll) : '—') + '</td>'
           + '<td class="num">' + (ten != null ? fmtCurrency(ten) : '—') + '</td>'
           + '<td class="num">' + (anc ? fmtCurrency(anc) : '—') + '</td>'
+          // Payback flagged against the client's simple 5-year screen so it reads at a glance.
+          + '<td class="num">' + (m.simple_payback_years != null
+              ? (m.meets_five_year_screen ? '<strong>' + fmt2sig(num(m.simple_payback_years)) + ' \u2713</strong>' : fmt2sig(num(m.simple_payback_years)))
+              : '—') + '</td>'
+          // Net MAC over the hold. NEGATIVE = abates and pays for itself — the informative half
+          // of the sign convention, so never clamp it at zero.
+          + '<td class="num">' + (m.marginal_abatement_cost != null ? fmtCurrency(num(m.marginal_abatement_cost)) : '—') + '</td>'
           + '<td class="num">' + (roc != null ? fmtPct(roc) : '—') + '</td>'
           + '</tr>';
       });
@@ -796,6 +804,9 @@
           + '<td class="num">' + fmtCurrency(TLL) + '</td>'
           + '<td class="num">' + fmtCurrency(TTen) + '</td>'
           + '<td class="num">' + fmtCurrency(TAnc) + '</td>'
+          // Blank on purpose: payback and MAC are per-measure decisions, and a bundle average
+          // would reintroduce exactly the aggregate-only reading the client asked us to drop.
+          + '<td class="num">—</td><td class="num">—</td>'
           + '<td class="num">' + (TRoc != null ? fmtPct(TRoc) : '—') + '</td>'
           + '</tr>';
       }

@@ -169,6 +169,22 @@
               "status": {
                 "type": "string",
                 "description": "Measure status shown in the roadmap's Status column. Defaults to 'Recommended' when omitted."
+              },
+              "simple_payback_years": {
+                "type": "number",
+                "description": "Simple payback in years on the LANDLORD-side benefit only (owner utility savings + ancillary revenue). Omitted when there is no owner-side benefit."
+              },
+              "meets_five_year_screen": {
+                "type": "boolean",
+                "description": "Whether the measure clears the client's simple 5-year payback screen."
+              },
+              "marginal_abatement_cost": {
+                "type": "number",
+                "description": "Net marginal abatement cost in $/tCO2e over the hold to exit: (net capex - owner benefit x hold years) / (annual tCO2e x hold years). NEGATIVE means the measure pays for itself while abating."
+              },
+              "abatement_tco2e_to_exit": {
+                "type": "number",
+                "description": "Total tCO2e abated between install year and exit year."
               }
             }
           }

@@ -492,13 +492,20 @@ Gather every source; record everything in state as you go.
    in `state.documents` as `{name, type: audit|pca|utility|other, storage_path, read}` and
    mark `read: true` once ingested.
    **Capture the property's STREET ADDRESS from the PCA** (the cover/property-description page
-   carries it; the ALTA survey and appraisal are fallbacks) into `state.property.address`, and pass
-   it through to the report — it prints on the cover and in every interior page header. Assets
-   onboarded from a bulk import routinely have a NULL `street_address`, which is why the cover
-   rendered a bare "—" (Bain/Evergreen 2026-07-30). Take it from the document, verbatim. **Never
-   reverse-geocode it from lat/lon and never infer it from the asset name** — an approximate
-   address on a client deliverable is the same class of error as a fabricated figure. If no
-   document states it, leave it blank and note the gap.
+   carries it; the ALTA survey and appraisal are fallbacks). Take it from the document, verbatim.
+   **Never reverse-geocode it from lat/lon and never infer it from the asset name** — an
+   approximate address on a client deliverable is the same class of error as a fabricated figure.
+   ⚠️ **Where it has to land:** the report's address comes from the **Soapbox asset row**
+   (`street_address` + `city`/`state_province`), which `derive_engagement` reads server-side and
+   stamps as `propertyMeta.address`. Recording it only in `state` does NOT reach the report — that
+   mistake left the cover showing a bare "—" even though the agent had correctly read
+   "101 Medical Parkway, Lakeway, Texas" off the PCA (Bain/Evergreen 2026-07-30). Assets
+   onboarded from a bulk import routinely have a NULL `street_address`.
+   **There is currently NO agent tool that writes these columns** (`update_asset_metadata` only
+   writes the `metadata` JSONB, not `street_address`). So when the asset row has no address:
+   record what the document says, and **tell the user the exact value to save on the asset** so the
+   cover renders — do not silently ship a report with a blank address, and do not pretend you set
+   it. If no document states an address, say so and leave it blank.
 2. **Retrofit register + findings ledger:** `retrofit__get_measure_state` for the asset's
    existing measure register; load existing open findings via `verifier__list_findings(asset_id)`
    — capture `finding_ids`; the gas-split style pre-existing findings must be adjudicated at

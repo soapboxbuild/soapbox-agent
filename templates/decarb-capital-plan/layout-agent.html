@@ -1153,13 +1153,26 @@
       var crremLabel = 'CRREM pathway' + (imp.crrem && imp.crrem.meta && imp.crrem.meta.region ? ' (' + imp.crrem.meta.region + ')' : '');
 
       var euiSeries = [{ label: 'EUI (kWh/m²/yr)', color: COLOR_S2, points: traj.map(function(t) { return { x: t.year, y: num(t.eui_kwh_m2) }; }) }];
+      // Net purchased EUI — what the building actually buys after on-site generation offsets grid
+      // draw. Without this the array is invisible on the energy exhibit (the EUI line is
+      // consumption-only by design), which reads as "the solar does nothing for energy".
+      // Projector emits this only when generation actually moves the number.
+      if (traj.some(function(t) { return num(t.net_purchased_eui_kwh_m2) != null; })) {
+        euiSeries.push({ label: 'Net purchased (after on-site solar)', color: COLOR_POS, dash: '2,3',
+          points: traj.map(function(t) { return { x: t.year, y: num(t.net_purchased_eui_kwh_m2) }; }) });
+      }
+      // Hold the pathway separately: stranding is EUI vs the COMPLIANCE PATHWAY, and indexing
+      // euiSeries[1] broke that the moment a second data series was inserted ahead of it — it then
+      // compared EUI against net-purchased and drew a phantom "Stranding 2027" on a building that
+      // never crosses the pathway at all (caught by screenshotting, 2026-07-30).
+      var euiPathwayPoints = null;
       if (crremPath && crremPath.length && crremPath.some(function(p) { return p.eui_kwh_m2yr != null; })) {
-        euiSeries.push({ label: crremLabel, color: COLOR_NET, dash: '5,4', dots: false,
-          points: crremPath.filter(function(p) { return num(p.eui_kwh_m2yr) != null; }).map(function(p) { return { x: p.year, y: num(p.eui_kwh_m2yr) }; }) });
+        euiPathwayPoints = crremPath.filter(function(p) { return num(p.eui_kwh_m2yr) != null; }).map(function(p) { return { x: p.year, y: num(p.eui_kwh_m2yr) }; });
+        euiSeries.push({ label: crremLabel, color: COLOR_NET, dash: '5,4', dots: false, points: euiPathwayPoints });
       }
       if (euiSeries[0].points.some(function(p) { return p.y != null; })) {
         showEl('exhibit-eui');
-        var euiStranding = euiSeries[1] ? computeStrandingYear(euiSeries[0].points, euiSeries[1].points) : null;
+        var euiStranding = euiPathwayPoints ? computeStrandingYear(euiSeries[0].points, euiPathwayPoints) : null;
         buildAxisChart('eui-chart-block', euiSeries, { years: tYears, yAxisLabel: 'kWh/m²/yr', H: 190, zeroBased: true, strandingYear: euiStranding, thresholds: bpsThresholds.filter(function(t) { return t.metric === 'eui'; }) });
       }
 

@@ -865,6 +865,17 @@ do not assemble the Gate-2 roster from an empty or partial register.
        DER incentives), and `brave-search` (DSIRE, utility program pages) as a labeled fallback.
    - **Revenue** — grid services / demand-response, SRECs/RECs, and net-metering / VNM export
      credits (solar VNM already enters at the 80% owner capture above).
+   - **⚠️ Income Audette can't model — pass via `derive_engagement`'s `ancillary_income[]`, NOT a
+     measure.** An **FTM solar ROOF-LEASE** payment (landlord rent; the array is grid-side, so the
+     building's energy/carbon are UNCHANGED and Audette models it as $0) and a **BTM-solar PPA
+     MARGIN** (the landlord sells power to the tenant — the owner earns the margin, NOT the gross
+     energy value) have no Audette measure representation. Do NOT force them in by inflating a
+     measure's `owner_utility_savings` (that mis-capitalizes into a huge fake exit uplift and the
+     capitalization guard will BLOCK the derive), and do NOT smuggle them through a $0 measure's
+     `lifetime_revenue`. Pass them as `derive_engagement` `ancillary_income: [{plan, label,
+     annual_amount, start_year?, years?}]` — the engine adds each straight to the matching plan's
+     cashflow as 100%-owner ancillary revenue. Every stream needs a real basis (lease LOI / PPA term
+     sheet / market comp).
    Write them into the measure's **Audette economics**: incentives REDUCE net CapEx — record
    **gross capex, incentive, and net capex separately**, each with its program citation as
    provenance; recurring revenue enters the measure cashflow. Guardrails (inherit the sanity

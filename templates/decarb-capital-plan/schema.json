@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Decarbonization Capital Plan Report Data",
-  "description": "Data contract for the decarb-capital-plan template \u2014 a fork of the decarb-plan report for a single already-decided measures package (no multi-option/plan-A-vs-B analysis). Five sections: Summary, Measures, Financial, and Impact are populated from the engine-derived engagement record; Implementation Considerations is optional and only appears when supplied.",
+  "description": "Data contract for the decarb-capital-plan template — a fork of the decarb-plan report for a single already-decided measures package (no multi-option/plan-A-vs-B analysis). Five sections: Summary, Measures, Financial, and Impact are populated from the engine-derived engagement record; Implementation Considerations is optional and only appears when supplied.",
   "type": "object",
   "required": [
     "property",
@@ -14,7 +14,7 @@
   "properties": {
     "property": {
       "type": "object",
-      "description": "Core property identification. Required \u2014 an omitted or empty block renders literal placeholder text on the cover (known failure mode, see decarb template history). Renders the cover header and meta bar.",
+      "description": "Core property identification. Required — an omitted or empty block renders literal placeholder text on the cover (known failure mode, see decarb template history). Renders the cover header and meta bar.",
       "required": [
         "name",
         "address",
@@ -57,7 +57,7 @@
         },
         "gfa_m2": {
           "type": "number",
-          "description": "Gross floor area in m\u00b2. Optional; supports kWh\u00b7m\u207b\u00b2 derivations.",
+          "description": "Gross floor area in m². Optional; supports kWh·m⁻² derivations.",
           "minimum": 1
         },
         "year_built": {
@@ -74,7 +74,7 @@
     },
     "prepared_for": {
       "type": "string",
-      "description": "Client the plan is prepared for \u2014 renders on the cover eyebrow and as the running-header brand on every interior page (no client name is hardcoded in the template)."
+      "description": "Client the plan is prepared for — renders on the cover eyebrow and as the running-header brand on every interior page (no client name is hardcoded in the template)."
     },
     "report_date": {
       "type": "string",
@@ -83,7 +83,7 @@
     },
     "summary": {
       "type": "object",
-      "description": "Section 1 \u2014 Summary. Narrative overview.",
+      "description": "Section 1 — Summary. Narrative overview.",
       "required": [
         "narrative"
       ],
@@ -97,7 +97,7 @@
     },
     "measures": {
       "type": "object",
-      "description": "Section 2 \u2014 Measures. The decided measures package (already selected \u2014 no option comparison).",
+      "description": "Section 2 — Measures. The decided measures package (already selected — no option comparison).",
       "required": [
         "items"
       ],
@@ -105,7 +105,7 @@
       "properties": {
         "items": {
           "type": "array",
-          "description": "Each decided measure. Engine-sourced financial/emissions fields \u2014 never LLM-computed.",
+          "description": "Each decided measure. Engine-sourced financial/emissions fields — never LLM-computed.",
           "items": {
             "type": "object",
             "required": [
@@ -148,7 +148,7 @@
               },
               "energy_savings_kwh": {
                 "type": "number",
-                "description": "Annual electric energy savings in kWh/yr \u2014 Audette's own real per-measure figure (energy_consumption_savings_electricity), never an engineering estimate. Omit rather than estimate when Audette has no figure for this measure."
+                "description": "Annual electric energy savings in kWh/yr — Audette's own real per-measure figure (energy_consumption_savings_electricity), never an engineering estimate. Omit rather than estimate when Audette has no figure for this measure."
               },
               "emissions_savings_tco2e": {
                 "type": "number",
@@ -193,7 +193,7 @@
     },
     "measures_considered": {
       "type": "array",
-      "description": "Measures analyzed during the engagement but NOT recommended into the package. Rendered at the bottom of the Section 2 roadmap table in muted styling with status 'Analyzed \u2014 not recommended'; absent fields render as em-dashes, never estimated.",
+      "description": "Measures analyzed during the engagement but NOT recommended into the package. Rendered at the bottom of the Section 2 roadmap table in muted styling with status 'Analyzed — not recommended'; absent fields render as em-dashes, never estimated.",
       "items": {
         "type": "object",
         "required": [
@@ -223,7 +223,7 @@
     },
     "financial": {
       "type": "object",
-      "description": "Section 3 \u2014 Financial. Single-package investment summary (no A/B plan comparison).",
+      "description": "Section 3 — Financial. Single-package investment summary (no A/B plan comparison).",
       "required": [
         "total_investment",
         "net_investment"
@@ -270,12 +270,12 @@
         },
         "bridge": {
           "type": "object",
-          "description": "Value Creation Bridge (Exhibit 3.1) \u2014 cumulative operating flows over the hold plus the capitalized exit value uplift at the presumed exit cap. Preferred over the legacy operating-basis 'waterfall' shape; when present it replaces it. All figures engine-computed \u2014 omit entirely rather than estimate any field.",
+          "description": "Value Creation Bridge (Exhibit 3.1) — cumulative operating flows over the hold plus the capitalized exit value uplift at the presumed exit cap. Preferred over the legacy operating-basis 'waterfall' shape; when present it replaces it. All figures engine-computed — omit entirely rather than estimate any field.",
           "additionalProperties": false,
           "properties": {
             "incremental_capex": {
               "type": "number",
-              "description": "Negative \u2014 capital outlay."
+              "description": "Negative — capital outlay."
             },
             "cumulative_utility_savings": {
               "type": "number",
@@ -300,7 +300,7 @@
         },
         "cashflow": {
           "type": "array",
-          "description": "Optional year-by-year cashflow series \u2014 powers both the cumulative-line chart and the detailed Annual Cashflow table (borrowed from decarb's own collapsible per-plan table).",
+          "description": "Optional year-by-year cashflow series — powers both the cumulative-line chart and the detailed Annual Cashflow table (borrowed from decarb's own collapsible per-plan table).",
           "items": {
             "type": "object",
             "required": [
@@ -326,7 +326,7 @@
               },
               "utility_savings_usd": {
                 "type": "number",
-                "description": "This year's recurring operating utility savings, USD \u2014 the real, engine-computed annual figure, not capitalized to any exit."
+                "description": "This year's recurring operating utility savings, USD — the real, engine-computed annual figure, not capitalized to any exit."
               },
               "fine_avoidance_usd": {
                 "type": "number",
@@ -334,14 +334,14 @@
               },
               "value_uplift_usd": {
                 "type": "number",
-                "description": "Implied value uplift = this year's NOI impact \u00f7 presumed exit cap, USD. Omit rather than estimate; renders as \u2014 when absent."
+                "description": "Implied value uplift = this year's NOI impact ÷ presumed exit cap, USD. Omit rather than estimate; renders as — when absent."
               }
             }
           }
         },
         "waterfall": {
           "type": "object",
-          "description": "LEGACY operating cost/savings bridge shape \u2014 superseded by financial.bridge (which, when present, is rendered instead). This shape models no disposition \u2014 it must NEVER contain an exit-capitalized figure (no exit_value_uplift / capitalized_utility_savings / net_value_creation). incentives and incremental_capex are plan-level, exit-free sums; cumulative_utility_savings is REALIZED savings summed across the modeled cashflow years (no capitalization); net_position is the real final-year cumulative cash position from that same series. Omit entirely rather than estimate any field.",
+          "description": "LEGACY operating cost/savings bridge shape — superseded by financial.bridge (which, when present, is rendered instead). This shape models no disposition — it must NEVER contain an exit-capitalized figure (no exit_value_uplift / capitalized_utility_savings / net_value_creation). incentives and incremental_capex are plan-level, exit-free sums; cumulative_utility_savings is REALIZED savings summed across the modeled cashflow years (no capitalization); net_position is the real final-year cumulative cash position from that same series. Omit entirely rather than estimate any field.",
           "additionalProperties": false,
           "properties": {
             "incentives": {
@@ -349,11 +349,11 @@
             },
             "incremental_capex": {
               "type": "number",
-              "description": "Negative \u2014 capital outlay."
+              "description": "Negative — capital outlay."
             },
             "cumulative_utility_savings": {
               "type": "number",
-              "description": "Sum of realized annual utility savings across the modeled cashflow years \u2014 not capitalized to any exit event."
+              "description": "Sum of realized annual utility savings across the modeled cashflow years — not capitalized to any exit event."
             },
             "net_position": {
               "type": "number",
@@ -363,7 +363,7 @@
         },
         "irr_incl_exit_pct": {
           "type": "number",
-          "description": "Incremental IRR INCLUDING the capitalized exit value uplift, as a percentage. Always report alongside irr_pct (which excludes exit) \u2014 on an exit-framed plan the two can differ in sign."
+          "description": "Incremental IRR INCLUDING the capitalized exit value uplift, as a percentage. Always report alongside irr_pct (which excludes exit) — on an exit-framed plan the two can differ in sign."
         },
         "irr_hurdle_pct": {
           "type": "number",
@@ -377,7 +377,7 @@
     },
     "impact": {
       "type": "object",
-      "description": "Section 4 \u2014 Impact (carbon, energy, regulatory).",
+      "description": "Section 4 — Impact (carbon, energy, regulatory).",
       "required": [
         "carbon",
         "energy"
@@ -443,19 +443,19 @@
             },
             "post_retrofit_kwh": {
               "type": "number",
-              "description": "Projected post-retrofit annual energy use, kWh/yr. Approximated by applying the engine's overall emissions_reduction_pct ratio to the kWh baseline (no independently modeled per-fuel kWh projection exists yet) \u2014 not an exact figure."
+              "description": "Projected post-retrofit annual energy use, kWh/yr. Approximated by applying the engine's overall emissions_reduction_pct ratio to the kWh baseline (no independently modeled per-fuel kWh projection exists yet) — not an exact figure."
             },
             "eui_baseline": {
               "type": "number",
-              "description": "Baseline EUI, kWh/m\u00b2/yr, if available."
+              "description": "Baseline EUI, kWh/m²/yr, if available."
             },
             "eui_target": {
               "type": "number",
-              "description": "Post-retrofit EUI, kWh/m\u00b2/yr, if available."
+              "description": "Post-retrofit EUI, kWh/m²/yr, if available."
             },
             "net_purchased_kwh": {
               "type": "number",
-              "description": "Post-retrofit purchased energy net of on-site generation (kWh/yr). Includes solar PV offset \u2014 the second, generation-inclusive figure."
+              "description": "Post-retrofit purchased energy net of on-site generation (kWh/yr). Includes solar PV offset — the second, generation-inclusive figure."
             },
             "net_purchased_eui": {
               "type": "number",
@@ -499,7 +499,7 @@
         },
         "trajectory": {
           "type": "array",
-          "description": "Optional year-by-year EUI and GHG intensity series (engine-derived from aggregateTrajectory; EUI is a ratio-derived projection off the same reduction curve \u2014 see projector notes). Powers the EUI/GHGi vs. compliance-threshold exhibit. Omit entirely if the engine trajectory isn't available rather than estimate one.",
+          "description": "Optional year-by-year EUI and GHG intensity series (engine-derived from aggregateTrajectory; EUI is a ratio-derived projection off the same reduction curve — see projector notes). Powers the EUI/GHGi vs. compliance-threshold exhibit. Omit entirely if the engine trajectory isn't available rather than estimate one.",
           "items": {
             "type": "object",
             "required": [
@@ -512,15 +512,15 @@
               },
               "eui_kwh_m2": {
                 "type": "number",
-                "description": "Projected EUI, kWh/m\u00b2/yr."
+                "description": "Projected EUI, kWh/m²/yr."
               },
               "ghgi_kgco2_m2": {
                 "type": "number",
-                "description": "Projected (planned-package) GHG intensity, kgCO2e/m\u00b2/yr."
+                "description": "Projected (planned-package) GHG intensity, kgCO2e/m²/yr."
               },
               "ghgi_bau_kgco2_m2": {
                 "type": "number",
-                "description": "Business-as-usual GHG intensity, kgCO2e/m\u00b2/yr, for reference."
+                "description": "Business-as-usual GHG intensity, kgCO2e/m²/yr, for reference."
               },
               "net_purchased_eui_kwh_m2": {
                 "type": "number",
@@ -531,7 +531,7 @@
         },
         "bps_thresholds": {
           "type": "array",
-          "description": "Optional building-performance-standard threshold lines drawn on the EUI (metric 'eui') and GHGi (metric 'ghgi') trajectory charts as horizontal dashed limits with a right-aligned label. Values must be in the chart's own unit (EUI: kWh/m\u00b2/yr; GHGi: kgCO2e/m\u00b2/yr) \u2014 never converted at render time. Real, cited thresholds only \u2014 omit rather than estimate.",
+          "description": "Optional building-performance-standard threshold lines drawn on the EUI (metric 'eui') and GHGi (metric 'ghgi') trajectory charts as horizontal dashed limits with a right-aligned label. Values must be in the chart's own unit (EUI: kWh/m²/yr; GHGi: kgCO2e/m²/yr) — never converted at render time. Real, cited thresholds only — omit rather than estimate.",
           "items": {
             "type": "object",
             "required": [
@@ -566,7 +566,7 @@
         },
         "crrem": {
           "type": "object",
-          "description": "Real CRREM compliance pathway, only present when the engagement was derived with a crrem_region. NEVER hand-drawn or estimated \u2014 must come from the engine's fetched pathway verbatim, or be omitted.",
+          "description": "Real CRREM compliance pathway, only present when the engagement was derived with a crrem_region. NEVER hand-drawn or estimated — must come from the engine's fetched pathway verbatim, or be omitted.",
           "additionalProperties": false,
           "properties": {
             "pathway": {
@@ -587,7 +587,7 @@
                   },
                   "eui_kwh_m2yr": {
                     "type": "number",
-                    "description": "CRREM's own real EUI-native target for this year, if the fetched pathway includes one. Never derived from the carbon figure via a grid factor \u2014 omit rather than approximate."
+                    "description": "CRREM's own real EUI-native target for this year, if the fetched pathway includes one. Never derived from the carbon figure via a grid factor — omit rather than approximate."
                   }
                 }
               }
@@ -626,9 +626,42 @@
         }
       }
     },
+    "measure_descriptions": {
+      "type": "object",
+      "description": "Section 5 — Measure Descriptions. The plain-language scope of each recommended measure, developed with the client after the bundle and strategy are agreed and BEFORE the report is produced. Server-projected from the engagement record; omit entirely when there are none (the section is then hidden).",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "description": "One entry per recommended measure, ordered to match the measures table.",
+          "items": {
+            "type": "object",
+            "required": [
+              "measure",
+              "description"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "measure": {
+                "type": "string",
+                "description": "Measure name as it appears in the measures table."
+              },
+              "description": {
+                "type": "string",
+                "description": "What the work actually is, in the client's terms — equipment, location, dependencies. Not the economics."
+              },
+              "not_in_recommended_plan": {
+                "type": "boolean",
+                "description": "Set by the projector when this description no longer matches any measure in the recommended plan (e.g. the Audette plan was edited after the conversation). Rendered as a label, not dropped."
+              }
+            }
+          }
+        }
+      }
+    },
     "implementation": {
       "type": "object",
-      "description": "Section 5 \u2014 Implementation Considerations.",
+      "description": "Section 6 — Implementation Considerations.",
       "additionalProperties": false,
       "properties": {
         "narrative": {
@@ -659,7 +692,7 @@
     },
     "incentive_programs": {
       "type": "object",
-      "description": "Section 5 \u2014 Incentive Programs. Real, sourced incentive/rebate/financing research applicable to this asset (from the incentive research agent, when available). Omit entirely rather than hand-estimate a program.",
+      "description": "Section 6 — Incentive Programs. Real, sourced incentive/rebate/financing research applicable to this asset (from the incentive research agent, when available). Omit entirely rather than hand-estimate a program.",
       "additionalProperties": false,
       "properties": {
         "summary": {
@@ -690,7 +723,7 @@
     },
     "compliance_notes": {
       "type": "object",
-      "description": "Section 5 \u2014 Compliance Notes. How this building performs against real building-performance-standard/compliance programs applicable to its jurisdiction (e.g. WA Clean Buildings Act, Seattle BEPS) \u2014 real, sourced status only. Omit entirely rather than fabricate a compliance status or target; this section is intentionally unpopulated until a real, cited compliance-rules data source exists (mirroring the rigor of CRREM region / incentive-rules.json).",
+      "description": "Section 6 — Compliance Notes. How this building performs against real building-performance-standard/compliance programs applicable to its jurisdiction (e.g. WA Clean Buildings Act, Seattle BEPS) — real, sourced status only. Omit entirely rather than fabricate a compliance status or target; this section is intentionally unpopulated until a real, cited compliance-rules data source exists (mirroring the rigor of CRREM region / incentive-rules.json).",
       "additionalProperties": false,
       "properties": {
         "summary": {

@@ -364,7 +364,8 @@ in `state.helper`). It is a rendered *view of state* — regenerate and re-save 
 checkpoint** (P2 foundation, P3 measures, P4 write-back). Fill the skeleton at
 `skills/helper-files/references/skeleton.html`; the decarb **phase/gate checklist sections** are
 P0 Kickoff · P1 Evidence · P2 Model Foundation (2A model · 2B baseline+calibration · 2C split ·
-2D equipment) · GATE 1 · P3 Measures · GATE 2 · P4 Write-back+Verify · P5 Deliverables. **Do NOT produce standalone intermediate/gate HTML** (no `p1-baseline.html`,
+2D equipment) · GATE 1 · P3 Measures · GATE 2 · P4 Write-back+Verify · P4b Measure Descriptions ·
+P5 Deliverables · P6 Executive Summary. **Do NOT produce standalone intermediate/gate HTML** (no `p1-baseline.html`,
 no `building-model-verification.html`) — that material is checklist sections of the helper, and
 **GATE 1 / GATE 2 are reviewed as the helper's checklist sections**, not as polished artifacts.
 Only the **Report** and the **Delivery-Meeting Slides** are design-forward (`Reports/`, gate-only).
@@ -424,7 +425,7 @@ cat projects/<asset-key>/decarb-plan.json 2>/dev/null
 ```
 
 - **File exists:** validate it against `skills/decarb-plan/state-schema.json`
-  (`phase` must be one of `P0|P1|P2|GATE1|P3|GATE2|P4|P5|done`). Resume at the recorded
+  (`phase` must be one of `P0|P1|P2|GATE1|P3|GATE2|P4|P4b|P5|P6|done`). Resume at the recorded
   `phase`. **Never redo a completed phase** — every phase below is idempotent against the
   ledger: skip any step whose output is already recorded in state.
 - **File missing:** this is a new engagement — start at P0.
@@ -1100,6 +1101,48 @@ Set `phase: "P4"` and save.
    - Neither → **no render. The gate fails CLOSED.** Do not dispatch the renderer, do not
      produce a partial report, do not summarize around it.
 
+Set `phase: "P4b"` and save.
+
+---
+
+## P4b — Measure Descriptions (INTERACTIVE, before the report is produced)
+
+The measures table gives a client the numbers. It does not tell them **what the work is** — and they
+are being asked to approve scope, not spreadsheet rows. So the report has its own **Section 05 —
+Measure Descriptions**, ahead of Notes, and you write it **with the user**, here, once the bundle and
+the strategy are settled (Gate 2 done, Audette write-backs complete) and **before** the report is
+produced. That timing is deliberate: descriptions of a bundle still in flux get rewritten, and unlike
+the executive summary these don't depend on the derived economics — only on the agreed scope. They
+ship with the FIRST render, so this phase adds **no** extra render.
+
+**Sequence:**
+
+1. **Draft one description per measure in the recommended plan**, from the asset's real evidence —
+   the PCA's equipment inventory and condition notes, the Audette measure's own scope, the equipment
+   survey, roof/envelope observations. Say what is being replaced or added, where it is, what it
+   touches (ducts, controls, electrical capacity, roof), what it depends on, and whether it is a
+   like-for-like replacement at end of life or an incremental upgrade. 2–4 sentences.
+2. **Do not describe the economics.** Cost, payback, savings and abatement are already in the table
+   two pages earlier; repeating them here is padding and invites the two surfaces to disagree.
+3. **Show the user all of them together** and ask what to change. Scope wording is where their
+   client knowledge beats yours — how a measure is characterised ("brought forward at RUL" vs
+   "upgrade") changes how the asset team reads the ask. Use `ask_user_question` for genuine
+   either/ors; otherwise present the set and invite edits.
+4. **Iterate until they approve. Their wording wins.**
+5. **Carry them into P5** — pass the agreed set to `derive_engagement` as `measure_descriptions`
+   (see the P5 arg list). Include `measure_id` for each one.
+
+**Content rules:**
+- **No boilerplate.** A description that would read identically on any building is worse than none —
+  it tells the client we didn't look at their asset. If the evidence doesn't support a real
+  description, say so to the user and let them supply it; don't fill the space.
+- **One per recommended measure**, ordered to match the measures table.
+- Alternatives (measures in the non-recommended plan) do NOT get descriptions — they are not the ask.
+- If a measure changes in Audette after this conversation, come back and update its description. The
+  report labels a description that no longer matches any measure in the recommended plan rather than
+  presenting it as current scope — that label appearing in a delivered report means this step was
+  skipped, not that the label did its job.
+
 Set `phase: "P5"` and save.
 
 ---
@@ -1158,6 +1201,11 @@ gate (resume may have skipped P4's check).
      inventing a benchmark. A live run modelled 12% against a client whose stated screen was 15% and
      the client noticed in the delivery meeting ("a little low for us usually") — the locked kickoff
      value is the only source.
+   - `measure_descriptions`: the set agreed with the user in **P4b** — `[{measure, measure_id,
+     description}]`, one per recommended measure, ordered to match the measures table. Unlike
+     `executive_summary` this IS passed on the first derive, so Section 05 ships with the first
+     render. Always include `measure_id`: keyed on name alone, a description is orphaned the moment
+     the Audette plan is edited, and the report will label it as no longer matching the plan.
    - `executive_summary`: do NOT pass this on the first derive. It is authored interactively in **P6**,
      after the report has rendered and the wording has been agreed with the user.
    - `implementation_considerations` (+ optional `implementation_narrative`): the non-financial

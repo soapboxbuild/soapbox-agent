@@ -19,7 +19,9 @@
         "P3",
         "GATE2",
         "P4",
+        "P4b",
         "P5",
+        "P6",
         "done"
       ],
       "description": "Current phase. Post-Gate-1 baseline changes set this back to GATE1."
@@ -186,7 +188,7 @@
                 "string",
                 "null"
               ],
-              "description": "Recorded verbatim from kickoff \u2014 never paraphrased"
+              "description": "Recorded verbatim from kickoff — never paraphrased"
             }
           }
         },
@@ -266,7 +268,7 @@
                 "string",
                 "null"
               ],
-              "description": "Recorded verbatim from kickoff \u2014 never paraphrased"
+              "description": "Recorded verbatim from kickoff — never paraphrased"
             }
           }
         },
@@ -382,12 +384,28 @@
       "description": "Per-end-use owner-capture map (P2 step 2C). Keys are end-uses (e.g. central_gas_plant, elevators, garage_ventilation, common_lighting, in_unit_electric, common_laundry, amenity_spa). Each measure's savings basis uses ITS end-use's capture, never the building's blended split — common-area/central-plant loads are 100% owner even in a tenant-metered residential building.",
       "additionalProperties": {
         "type": "object",
-        "required": ["payer", "owner_capture_pct"],
+        "required": [
+          "payer",
+          "owner_capture_pct"
+        ],
         "properties": {
-          "payer": { "type": "string", "enum": ["landlord", "tenant", "mixed"] },
-          "owner_capture_pct": { "type": "number" },
-          "source": { "type": "string" },
-          "finding_id": { "type": "string" }
+          "payer": {
+            "type": "string",
+            "enum": [
+              "landlord",
+              "tenant",
+              "mixed"
+            ]
+          },
+          "owner_capture_pct": {
+            "type": "number"
+          },
+          "source": {
+            "type": "string"
+          },
+          "finding_id": {
+            "type": "string"
+          }
         }
       }
     },
@@ -448,7 +466,7 @@
               },
               "rule": {
                 "type": "string",
-                "description": "Named hierarchy rule that produced the suggestion (suggestion only \u2014 never auto-applied)"
+                "description": "Named hierarchy rule that produced the suggestion (suggestion only — never auto-applied)"
               }
             }
           },
@@ -558,7 +576,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Audette building model uid(s) \u2014 one property may hold several buildings"
+          "description": "Audette building model uid(s) — one property may hold several buildings"
         },
         "custom_plan_id": {
           "type": [
@@ -659,7 +677,7 @@
         },
         "overrides": {
           "type": "array",
-          "description": "Documented overrides for open high-severity findings \u2014 required for render when verification_status is not pass",
+          "description": "Documented overrides for open high-severity findings — required for render when verification_status is not pass",
           "items": {
             "type": "object",
             "required": [
@@ -699,7 +717,7 @@
       "properties": {
         "start_date": {
           "type": "string",
-          "description": "Engagement start date (ISO, YYYY-MM-DD). FIXED at P0 \u2014 never the save date."
+          "description": "Engagement start date (ISO, YYYY-MM-DD). FIXED at P0 — never the save date."
         },
         "filename": {
           "type": "string",

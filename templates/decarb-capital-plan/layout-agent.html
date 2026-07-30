@@ -703,7 +703,11 @@
       ? (num(imp.energy.baseline_kwh) - num(imp.energy.net_purchased_kwh)) / num(imp.energy.baseline_kwh)
       : null;
     if (netPurchPctForKpi != null && (energyPctForKpi == null || Math.abs(netPurchPctForKpi - energyPctForKpi) > 0.005)) {
-      kpiTiles.push({ label: 'Net Purchased Energy', value: fmtPct(netPurchPctForKpi), sublabel: 'incl. on-site solar' });
+      // Say "Reduction" explicitly. "Net Purchased Energy 75%" beside "Energy Reduction 13%" reads
+      // as though 75% were a LEVEL rather than a change — a reader can't tell which without the
+      // word (user feedback, 2026-07-30). The bar and chart labels keep "Net purchased" because
+      // there they carry an absolute level (MWh/yr, kWh/m²/yr), where it isn't ambiguous.
+      kpiTiles.push({ label: 'Purchased Energy Reduction', value: fmtPct(netPurchPctForKpi), sublabel: 'incl. on-site solar' });
     }
     if (fin.simple_payback_years != null) kpiTiles.push({ label: 'Simple Payback', value: fmt2sig(num(fin.simple_payback_years)) + ' yrs' });
     if (fin.exit_year != null) kpiTiles.push({ label: 'Presumed Exit Year', value: String(fin.exit_year) });

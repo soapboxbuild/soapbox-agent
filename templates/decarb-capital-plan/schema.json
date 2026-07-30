@@ -383,6 +383,13 @@
             "grid_decarb_reduction_pct": {
               "type": "number",
               "description": "Additional emissions-reduction fraction (0-1) attributable to grid decarbonization beyond the measures-only headline."
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "measures_only"
+              ],
+              "description": "Marks post_retrofit_tco2e/reduction_pct as measures-only (grid decarbonization reported separately). Absent => legacy combined figure."
             }
           }
         },
@@ -417,6 +424,13 @@
             "net_purchased_eui": {
               "type": "number",
               "description": "Net purchased EUI (kWh/m2/yr) net of on-site generation."
+            },
+            "basis": {
+              "type": "string",
+              "enum": [
+                "efficiency_only"
+              ],
+              "description": "Marks post_retrofit_kwh as excluding on-site generation. Absent => legacy figure that may include generation; the template then uses a neutral label."
             }
           }
         },

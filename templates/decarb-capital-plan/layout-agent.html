@@ -687,7 +687,8 @@
     // Emissions headline is MEASURES-ONLY (reduction_pct). Grid decarbonization is reported as its
     // own tile when the projector supplies it — never rolled into the headline, which previously
     // produced an implausible combined 97% that also double-counted solar's own avoided emissions.
-    if (carbonPctForKpi != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(carbonPctForKpi), sublabel: 'measures only' });
+    if (carbonPctForKpi != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(carbonPctForKpi),
+      sublabel: (imp.carbon && imp.carbon.basis === 'measures_only') ? 'measures only' : 'incl. grid decarbonization' });
     if (imp.carbon && imp.carbon.grid_decarb_reduction_pct != null && num(imp.carbon.grid_decarb_reduction_pct) > 0) {
       kpiTiles.push({ label: '+ Grid Decarbonization', value: fmtPct(num(imp.carbon.grid_decarb_reduction_pct)), sublabel: 'additional, incl. grid' });
     }
@@ -696,7 +697,8 @@
     var energyPctForKpi = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.post_retrofit_kwh != null && num(imp.energy.baseline_kwh) > 0)
       ? (num(imp.energy.baseline_kwh) - num(imp.energy.post_retrofit_kwh)) / num(imp.energy.baseline_kwh)
       : null;
-    if (energyPctForKpi != null) kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(energyPctForKpi), sublabel: 'efficiency measures' });
+    if (energyPctForKpi != null) kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(energyPctForKpi),
+      ...((imp.energy && imp.energy.basis === 'efficiency_only') ? { sublabel: 'efficiency measures' } : {}) });
     var netPurchPctForKpi = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.net_purchased_kwh != null && num(imp.energy.baseline_kwh) > 0)
       ? (num(imp.energy.baseline_kwh) - num(imp.energy.net_purchased_kwh)) / num(imp.energy.baseline_kwh)
       : null;
@@ -972,7 +974,12 @@
       var cMaxAll = Math.max(cBase, cPost, cCombined != null ? cCombined : 0) || 1;
       setHtml('impact-carbon',
         '<div class="impact-metric-title">Carbon (tCO2e/yr)</div>'
-        + (cPct != null ? '<div class="impact-reduction-pct">' + fmtPct(cPct) + '</div><div class="exhibit-note">10-year reduction from measures only</div>' : '')
+        // Label from the projector's explicit `basis`, never inferred: an OLD record (or a render
+        // before the projector ships) carries a COMBINED measures+grid figure here, and calling
+        // that "measures only" would be a false claim on a client deliverable.
+        + (cPct != null ? '<div class="impact-reduction-pct">' + fmtPct(cPct) + '</div><div class="exhibit-note">'
+            + (carbon.basis === 'measures_only' ? '10-year reduction from measures only' : '10-year reduction, incl. grid decarbonization')
+            + '</div>' : '')
         + '<div style="margin-top:12px">'
         + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((cBase / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cBase) + '</div></div>'
         + '<div style="display:flex;align-items:center;gap:8px;font-size:12px' + (cCombined != null ? ';margin-bottom:6px' : '') + '"><div style="width:90px;flex-shrink:0;color:#707477">After measures</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((cPost / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cPost) + '</div></div>'
@@ -1002,7 +1009,11 @@
           + '</div>' : '';
       setHtml('impact-energy',
         '<div class="impact-metric-title">Energy (site)</div>'
-        + (ePct != null ? '<div class="impact-reduction-pct">' + fmtPct(ePct) + '</div><div class="exhibit-note">10-year consumption reduction, efficiency measures only</div>' : '')
+        // Same basis rule as carbon: only claim "efficiency measures only" when the projector says
+        // the figure actually excludes on-site generation.
+        + (ePct != null ? '<div class="impact-reduction-pct">' + fmtPct(ePct) + '</div><div class="exhibit-note">'
+            + (energy.basis === 'efficiency_only' ? '10-year consumption reduction, efficiency measures only' : '10-year reduction')
+            + '</div>' : '')
         + '<div style="margin-top:12px">'
         + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((eBase / eMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + eBaseF.value + ' ' + eBaseF.unit + '</div></div>'
         + '<div style="display:flex;align-items:center;gap:8px;font-size:12px' + (showNet ? ';margin-bottom:6px' : '') + '"><div style="width:90px;flex-shrink:0;color:#707477">After measures</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((ePost / eMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + ePostF.value + ' ' + ePostF.unit + '</div></div>'

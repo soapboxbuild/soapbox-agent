@@ -684,36 +684,29 @@
       : (imp.carbon && imp.carbon.baseline_tco2e != null && imp.carbon.post_retrofit_tco2e != null)
         ? (num(imp.carbon.baseline_tco2e) - num(imp.carbon.post_retrofit_tco2e)) / num(imp.carbon.baseline_tco2e)
         : null;
-    // Emissions headline is MEASURES-ONLY (reduction_pct). Grid decarbonization is reported as its
-    // own tile when the projector supplies it — never rolled into the headline, which previously
-    // produced an implausible combined 97% that also double-counted solar's own avoided emissions.
-    if (carbonPctForKpi != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(carbonPctForKpi),
-      sublabel: (imp.carbon && imp.carbon.basis === 'measures_only') ? 'incl. on-site solar' : 'incl. grid decarbonization' });
-    // Efficiency-only emissions, the like-for-like partner of the Energy Reduction tile. Without it
-    // the two panels invite a comparison of 13% energy against 70% carbon — different measure sets
-    // under the same words (user, 2026-07-30).
-    if (imp.carbon && imp.carbon.efficiency_reduction_pct != null) {
-      kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(num(imp.carbon.efficiency_reduction_pct)), sublabel: 'efficiency measures' });
-    }
-    if (imp.carbon && imp.carbon.grid_decarb_reduction_pct != null && num(imp.carbon.grid_decarb_reduction_pct) > 0) {
-      kpiTiles.push({ label: '+ Grid Decarbonization', value: fmtPct(num(imp.carbon.grid_decarb_reduction_pct)), sublabel: 'additional, incl. grid' });
-    }
-    // Energy: BOTH figures. post_retrofit_kwh is efficiency + electrification only (on-site solar
-    // GENERATION is not a consumption cut); net_purchased_kwh is net of that generation.
-    var energyPctForKpi = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.post_retrofit_kwh != null && num(imp.energy.baseline_kwh) > 0)
-      ? (num(imp.energy.baseline_kwh) - num(imp.energy.post_retrofit_kwh)) / num(imp.energy.baseline_kwh)
+    // ── Impact KPIs as ONE cumulative ladder, identical in shape for carbon and energy ──────────
+    // Each tile adds the next contribution rather than reporting a standalone slice: efficiency,
+    // then + solar, then + grid (carbon only). The grid tile previously showed the grid's own 30.5%
+    // beside a 75% measures figure, which read as a separate, unrelated number — and the two do not
+    // add anyway, they compound. It now shows the CUMULATIVE reduction against today's baseline,
+    // matching how the energy tiles already step (user, 2026-07-30).
+    var effCarbonPct = (imp.carbon && imp.carbon.efficiency_reduction_pct != null) ? num(imp.carbon.efficiency_reduction_pct) : null;
+    var cumCarbonPct = (imp.carbon && imp.carbon.baseline_tco2e != null && imp.carbon.combined_post_retrofit_tco2e != null && num(imp.carbon.baseline_tco2e) > 0)
+      ? (num(imp.carbon.baseline_tco2e) - num(imp.carbon.combined_post_retrofit_tco2e)) / num(imp.carbon.baseline_tco2e)
       : null;
-    if (energyPctForKpi != null) kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(energyPctForKpi),
-      ...((imp.energy && imp.energy.basis === 'efficiency_only') ? { sublabel: 'efficiency measures' } : {}) });
-    var netPurchPctForKpi = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.net_purchased_kwh != null && num(imp.energy.baseline_kwh) > 0)
-      ? (num(imp.energy.baseline_kwh) - num(imp.energy.net_purchased_kwh)) / num(imp.energy.baseline_kwh)
-      : null;
-    if (netPurchPctForKpi != null && (energyPctForKpi == null || Math.abs(netPurchPctForKpi - energyPctForKpi) > 0.005)) {
-      // Say "Reduction" explicitly. "Net Purchased Energy 75%" beside "Energy Reduction 13%" reads
-      // as though 75% were a LEVEL rather than a change — a reader can't tell which without the
-      // word (user feedback, 2026-07-30). The bar and chart labels keep "Net purchased" because
-      // there they carry an absolute level (MWh/yr, kWh/m²/yr), where it isn't ambiguous.
-      kpiTiles.push({ label: 'Purchased Energy Reduction', value: fmtPct(netPurchPctForKpi), sublabel: 'incl. on-site solar' });
+    var effEnergyPct = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.post_retrofit_kwh != null && num(imp.energy.baseline_kwh) > 0)
+      ? (num(imp.energy.baseline_kwh) - num(imp.energy.post_retrofit_kwh)) / num(imp.energy.baseline_kwh) : null;
+    var netEnergyPct = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.net_purchased_kwh != null && num(imp.energy.baseline_kwh) > 0)
+      ? (num(imp.energy.baseline_kwh) - num(imp.energy.net_purchased_kwh)) / num(imp.energy.baseline_kwh) : null;
+
+    if (effEnergyPct != null) kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(effEnergyPct), sublabel: 'efficiency' });
+    if (netEnergyPct != null && (effEnergyPct == null || Math.abs(netEnergyPct - effEnergyPct) > 0.005)) {
+      kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(netEnergyPct), sublabel: '+ solar' });
+    }
+    if (effCarbonPct != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(effCarbonPct), sublabel: 'efficiency' });
+    if (carbonPctForKpi != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(carbonPctForKpi), sublabel: '+ solar' });
+    if (cumCarbonPct != null && carbonPctForKpi != null && cumCarbonPct > carbonPctForKpi + 0.005) {
+      kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(cumCarbonPct), sublabel: '+ grid, vs today' });
     }
     if (fin.simple_payback_years != null) kpiTiles.push({ label: 'Simple Payback', value: fmt2sig(num(fin.simple_payback_years)) + ' yrs' });
     if (fin.exit_year != null) kpiTiles.push({ label: 'Presumed Exit Year', value: String(fin.exit_year) });

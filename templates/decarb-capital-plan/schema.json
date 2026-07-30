@@ -394,6 +394,14 @@
                 "measures_only"
               ],
               "description": "Marks post_retrofit_tco2e/reduction_pct as measures-only (grid decarbonization reported separately). Absent => legacy combined figure."
+            },
+            "efficiency_reduction_pct": {
+              "type": "number",
+              "description": "Emissions-reduction fraction (0-1) from efficiency + electrification measures ONLY, excluding on-site generation. The like-for-like partner of impact.energy.post_retrofit_kwh, so the carbon and energy panels can be compared on the same measure set."
+            },
+            "post_retrofit_efficiency_tco2e": {
+              "type": "number",
+              "description": "Annual emissions (tCO2e/yr) after efficiency + electrification measures only, excluding on-site generation."
             }
           }
         },

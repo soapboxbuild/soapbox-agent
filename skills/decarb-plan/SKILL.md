@@ -491,6 +491,14 @@ Gather every source; record everything in state as you go.
    document (audits, PCAs, utility data) with `read_file` / `search_documents`. Record each
    in `state.documents` as `{name, type: audit|pca|utility|other, storage_path, read}` and
    mark `read: true` once ingested.
+   **Capture the property's STREET ADDRESS from the PCA** (the cover/property-description page
+   carries it; the ALTA survey and appraisal are fallbacks) into `state.property.address`, and pass
+   it through to the report — it prints on the cover and in every interior page header. Assets
+   onboarded from a bulk import routinely have a NULL `street_address`, which is why the cover
+   rendered a bare "—" (Bain/Evergreen 2026-07-30). Take it from the document, verbatim. **Never
+   reverse-geocode it from lat/lon and never infer it from the asset name** — an approximate
+   address on a client deliverable is the same class of error as a fabricated figure. If no
+   document states it, leave it blank and note the gap.
 2. **Retrofit register + findings ledger:** `retrofit__get_measure_state` for the asset's
    existing measure register; load existing open findings via `verifier__list_findings(asset_id)`
    — capture `finding_ids`; the gas-split style pre-existing findings must be adjudicated at
@@ -838,10 +846,14 @@ do not assemble the Gate-2 roster from an empty or partial register.
      (which is stale/incomplete — that is why we research here). This flag is a **real Audette
      field that round-trips through derive**; it is what drives the incentive's `medium` confidence
      in the record. Omitting it silently drops you back to the static table.
-   - (optional enrichment) `incentive_program` (name) and `incentive_citation` (URL) — best-effort;
-     these may not round-trip through Audette persistence, so **also** record the program+citation
-     in `incentive_programs` (P5, below) and in the measure `notes`, which is where the audit trail
-     actually lives.
+   - ⛔ **`incentive_program` (name) — REQUIRED whenever `total_incentives > 0`.** `derive_engagement`
+     **hard-blocks** a dollar figure that names no program ("unsourced incentive"): a number with no
+     program behind it is indistinguishable from an invented one. Set `incentive_citation` (URL) too.
+     Also record the program+citation in `incentive_programs` (P5, below) and in the measure `notes`,
+     so the audit trail survives even if Audette drops the field.
+   - **A $0 outcome is a legitimate, accepted result — not a failure and not something to pad.** Set
+     `total_incentives: 0` with `user_provided_incentives: true` and derive will proceed, disclosing
+     it in the report as "researched, none available". Never invent a program to avoid a $0.
    Set `total_incentives` to the **net summed** estimate for the measure — do NOT also separately
    discount the measure's capex for the same incentive, or you double-count. Gross capex stays the
    measure's real `measure_cost`/`incremental_cost`; `total_incentives` is the offset the engine
@@ -850,11 +862,17 @@ do not assemble the Gate-2 roster from an empty or partial register.
    every screened-in measure, proactively search for and quantify:
    - **Incentives** — ⚠️ **federal availability changed under OBBBA (P.L. 119-21, Jul 2025) — do
      NOT apply pre-2025 IRA assumptions:**
-     - **§48E ITC (solar/wind): terminated** except two paths — construction began on/before
-       **Jul 4, 2026** (safe-harbored, 4-yr in-service window), or the system is **placed in
-       service by Dec 31, 2027**. A 2028+ solar install year gets **NO federal ITC** — $0 is the
-       correct figure; never add one. For a 2026–2027 in-service date, verify timing + FEOC
-       (foreign-entity) sourcing rules before crediting it.
+     - ⛔ **§48E ITC (solar/wind): DEAD for new work — never claim it, at ANY install year.**
+       Both surviving paths are closed: the construction-start safe harbor expired **Jul 4, 2026**,
+       and the placed-in-service deadline of **Dec 31, 2027** is not achievable for an array that
+       has not already been procured (design, permitting, equipment lead times, interconnection).
+       **$0 federal ITC is the correct figure for every solar measure you will ever author here.**
+       Do not model it, do not list it under `incentive_programs`, and do not describe it in the
+       notes as something to "preserve", "capture" or "begin procurement early" for — that reads as
+       a live recommendation. Justify rooftop PV on **energy and/or roof-lease economics alone**
+       (see the solar-monetization requirement below). The only exception is an array already
+       under construction with documented safe-harbor evidence — which is a client-supplied fact,
+       never an assumption you make.
      - **§48E for storage/geothermal**: NOT terminated by the solar/wind provision (later
        phase-down; FEOC rules apply) — still worth checking.
      - **§179D deduction: dead for projects whose construction begins after Jun 30, 2026** —
@@ -1101,11 +1119,39 @@ gate (resume may have skipped P4's check).
    - `incentive_programs`: the cited programs from your P3 3b incentive research (`[{program,
      description}]`). REQUIRED to populate the report's Incentive Programs (Notes) section — the
      server does NOT research incentives itself. Omit only if research genuinely found none.
+     ⛔ **This list must RECONCILE with the measures table.** Every program listed here must either
+     (a) be quantified in some measure's `total_incentives`, or (b) say explicitly why it is not —
+     "screened, not quantified: <reason>" (program closed to new applicants, measure ineligible,
+     rebate not yet confirmed by the utility, etc.). A program named in the Notes while the
+     measures show $0 incentives reads to the client as money left on the table or, worse, as an
+     incentive we claimed and then failed to model (found live: Pedernales Electric Cooperative
+     rebates listed in the notes with no corresponding measure economics, Bain/Evergreen
+     2026-07-30). Before you call `derive_engagement`, check each listed program against the
+     per-measure `total_incentives` you authored in P4 and reconcile every mismatch.
    - `implementation_considerations` (+ optional `implementation_narrative`): the non-financial
      decision factors for the Notes section — solar-model trade-offs (PPA lease vs owned BTM +
      green lease), roof-replacement timing when the PCA flags limited roof life before rooftop
      solar, interconnection/permitting lead times, etc. `[{title, detail}]`, grounded in the
      asset's real docs — this is decision-useful content, not boilerplate.
+     ⛔ **If the plan contains ANY solar measure, one consideration MUST state the monetization
+     mechanism** — i.e. exactly *how the owner earns money from this array under this plan*, since
+     the federal ITC is no longer part of the answer. Name the specific mechanism(s) actually
+     modeled and tie each to the numbers in the report:
+     - **BTM (behind-the-meter) self-consumption** — the array offsets the building's purchased
+       kWh. State who captures it: on a modified-gross/full-service lease the landlord keeps the
+       saving; on NNN or tenant-metered load the TENANT does and the owner's benefit is ~$0 unless
+       leases are amended. State the landlord-capture % actually modeled.
+     - **Net metering / VNM export credits** — the tariff crediting exported kWh, and whether
+       export is even allowed at this interconnection.
+     - **FTM roof lease** — rent from a third-party developer; the array is grid-side, so the
+       building's energy and carbon are UNCHANGED (this flows via `ancillary_income[]`, not a
+       measure).
+     - **PPA** — the owner takes a margin/discount-to-tariff, not the array's gross value; if a
+       third party owns the array, the owner does not hold the asset.
+     - **SREC/REC sales** where a real market exists.
+     Also state the ownership consequence plainly: a third-party PPA or lease moves the tax
+     attributes and depreciation to the lessor. Do NOT write a consideration that recommends
+     preserving/capturing the §48E ITC — it is dead for new work (see P3 3b).
    - Rendering to the **decarb-capital-plan** template additionally consumes: exit panes and the
      value bridge (both derive from the exit args above), `measures_considered` (server-extracted;
      nothing for you to pass), and the same `bps_thresholds`.
@@ -1126,6 +1172,14 @@ gate (resume may have skipped P4's check).
    charts).** Call `fill_report(template: 'decarb-capital-plan', data: {}, title: "<Asset> —
    Decarbonization Roadmap")`. There is now **ONE** decarb report — the single-recommended-plan
    capital plan. (`template: 'decarb'` also resolves to it, but name the canonical template.)
+   ⛔ **RENDER ONCE.** Do not render until the plan is FINAL — Gate 2 settled, all Audette
+   write-backs complete, and `derive_engagement` run on the final plans. A render is the last step,
+   not a progress check. Rendering early forces a re-render after every subsequent Audette edit or
+   re-derive: one live run rendered, re-derived, rendered, edited an Audette plan, and rendered
+   again — four renders where one was needed (Bain/Evergreen 2026-07-30).
+   **If you genuinely must re-render** (the data really did change), pass the SAME `artifact_id`
+   returned by the first call so the existing report updates in place instead of adding another
+   report card to the thread.
    You author **no report_data** — the server detects the persisted decarb engagement record for
    this asset and projects the entire deliverable from it, discarding whatever you pass as `data`.
    **The report presents ONE recommended plan** (the value-driving plan — highest net value) and

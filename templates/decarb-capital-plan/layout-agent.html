@@ -142,7 +142,8 @@
     /* ─── Running header/footer, every interior page ─── */
     .page-header-run { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: var(--space-4); margin-bottom: var(--space-8); border-bottom: 1px solid var(--border-hairline); }
     .phr-brand { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bronze); font-weight: 700; }
-    .phr-property { font-size: 10px; color: var(--text-muted); }
+    .phr-property { display: flex; flex-direction: column; align-items: flex-end; font-size: 10px; color: var(--text-muted); line-height: 1.35; }
+    .phr-address { font-size: 9px; color: var(--text-faint, #989CA0); }
     .page-footer-run { display: flex; justify-content: space-between; padding-top: var(--space-4); margin-top: var(--space-8); border-top: 1px solid var(--border-hairline); font-size: 9px; color: var(--text-muted); }
 
     /* ─── Cover+Summary: big full-width header (biggest in the document), rail starts below it ─── */
@@ -281,7 +282,7 @@
         <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
         <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
       </div>
-      <div class="rail-brand">Capital Plan</div>
+      <div class="rail-brand">Decarbonization Capital Plan</div>
     </div>
     <div class="page-body">
       <div class="page-content">
@@ -290,7 +291,7 @@
         <div class="narrative" id="summary-narrative"></div>
         <div class="kpi-grid" id="summary-kpi-grid"></div>
       </div>
-      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+      <div class="page-footer-run"><span>Confidential</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
     </div>
    </div>
   </div>
@@ -304,16 +305,16 @@
         <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
         <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
       </div>
-      <div class="rail-brand">Capital Plan</div>
+      <div class="rail-brand">Decarbonization Capital Plan</div>
     </div>
     <div class="page-body">
-      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property page-prop-name">—</span></div>
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property"><span class="page-prop-name">—</span><span class="phr-address"></span></span></div>
       <div class="page-content">
         <div class="section-eyebrow">Section 02</div>
         <h2 class="section-title">Measures</h2>
         <div class="table-scroll" id="measures-groups"></div>
       </div>
-      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+      <div class="page-footer-run"><span>Confidential</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
     </div>
   </div>
 
@@ -326,10 +327,10 @@
         <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
         <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
       </div>
-      <div class="rail-brand">Capital Plan</div>
+      <div class="rail-brand">Decarbonization Capital Plan</div>
     </div>
     <div class="page-body">
-      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property page-prop-name">—</span></div>
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property"><span class="page-prop-name">—</span><span class="phr-address"></span></span></div>
       <div class="page-content">
         <div class="section-eyebrow">Section 03</div>
         <h2 class="section-title">Financial</h2>
@@ -350,7 +351,7 @@
           <div class="exhibit-note" id="cashflow-note"></div>
         </div>
       </div>
-      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+      <div class="page-footer-run"><span>Confidential</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
     </div>
   </div>
 
@@ -363,10 +364,10 @@
         <div class="rail-item current"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
         <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
       </div>
-      <div class="rail-brand">Capital Plan</div>
+      <div class="rail-brand">Decarbonization Capital Plan</div>
     </div>
     <div class="page-body">
-      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property page-prop-name">—</span></div>
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property"><span class="page-prop-name">—</span><span class="phr-address"></span></span></div>
       <div class="page-content">
         <div class="section-eyebrow">Section 04</div>
         <h2 class="section-title">Impact</h2>
@@ -390,7 +391,7 @@
 
         <div class="impact-metric" id="impact-regulatory" style="display:none"></div>
       </div>
-      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+      <div class="page-footer-run"><span>Confidential</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
     </div>
   </div>
 
@@ -403,10 +404,10 @@
         <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
         <div class="rail-item current"><span class="rail-num">05</span><span class="rail-label">Notes</span></div>
       </div>
-      <div class="rail-brand">Capital Plan</div>
+      <div class="rail-brand">Decarbonization Capital Plan</div>
     </div>
     <div class="page-body">
-      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property page-prop-name">—</span></div>
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property"><span class="page-prop-name">—</span><span class="phr-address"></span></span></div>
       <div class="page-content">
         <div class="section-eyebrow">Section 05</div>
         <h2 class="section-title">Notes</h2>
@@ -426,7 +427,7 @@
           <div id="compliance-items"></div>
         </div>
       </div>
-      <div class="page-footer-run"><span>Capital Plan</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+      <div class="page-footer-run"><span>Confidential</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
     </div>
   </div>
 </div>
@@ -643,11 +644,18 @@
     /* De-branded identity: the client name comes ONLY from the data (prepared_for) —
        no hardcoded firm name anywhere. Fallback is empty, never a placeholder brand. */
     var preparedFor = (data.prepared_for != null && String(data.prepared_for).trim()) ? String(data.prepared_for).trim() : '';
-    setText('cover-for', preparedFor);
+    // Cover eyebrow labels the DELIVERABLE, not the client — the client identity comes from the
+    // brand logo injected into the cover-logo-slot. (Previously showed prepared_for, which
+    // duplicated the logo, e.g. Bain logo + "Bain Capital" eyebrow.)
+    setText('cover-for', 'Decarbonization Capital Plan');
+    // Running header keeps the client name on the left of every interior page.
     document.querySelectorAll('.phr-brand').forEach(function(el) { el.textContent = preparedFor; });
     setText('cover-property-name', safe(prop.name));
     setText('cover-property-address', safe(prop.address));
-    setText('cover-meta-type', safe(capitalise(prop.type)));
+    // Humanize the raw property-type token (e.g. "Medical_office" -> "Medical Office"):
+    // underscores to spaces, title-case each word. capitalise() only touched the first letter.
+    var typeStr = prop.type ? String(prop.type).replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }) : '—';
+    setText('cover-meta-type', typeStr);
     var sizeStr = prop.units ? (prop.units + ' units')
                 : prop.gfa_sqft ? (prop.gfa_sqft.toLocaleString('en-US') + ' sqft')
                 : '—';
@@ -659,6 +667,10 @@
     /* Running header/footer property name — every interior page shares this class. */
     var propNameRunning = safe(prop.name);
     document.querySelectorAll('.page-prop-name').forEach(function(el) { el.textContent = propNameRunning; });
+    /* Address under the building name in each interior-page header (empty until the property
+       model / PCA supplies prop.address — never a placeholder). */
+    var propAddrRunning = (prop.address != null && String(prop.address).trim()) ? String(prop.address).trim() : '';
+    document.querySelectorAll('.phr-address').forEach(function(el) { el.textContent = propAddrRunning; });
 
     /* ════════════════════════════════
        01. SUMMARY
@@ -703,11 +715,14 @@
       var TLfL = 0, TIncr = 0, TIncent = 0, TNet = 0, TEnergy = 0, TCO2 = 0, TLL = 0, TTen = 0, TAnc = 0;
       var html = '<table class="data-table measures-fixed">'
         // Fixed column widths (must sum to 100): a wide Measure column so names wrap in ~2 lines
-        // rather than stretching rows tall, Status/Year narrow, the 10 numeric columns even.
+        // rather than stretching rows tall, then Status/Year. Status was 8% — too narrow for
+        // "Recommended", which wrapped and collided with the 4% Year column (Bain/Evergreen
+        // 2026-07-30). Status now 11% (fits "Recommended" on one line) and Year 6%; the 10 numeric
+        // columns absorb the difference at 6.6% each.
         + '<colgroup>'
-        + '<col style="width:18%"><col style="width:8%"><col style="width:4%">'
-        + '<col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%">'
-        + '<col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:7%">'
+        + '<col style="width:17%"><col style="width:11%"><col style="width:6%">'
+        + '<col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%">'
+        + '<col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%"><col style="width:6.6%">'
         + '</colgroup>'
         + '<thead><tr>'
         + '<th>Measure</th><th>Status</th><th class="num">Year</th>'
@@ -855,8 +870,11 @@
         // capitalized exit value uplift at the presumed exit cap. Fixed bar order;
         // Fine Avoidance only appears when it's actually non-zero.
         if (num(bridge.incremental_capex) != null) steps.push({ label: 'Incremental Capex', v: num(bridge.incremental_capex) });
-        if (num(bridge.cumulative_utility_savings) != null) steps.push({ label: 'Cumulative Energy Savings', v: num(bridge.cumulative_utility_savings) });
+        // Incentives before Cumulative Energy Savings — the capital offset lands right after the
+        // capex outlay (what comes back immediately), then the recurring operating savings. An
+        // explicit $0 incentives bar is honest (no program applies), never hidden.
         if (num(bridge.incentives) != null) steps.push({ label: 'Incentives', v: num(bridge.incentives) });
+        if (num(bridge.cumulative_utility_savings) != null) steps.push({ label: 'Cumulative Energy Savings', v: num(bridge.cumulative_utility_savings) });
         if (num(bridge.fine_avoidance)) steps.push({ label: 'Fine Avoidance', v: num(bridge.fine_avoidance) });
         if (num(bridge.exit_value_uplift) != null) steps.push({ label: 'Exit Value Uplift', v: num(bridge.exit_value_uplift) });
         net = num(bridge.net);

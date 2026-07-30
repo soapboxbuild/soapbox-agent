@@ -737,6 +737,22 @@ These gate every IRR, so they must be adjudicated and **LOCKED here** — once l
 re-enters a superseded value (past runs drifted 15%→5% / 2031→2034). Record the locked values with
 `adjudicated_by: "user"` in `state.baseline` / `state.kickoff`.
 
+Two things this presentation must carry, both raised by a client in delivery:
+
+- **The exit cap needs a cited market source, not a round number.** Clients are content for us to
+  set it — *"fine with you guys pulling from survey whatever is kind of market"* — but that is an
+  instruction to **go find a survey figure for this property type in this submarket and cite it**
+  (CBRE/JLL/Cushman cap-rate survey, PwC Investor Survey, a comparable-sale set), not licence to
+  carry 5.5% because it looks reasonable. If you cannot source one, present the value as
+  unevidenced, say so, and carry it into the report's limitations — an unsourced cap rate silently
+  sets the entire headline (the exit uplift is annual NOI ÷ this number).
+- **The landlord-capture % is an assumption the client has to validate.** The split confirmed here
+  becomes the share of every utility saving the owner actually keeps, and therefore every payback,
+  every MAC and the whole IRR. State the resulting figure as a number ("~80% of utility savings
+  accrue to the landlord under the modified-gross leases") and ask them to confirm it against the
+  actual leases. Until they do, it is a stated assumption, not a fact — and it goes in the report's
+  limitations, because a reader will otherwise take the paybacks as underwritten.
+
 **(c2) CRREM benchmark property type — confirm, don't assume.** The CRREM pathway defaults to
 the Audette archetype's mapping, but the RIGHT benchmark can differ: a warehouse with a material
 refrigeration load (walk-in coolers/freezers per the PCA) belongs on `refrigerated_warehouse_cool`
@@ -1135,10 +1151,13 @@ gate (resume may have skipped P4's check).
      rebates listed in the notes with no corresponding measure economics, Bain/Evergreen
      2026-07-30). Before you call `derive_engagement`, check each listed program against the
      per-measure `total_incentives` you authored in P4 and reconcile every mismatch.
-   - `irr_hurdle_pct`: the client's OWN IRR hurdle as a percent, when they have stated one (Bain: 15).
-     The report prints an explicit pass/fail against the incl.-exit incremental IRR — that is the rate
-     a hurdle screens on an exit-framed plan. Never assume a hurdle; if the client hasn't given one,
-     omit it rather than inventing a benchmark.
+   - `irr_hurdle_pct`: the client's OWN IRR hurdle as a percent — **`state.kickoff.irr_hurdle.value`,
+     the figure locked at Gate 1**, not a number you pick here (Bain: 15). The report prints an
+     explicit pass/fail against the incl.-exit incremental IRR — that is the rate a hurdle screens on
+     an exit-framed plan. Never assume a hurdle; if the client hasn't given one, omit it rather than
+     inventing a benchmark. A live run modelled 12% against a client whose stated screen was 15% and
+     the client noticed in the delivery meeting ("a little low for us usually") — the locked kickoff
+     value is the only source.
    - `executive_summary`: do NOT pass this on the first derive. It is authored interactively in **P6**,
      after the report has rendered and the wording has been agreed with the user.
    - `implementation_considerations` (+ optional `implementation_narrative`): the non-financial
@@ -1165,6 +1184,13 @@ gate (resume may have skipped P4's check).
      Also state the ownership consequence plainly: a third-party PPA or lease moves the tax
      attributes and depreciation to the lessor. Do NOT write a consideration that recommends
      preserving/capturing the §48E ITC — it is dead for new work (see P3 3b).
+     ⛔ **And say what a lease costs them in carbon.** Model the OWNED case (owners are content to
+     see it even when their own practice leans to leasing, because ownership is operationally
+     complex) — but whenever solar carries a material share of the plan's abatement, carry one line
+     naming that share and stating that under a roof lease or third-party PPA **the owner cannot
+     claim the reduction**; it belongs to whoever owns the array. On a live plan the array was 86 of
+     102 tCO₂e — i.e. the lease the client preferred would have forfeited most of the carbon story
+     the report was built on, and nobody had said so (Bain delivery meeting 2026-07-30).
    - Rendering to the **decarb-capital-plan** template additionally consumes: exit panes and the
      value bridge (both derive from the exit args above), `measures_considered` (server-extracted;
      nothing for you to pass), and the same `bps_thresholds`.
@@ -1200,7 +1226,19 @@ gate (resume may have skipped P4's check).
    drives ALL economics, the value bridge, and the year-by-year cashflow from that single plan.
    Measures that belong to OTHER modeled scenarios are still listed in the measures table, marked
    **"Alternative — not modeled in financials"** — included for comparison, excluded from the
-   headline economics. The template's own JavaScript renders every section and chart from the
+   headline economics.
+
+   **Be ready to say what "Recommended" means, because clients ask.** It means exactly one thing:
+   the measure is in the plan the USER selected at Gate 2, so it is inside the modeled economics.
+   It is *not* a claim that the measure clears their hurdle on its own — a plan can be recommended
+   as a bundle while individual measures inside it don't pay back. The table's decision columns are
+   projected per measure so the client can make that call themselves: **Payback** (net capex after
+   incentives ÷ the owner's annual net benefit — blank where there is no net capex or no benefit,
+   never zero), the **5-year screen** (does that payback land inside five years — the return-on-cost
+   test asked for in delivery), and **Abatement cost** (net lifetime cost ÷ tCO₂e abated **over the
+   hold to exit**, so it is comparable across measures and denominated in the client's own hold
+   period, not an arbitrary EUL). All three inherit the landlord-capture assumption from Gate 1(c) —
+   if that share is still unvalidated, the columns are directional and the report must say so. The template's own JavaScript renders every section and chart from the
    projected data — the **decision dashboard**, the **value-creation waterfall / exit bridge**,
    the **year-by-year cashflow**, and the **emissions trajectory with the CRREM pathway curve**.
    (You still author BOTH Audette plans in P4 and derive both — that is what populates the

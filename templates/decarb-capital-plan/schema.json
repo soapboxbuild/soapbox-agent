@@ -485,6 +485,10 @@
               "ghgi_bau_kgco2_m2": {
                 "type": "number",
                 "description": "Business-as-usual GHG intensity, kgCO2e/m\u00b2/yr, for reference."
+              },
+              "net_purchased_eui_kwh_m2": {
+                "type": "number",
+                "description": "Net purchased EUI for that year (kWh/m2/yr) after on-site generation offsets grid draw. Omitted when the plan has no on-site generation."
               }
             }
           }

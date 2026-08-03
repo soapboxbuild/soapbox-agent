@@ -1441,6 +1441,56 @@
     // plan overflows a single page on its own) and Notes. Same machinery for both.
     paginateFlowSection('measure-descriptions-section', 'Measure Descriptions (continued)', ['measure-descriptions-items']);
     paginateFlowSection('notes-section', 'Notes (continued)', ['implementation-considerations', 'incentives-items', 'compliance-items']);
+    // The measures TABLE is variable-length too — one row per measure plus a totals row plus an
+    // alternative row per non-recommended measure. It had no pagination at all, so a long roster
+    // simply stretched its page taller than the sheet instead of flowing onto a second one
+    // (user, 2026-08-03). Rows are the atomic units; the colgroup and header repeat on each page.
+    paginateTableSection('measures-section', 'Measures (continued)');
+    function paginateTableSection(pageId, contTitle) {
+      var page = document.getElementById(pageId);
+      if (!page || page.style.display === 'none') return;
+      var probe = document.createElement('div');
+      probe.style.cssText = 'width:1in;height:1in;position:absolute;visibility:hidden;left:-9999px';
+      document.body.appendChild(probe);
+      var pxIn = probe.getBoundingClientRect().width || 96; probe.remove();
+      var MAXH = (page.classList.contains('landscape') ? 8.5 : 11) * pxIn + 3;
+      if (page.getBoundingClientRect().height <= MAXH) return; // already fits — leave it alone
+      var table = page.querySelector('.data-table');
+      var tbody = table && table.querySelector('tbody');
+      if (!tbody) return;
+      var rows = Array.prototype.slice.call(tbody.children).map(function(r) { return r.outerHTML; });
+      if (rows.length < 2) return;
+
+      var makePage = function(isCont) {
+        var clone = page.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.style.display = '';
+        if (isCont) {
+          var t = clone.querySelector('.section-title');
+          if (t) t.textContent = contTitle;
+        }
+        clone.querySelector('.data-table tbody').innerHTML = '';
+        return clone;
+      };
+      var cur = makePage(false);
+      var curBody = cur.querySelector('.data-table tbody');
+      page.parentNode.insertBefore(cur, page);
+      for (var i = 0; i < rows.length; i++) {
+        curBody.insertAdjacentHTML('beforeend', rows[i]);
+        if (cur.getBoundingClientRect().height > MAXH && curBody.children.length > 1) {
+          curBody.removeChild(curBody.lastElementChild);
+          var carry = [rows[i]];
+          // Never let a totals row open a page on its own — it reads as a stray number with nothing
+          // above it. Carry the preceding row forward with it.
+          var tail = curBody.lastElementChild;
+          if (/totals-row/.test(rows[i]) && tail) { carry.unshift(tail.outerHTML); curBody.removeChild(tail); }
+          cur = makePage(true); curBody = cur.querySelector('.data-table tbody');
+          page.parentNode.insertBefore(cur, page);
+          carry.forEach(function(r) { curBody.insertAdjacentHTML('beforeend', r); });
+        }
+      }
+      page.parentNode.removeChild(page);
+    }
     function paginateFlowSection(pageId, contTitle, itemContainerIds) {
       var page = document.getElementById(pageId);
       if (!page || page.style.display === 'none') return;
@@ -1449,7 +1499,9 @@
       probe.style.cssText = 'width:1in;height:1in;position:absolute;visibility:hidden;left:-9999px';
       document.body.appendChild(probe);
       var pxIn = probe.getBoundingClientRect().width || 96; probe.remove();
-      var MAXH = 11 * pxIn + 3; // border-box min-height is exactly 11in; small slack for rounding
+      // The cap is the PAGE's own height, not a constant: the measures page is landscape and only
+      // 8.5in tall, so an 11in cap would let it grow half a page past its own frame before splitting.
+      var MAXH = (page.classList.contains('landscape') ? 8.5 : 11) * pxIn + 3;
       var content = page.querySelector('.page-content');
       if (!content) return;
 
@@ -1487,6 +1539,7 @@
       };
       var isTitle = function(html) { return /class="[^"]*subsection-title/.test(html); };
 
+      var firstTitle = (function() { var t = page.querySelector('.section-title'); return t ? t.textContent : ''; })();
       var cur = makePage(false), curContent = cur.querySelector('.page-content');
       page.parentNode.insertBefore(cur, page);
       for (var i = 0; i < units.length; i++) {
@@ -1506,6 +1559,36 @@
         }
       }
       page.parentNode.removeChild(page); // drop the original single-page section; the clones replace it
+
+      // CONVERGENCE PASS. The per-insertion check can still leave a page over the cap: heights are
+      // measured as units are appended, but carrying a stranded subsection title forward reflows the
+      // page that keeps it, and a unit that fitted at measure time can end up over once its
+      // neighbours move. Sweep the finished pages and push the last unit of any over-tall page onto
+      // the next one until everything fits. Bounded so a single oversized unit cannot spin.
+      var pagesOf = function() {
+        return Array.prototype.slice.call(document.querySelectorAll('.page')).filter(function(pg) {
+          var t = pg.querySelector('.section-title');
+          return t && (t.textContent === contTitle || t.textContent === firstTitle);
+        });
+      };
+      for (var guard = 0; guard < 40; guard++) {
+        var pgs = pagesOf(), moved = false;
+        for (var k = 0; k < pgs.length; k++) {
+          var pc = pgs[k].querySelector('.page-content');
+          var flow = pc.querySelectorAll('.consideration-item, .subsection-title, .narrative');
+          if (pgs[k].getBoundingClientRect().height <= MAXH || flow.length < 2) continue;
+          var last = pc.lastElementChild;
+          if (!last) continue;
+          var next = pgs[k + 1];
+          if (!next) { next = makePage(true); pgs[k].parentNode.insertBefore(next, pgs[k].nextSibling); }
+          var nc = next.querySelector('.page-content');
+          // Insert after this page's leading chrome (eyebrow + title), before its existing units.
+          var anchor = nc.querySelector('.subsection-title, .consideration-item, .narrative');
+          if (anchor) nc.insertBefore(last, anchor); else nc.appendChild(last);
+          moved = true;
+        }
+        if (!moved) break;
+      }
     }
 
     /* ════════════════════════════════

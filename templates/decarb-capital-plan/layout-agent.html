@@ -739,7 +739,15 @@
         + xsRows + '</div>');
       showEl('exec-summary');
     }
+    // The agreed executive summary SUPERSEDES the engine's deterministic narrative — it does not sit
+    // above it. Two summaries of the same plan on the same page is a worse document than either alone:
+    // the reader has to work out which one is authoritative, and they restate the same figures in
+    // different words (the engine's is generated, the exec summary is the one agreed with the client).
+    // Show the narrative only when there is no executive summary to lead with.
     setHtml('summary-narrative', esc(sum.narrative || '').replace(/\n/g, '<br>'));
+    var hasExecSummary = !!(document.getElementById('exec-summary') && document.getElementById('exec-summary').style.display !== 'none' && document.getElementById('exec-summary').innerHTML.trim());
+    // The agreed executive summary supersedes the engine narrative (see above).
+    if (hasExecSummary) { var _sn = document.getElementById('summary-narrative'); if (_sn) _sn.style.display = 'none'; }
     var kpiTiles = [];
     if (fin.total_investment != null) kpiTiles.push({ label: 'Total Incremental Investment', value: fmtCurrency(num(fin.total_investment)) });
     if (fin.total_incentives != null) kpiTiles.push({ label: 'Incentives', value: fmtCurrency(num(fin.total_incentives)) });
@@ -763,16 +771,42 @@
     var netEnergyPct = (imp.energy && imp.energy.baseline_kwh != null && imp.energy.net_purchased_kwh != null && num(imp.energy.baseline_kwh) > 0)
       ? (num(imp.energy.baseline_kwh) - num(imp.energy.net_purchased_kwh)) / num(imp.energy.baseline_kwh) : null;
 
-    if (effEnergyPct != null) kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(effEnergyPct), sublabel: 'efficiency' });
-    if (netEnergyPct != null && (effEnergyPct == null || Math.abs(netEnergyPct - effEnergyPct) > 0.005)) {
-      kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(netEnergyPct), sublabel: '+ solar' });
+    // ── ONE energy tile and ONE emissions tile — the fullest figure of each ─────────────────────
+    // The ladder version (efficiency / + solar / + grid) put five near-identical percentages on the
+    // cover and the reader had to work out which was the headline. Show the totals that answer the
+    // question being asked — how much less energy does the building buy, and how much less carbon
+    // does it emit — and leave the decomposition to the Impact section, where the bars carry it
+    // (user, 2026-08-03). Sublabels state what each figure INCLUDES so neither can be misread.
+    var totalEnergyPct = (netEnergyPct != null) ? netEnergyPct : effEnergyPct;
+    if (totalEnergyPct != null) {
+      kpiTiles.push({ label: 'Energy Reduction', value: fmtPct(totalEnergyPct),
+        sublabel: (netEnergyPct != null) ? 'incl. on-site solar' : 'efficiency measures' });
     }
-    if (effCarbonPct != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(effCarbonPct), sublabel: 'efficiency' });
-    if (carbonPctForKpi != null) kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(carbonPctForKpi), sublabel: '+ solar' });
-    if (cumCarbonPct != null && carbonPctForKpi != null && cumCarbonPct > carbonPctForKpi + 0.005) {
-      kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(cumCarbonPct), sublabel: '+ grid, vs today' });
+    // Emissions: the cumulative figure vs TODAY, which includes both the measures and projected grid
+    // decarbonization. That is the number a reader means by "how much less carbon", and the Impact
+    // section separates the grid's contribution from the asset's own.
+    var totalCarbonPct = (cumCarbonPct != null) ? cumCarbonPct : carbonPctForKpi;
+    if (totalCarbonPct != null) {
+      kpiTiles.push({ label: 'Emissions Reduction', value: fmtPct(totalCarbonPct),
+        sublabel: (cumCarbonPct != null) ? 'incl. solar + grid decarb., vs today' : 'incl. on-site solar' });
     }
-    if (fin.simple_payback_years != null) kpiTiles.push({ label: 'Simple Payback', value: fmt2sig(num(fin.simple_payback_years)) + ' yrs' });
+    // The hurdle is the client's own screen, so the verdict belongs on the cover next to the spend.
+    // Simple payback was dropped: on an exit-framed plan it is the least meaningful of the returns
+    // (this plan's payback is 6.2 yrs while the exit-inclusive IRR clears 15% comfortably).
+    var irrForKpi = (fin.irr_incl_exit_pct != null) ? num(fin.irr_incl_exit_pct)
+      : (fin.irr_pct != null) ? num(fin.irr_pct) : null;
+    if (fin.irr_hurdle_pct != null) {
+      var hurdle = num(fin.irr_hurdle_pct);
+      if (irrForKpi != null) {
+        kpiTiles.push({ label: 'IRR vs Hurdle', value: fmt2sig(irrForKpi) + '%',
+          sublabel: 'vs ' + fmt2sig(hurdle) + '% hurdle — ' + (irrForKpi >= hurdle ? 'clears' : 'misses')
+            + (fin.irr_incl_exit_pct != null ? ' (incl. exit)' : '') });
+      } else {
+        kpiTiles.push({ label: 'IRR Hurdle', value: fmt2sig(hurdle) + '%', sublabel: 'client screen' });
+      }
+    } else if (irrForKpi != null) {
+      kpiTiles.push({ label: fin.irr_incl_exit_pct != null ? 'IRR (incl. exit)' : 'IRR', value: fmt2sig(irrForKpi) + '%' });
+    }
     if (fin.exit_year != null) kpiTiles.push({ label: 'Presumed Exit Year', value: String(fin.exit_year) });
     if (fin.exit_cap != null) kpiTiles.push({ label: 'Presumed Exit Cap', value: fmtPct(num(fin.exit_cap)) });
     if (kpiTiles.length) {

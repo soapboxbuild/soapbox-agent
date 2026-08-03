@@ -1105,6 +1105,61 @@ Set `phase: "P4b"` and save.
 
 ---
 
+### Authoring Audette plans — the traps that have actually cost real engagement time
+
+Every rule here comes from a live failure on 2026-08-03, and each one cost between one derive and
+an hour. Read this before you touch a plan.
+
+**1. Confirm which customer account you are on, before every write AND every derive.**
+`list_customer_accounts` → check `current_account`, and `switch_customer_account` if it is not the
+client you are working for. A reconnect can silently revert the session to a different account:
+Evergreen derives twice came back with a zero baseline because the token had reverted to Cortland,
+and the agent read it as a data problem rather than an account problem.
+
+**2. `update_custom_plan_measures` is broken server-side.** It returns
+`InvalidRequestError: A transaction is already begun on this Session` for ANY input — it fails
+before argument validation, so a plan id of all zeros produces the same error. Reads,
+`submit_equipment_survey`, building-attribute writes and `create_custom_plan` are all fine. **Do not
+reconnect over it** (see the tool-error rule in Failure modes) and do not retry it in a loop.
+Workaround: build a corrected plan with `create_custom_plan` and derive against the new id. Cost to
+respect: **there is no delete-plan tool**, so every workaround plan is permanent — Evergreen's
+building carries ~29 plans, and each confused re-derive added more. Get it right in one plan.
+
+**3. A recreated plan must carry the SCOPE, not just the `crm_id`.** `create_custom_plan` accepts
+`name`, `description`, `measure_size`, `size_unit`, `measure_cost`, `total_incentives`,
+`like_for_like_cost`, `lifetime`, `notes` and the `landlord_share_*` fields. Pass them. A
+catalog-only recreation silently downgrades the plan: "Rooftop BTM Solar PV, 175 kW" became
+"Install a Behind the Meter Solar Array" and a retro-commissioning bundle became "Install DCV
+Controls", so the report described thinner work than the client had agreed. If no `crm_id` fits, use
+`crm_id: "generic"` with explicit effects rather than the nearest wrong catalog entry.
+
+**4. `landlord_share_*` are FRACTIONS 0–1, not percentages** — despite the tool description saying
+"%". Passing 100 and 20 is rejected outright; pass 1 and 0.2.
+
+**5. Revenue arithmetic — the one that silently inflates money.** For a measure carrying revenue
+(`revenue_effect.revenue_by_year`):
+- Audette needs **one entry per model year from install to 2050** (23 entries for a 2028 install).
+  A shorter array throws `IndexError: list index out of range` server-side.
+- The deriver annualizes **`lifetime_revenue ÷ measure_life`**.
+- So the entries must **SUM to `annual × measure_life`** — NOT carry the annual figure each. A
+  23-entry array of $4,500 against a 10-year life became **$10,350/yr**, 2.3× the intended rate,
+  and nothing flagged it.
+- Verify after creating: read the measure back and check `lifetime_revenue ÷ measure_life` equals
+  the annual figure you intended.
+
+**6. Revenue is counted in exactly ONE place.** Either the measure carries it (`revenue_effect`) or
+you pass `ancillary_income` on the derive — never both. The engine SUMS them, and because each
+re-derive re-adds, the figure compounds: EV charging ran $10,350 → $13,950 → $24,300/yr across
+three derives, inflating net value creation from $478K to $771K. Prefer the measure: the revenue
+then lives with the capital, visible in the plan, and nothing has to be remembered on every future
+derive. `derive_engagement` now warns (`ancillary-income-double-counted`) when both exist.
+
+**7. Verify plan LABELS against plan IDS before deriving.** `plan_a_label`/`plan_b_label` are
+agent-supplied and are not checked against the ids. Crossing them attached "Recommended" to the
+full-roster plan, put post-exit measures inside the recommended bundle, and produced a null IRR —
+a confusing version that had to be diagnosed from roster counts. Read both plans back and confirm
+the label you are about to call `recommended_plan` belongs to the plan whose id you are passing.
+
 ## P4b — Measure Descriptions (INTERACTIVE, before the report is produced)
 
 The measures table gives a client the numbers. It does not tell them **what the work is** — and they
@@ -1439,6 +1494,14 @@ so you develop it WITH them.
    `executive_summary` `{headline, crrem_status, divergence_year, recommendation, limitations[]}`,
    then `fill_report` with the SAME `artifact_id`. It lives on the record, so it survives the next
    regeneration instead of being lost.
+
+⛔ **Any LATER derive can stale an already-agreed summary — re-check it every time.** The summary
+persists on the record, so a subsequent derive keeps the text while the economics move underneath
+it. This happened twice in one evening: a projector fix moved net value creation from $564K to
+$617,666, and then an EV double-count fix moved it again to $477,666 — the delivered summary was
+wrong on four figures each time, while reading perfectly. After ANY derive that follows a summary,
+re-read the four or five figures it quotes against the record and correct them before rendering.
+The `exec-summary-figure-untraceable` warning is your safety net, not your first check.
 
 **This is the one expected exception to RENDER ONCE.** The P5 render plus this final agreed-summary
 render is two — that is by design. Any render beyond those two means something upstream changed and

@@ -1330,11 +1330,17 @@
       showEl('measure-descriptions-section');
       showEl('measure-descriptions-block');
       setHtml('measure-descriptions-items', measureDescItems.map(function(it) {
-        // The projector can only match a description to a measure BY NAME (Audette custom-plan
-        // measures carry no stable id), so a renamed measure is indistinguishable from a removed
-        // one. Word it as something to check, never as a claim that the measure was dropped.
-        var stale = it.unmatched_measure
-          ? '<div class="consideration-detail" style="color:var(--bronze-mid);font-style:italic">No measure of this name in the recommended plan — confirm this scope is current.</div>' : '';
+        // Two different situations, two different notes. Describing an ALTERNATIVE measure is
+        // legitimate — it just isn't part of the recommended ask, so say that in the same language
+        // the measures table uses. A description matching NO measure at all is the actual problem
+        // (renamed in Audette, or dropped after the conversation), and matching is by name only, so
+        // word it as something to check rather than a claim about removal.
+        var stale = '';
+        if (it.in_alternative_plan) {
+          stale = '<div class="consideration-detail" style="color:var(--text-muted);font-style:italic">Alternative — not part of the recommended plan.</div>';
+        } else if (it.unmatched_measure) {
+          stale = '<div class="consideration-detail" style="color:var(--bronze-mid);font-style:italic">No measure of this name in the recommended plan — confirm this scope is current.</div>';
+        }
         return '<div class="consideration-item"><div class="consideration-title">' + esc(it.measure || '') + '</div>'
           + '<div class="consideration-detail">' + esc(it.description || '').replace(/\n/g, '<br>') + '</div>' + stale + '</div>';
       }).join(''));

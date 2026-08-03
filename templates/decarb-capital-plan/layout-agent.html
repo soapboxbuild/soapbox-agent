@@ -665,6 +665,18 @@
       return v || fallback;
     }
     var COLOR_POS = chartColor('--chart-positive', '#004F31');
+    // The reduction figures cover the MODELLED window — first trajectory year to exit — not a
+    // boilerplate decade. This report is a 3-year hold (2026-2029) and both impact panels claimed
+    // "10-year reduction" (user, 2026-08-03).
+    function horizonLabel() {
+      var tr = ((data.impact || {}).trajectory) || [];
+      var y0 = tr.length ? num(tr[0].year) : null;
+      var y1 = (data.financial && data.financial.exit_year != null) ? num(data.financial.exit_year)
+             : (tr.length ? num(tr[tr.length - 1].year) : null);
+      if (y0 == null || y1 == null || y1 <= y0) return '';
+      return (y1 - y0) + '-year';
+    }
+    var HORIZON = horizonLabel();
     var COLOR_NEG = chartColor('--chart-negative', '#C00000');
     var COLOR_S1  = chartColor('--chart-series-1', '#00458A');
     var COLOR_S2  = chartColor('--chart-series-2', '#0092F9');
@@ -951,8 +963,14 @@
       // least one year actually carries a non-zero fine_avoidance_usd; Implied Value Uplift
       // is always shown (— when the engine didn't produce it for a year).
       var hasFineCol = cashflow.some(function(c) { var fv = num(c.fine_avoidance_usd); return fv != null && fv !== 0; });
+      // Ancillary revenue (EV charging fees, roof-lease rent) was inside the Cumulative column with
+      // no column of its own, so the table did not foot: cumulative moved by $10,350/yr more than
+      // the visible columns explained and a reader could not reconcile it (Evergreen, 2026-08-03).
+      var hasAncCol = cashflow.some(function(c) { var av = num(c.ancillary_revenue_usd); return av != null && av !== 0; });
       setHtml('cashflow-thead', '<tr>'
-        + '<th class="num">Year</th><th class="num">Incremental Capex</th><th class="num">Incentives</th><th class="num">Utility Savings</th><th class="num">Cumulative</th>'
+        + '<th class="num">Year</th><th class="num">Incremental Capex</th><th class="num">Incentives</th><th class="num">Utility Savings</th>'
+        + (hasAncCol ? '<th class="num">Ancillary Revenue</th>' : '')
+        + '<th class="num">Cumulative</th>'
         + (hasFineCol ? '<th class="num">Fine Avoidance</th>' : '')
         + '<th class="num">Implied Value Uplift</th>'
         + '</tr>');
@@ -963,7 +981,9 @@
           return '<td class="num">' + (n != null ? fmtCurrency(n) : '—') + '</td>';
         }
         return '<tr><td class="num">' + esc(String(c.year)) + '</td>'
-          + cell(c.incremental_capex_usd) + cell(c.incentives_usd) + cell(c.utility_savings_usd) + cell(c.cumulative_usd)
+          + cell(c.incremental_capex_usd) + cell(c.incentives_usd) + cell(c.utility_savings_usd)
+          + (hasAncCol ? cell(c.ancillary_revenue_usd) : '')
+          + cell(c.cumulative_usd)
           + (hasFineCol ? cell(c.fine_avoidance_usd) : '')
           + cell(c.value_uplift_usd)
           + '</tr>';
@@ -1005,6 +1025,7 @@
 
     var bridge = fin.bridge;
     var wf = fin.waterfall;
+    var bridgeNetNote = '';
     if (bridge || wf) {
       showEl('exhibit-waterfall');
       var steps = [], net, netLabel;
@@ -1022,6 +1043,17 @@
         if (num(bridge.exit_value_uplift) != null) steps.push({ label: 'Exit Value Uplift', v: num(bridge.exit_value_uplift) });
         net = num(bridge.net);
         netLabel = 'Net';
+        // The bridge's Net counts BOTH interim operating cash and the capitalized exit uplift; the
+        // engine's plan-level net_value_creation counts the uplift against capital alone. The two
+        // legitimately differ, and when the executive summary quotes the engine's number while this
+        // exhibit shows the bridge's, the document contradicts itself with no explanation
+        // (Evergreen: $564K vs $729K, 2026-08-03). State both.
+        var planNet = num(bridge.plan_net_value_creation);
+        if (planNet != null && net != null && Math.abs(planNet - net) > 1) {
+          bridgeNetNote = ' Net counts operating cash received over the hold plus the capitalized exit uplift; '
+            + 'the plan\'s net value creation of ' + fmtCurrency(planNet) + ' counts the uplift against capital alone.';
+        }
+        setText('waterfall-note', 'Cumulative operating flows over the hold plus capitalized exit value uplift at the presumed exit cap.' + bridgeNetNote);
       } else {
         // Backward compat: the pre-bridge operating-basis waterfall shape.
         // Order: capital outlay first, then incentives as a positive capital impact offsetting it,
@@ -1107,7 +1139,7 @@
       setHtml('impact-carbon',
         '<div class="impact-metric-title">Carbon (tCO2e/yr)</div>'
         + (cPct != null ? '<div class="impact-reduction-pct">' + fmtPct(cPct) + '</div><div class="exhibit-note">'
-            + (carbon.basis === 'measures_only' ? '10-year reduction, all measures incl. on-site solar' : '10-year reduction, incl. grid decarbonization')
+            + (carbon.basis === 'measures_only' ? ((HORIZON ? HORIZON + ' ' : '') + 'reduction, all measures incl. on-site solar') : ((HORIZON ? HORIZON + ' ' : '') + 'reduction, incl. grid decarbonization'))
             + '</div>' : '')
         + '<div style="margin-top:12px">'
         + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((cBase / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cBase) + '</div></div>'
@@ -1140,7 +1172,7 @@
         // Same basis rule as carbon: only claim "efficiency measures only" when the projector says
         // the figure actually excludes on-site generation.
         + (ePct != null ? '<div class="impact-reduction-pct">' + fmtPct(ePct) + '</div><div class="exhibit-note">'
-            + (energy.basis === 'efficiency_only' ? '10-year consumption reduction, efficiency measures only' : '10-year reduction')
+            + (energy.basis === 'efficiency_only' ? ((HORIZON ? HORIZON + ' ' : '') + 'consumption reduction, efficiency measures only') : ((HORIZON ? HORIZON + ' ' : '') + 'reduction'))
             + '</div>' : '')
         + '<div style="margin-top:12px">'
         + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((eBase / eMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + eBaseF.value + ' ' + eBaseF.unit + '</div></div>'
@@ -1166,8 +1198,19 @@
       var yMin = years.length ? years[0] : 0, yMax = years.length ? years[years.length - 1] : 1;
       function px(yr) { return X1 + (yMax === yMin ? 0 : (yr - yMin) / (yMax - yMin)) * (X2 - X1); }
 
+      // Domain from points INSIDE the chart's own year window only. The CRREM pathway arrives as a
+      // full 2020-2050 curve while the chart draws just the hold (here 2026-2029), and those
+      // off-screen early years are the tallest values in the series — 87 kgCO2e/m² in 2020 against a
+      // 50 max on screen, which pushed the axis to 100 and squashed every visible line into the
+      // bottom 40% of the frame. A real 13% decline then reads as a flat line (user, 2026-08-03).
       var allV = [];
-      series.forEach(function(s) { s.points.forEach(function(p) { if (p.y != null) allV.push(p.y); }); });
+      series.forEach(function(s) {
+        s.points.forEach(function(p) {
+          if (p.y == null) return;
+          if (p.x != null && (p.x < yMin || p.x > yMax)) return;
+          allV.push(p.y);
+        });
+      });
       if (!allV.length) { setHtml(containerId, ''); return; }
       // BPS thresholds participate in the y-domain so a limit above/below every plotted
       // series still lands inside the frame (never clipped off the top or bottom).
@@ -1305,7 +1348,7 @@
       var euiPathwayPoints = null;
       if (crremPath && crremPath.length && crremPath.some(function(p) { return p.eui_kwh_m2yr != null; })) {
         euiPathwayPoints = crremPath.filter(function(p) { return num(p.eui_kwh_m2yr) != null; }).map(function(p) { return { x: p.year, y: num(p.eui_kwh_m2yr) }; });
-        euiSeries.push({ label: crremLabel, color: COLOR_NET, dash: '5,4', dots: false, points: euiPathwayPoints });
+        euiSeries.push({ label: crremLabel, color: ((COLOR_NET === COLOR_S1) ? (COLOR_NEG !== COLOR_S1 ? COLOR_NEG : '#A8322A') : COLOR_NET), dash: '5,4', dots: false, points: euiPathwayPoints });
       }
       if (euiSeries[euiPlannedIdx].points.some(function(p) { return p.y != null; })) {
         showEl('exhibit-eui');
@@ -1314,12 +1357,19 @@
         buildAxisChart('eui-chart-block', euiSeries, { years: tYears, yAxisLabel: 'kWh/m²/yr', H: 190, zeroBased: true, strandingYear: euiStranding, thresholds: bpsThresholds.filter(function(t) { return t.metric === 'eui'; }) });
       }
 
+      // "Business-as-Usual" alone invites the reader to see the building improving on its own — but
+      // nothing changes in BAU, so its entire decline IS projected grid decarbonization. Say so in
+      // the legend, the way the carbon ladder already does with its "+ grid decarb." row.
       var ghgiSeries = [
-        { label: 'Business-as-Usual', color: COLOR_BAU, dash: '4,3', points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_bau_kgco2_m2) }; }) },
+        { label: 'Business-as-Usual (grid decarbonization only)', color: COLOR_BAU, dash: '4,3', points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_bau_kgco2_m2) }; }) },
         { label: 'Planned (GHGi)', color: COLOR_S1, points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_kgco2_m2) }; }) }
       ];
       if (crremPath && crremPath.length && crremPath.some(function(p) { return p.carbon_kgco2_m2yr != null; })) {
-        ghgiSeries.push({ label: crremLabel, color: COLOR_NET, dash: '5,4', dots: false,
+        // The compliance pathway must not share the planned line's hue — an org brand overlay can
+        // collapse --chart-net onto --chart-series-1, which is exactly what happened here: two blue
+        // lines separated only by a dash pattern (Bain, 2026-08-03).
+        var pathColor = (COLOR_NET === COLOR_S1) ? (COLOR_NEG !== COLOR_S1 ? COLOR_NEG : '#A8322A') : COLOR_NET;
+        ghgiSeries.push({ label: crremLabel, color: pathColor, dash: '5,4', dots: false,
           points: crremPath.filter(function(p) { return num(p.carbon_kgco2_m2yr) != null; }).map(function(p) { return { x: p.year, y: num(p.carbon_kgco2_m2yr) }; }) });
       }
       if (ghgiSeries[1].points.some(function(p) { return p.y != null; })) {
@@ -1446,6 +1496,78 @@
     // simply stretched its page taller than the sheet instead of flowing onto a second one
     // (user, 2026-08-03). Rows are the atomic units; the colgroup and header repeat on each page.
     paginateTableSection('measures-section', 'Measures (continued)');
+    // Two pages carry fixed BLOCKS rather than a list of items, and both ran past their frame: the
+    // cover/Summary page (exec summary + narrative + KPI grid) and Impact (two panels + two charts).
+    // Neither can use the item-level flow — splitting a KPI grid or a chart mid-element is worse than
+    // a long page — so they flow at BLOCK granularity: whole children move to a continuation page.
+    // A cover cannot repeat its header, so the continuation is the same page with the cover band
+    // stripped (user, 2026-08-03: "either fit on singular pages or expand on to more pages").
+    paginateBlockPage('cover', 'Summary (continued)');
+    paginateBlockPage('impact-section', 'Impact (continued)');
+    function paginateBlockPage(pageId, contTitle) {
+      var page = document.getElementById(pageId);
+      if (!page || page.style.display === 'none') return;
+      var probe = document.createElement('div');
+      probe.style.cssText = 'width:1in;height:1in;position:absolute;visibility:hidden;left:-9999px';
+      document.body.appendChild(probe);
+      var pxIn = probe.getBoundingClientRect().width || 96; probe.remove();
+      var MAXH = (page.classList.contains('landscape') ? 8.5 : 11) * pxIn + 3;
+      if (page.getBoundingClientRect().height <= MAXH) return;
+      var content = page.querySelector('.page-content');
+      if (!content) return;
+      var blocks = Array.prototype.slice.call(content.children).filter(function(el) {
+        if (el.classList.contains('section-eyebrow') || el.classList.contains('section-title')) return false;
+        return !(el.style && el.style.display === 'none');
+      });
+      if (blocks.length < 2) return; // one oversized block cannot be split — leave it
+
+      var makeCont = function() {
+        var clone = page.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.style.display = '';
+        // Keep the page's own classes: the KPI grid's column layout is scoped under .cover-page, and
+        // stripping the class collapsed it to one column 555px tall — a continuation page that
+        // overflowed worse than the page it was relieving. Only the cover BAND is removed; a cover
+        // header never repeats.
+        if (!clone.classList.contains('page')) clone.classList.add('page');
+        var band = clone.querySelector('.cover-header');
+        if (band) band.remove();
+        var t = clone.querySelector('.section-title');
+        if (t) t.textContent = contTitle;
+        var c = clone.querySelector('.page-content');
+        Array.prototype.slice.call(c.children).forEach(function(el) {
+          if (!el.classList.contains('section-eyebrow') && !el.classList.contains('section-title')) el.remove();
+        });
+        return clone;
+      };
+
+      var cont = null;
+      // Move trailing blocks off the page until it fits, newest-first so document order is preserved.
+      for (var guard = 0; guard < 20 && page.getBoundingClientRect().height > MAXH; guard++) {
+        var remaining = Array.prototype.slice.call(content.children).filter(function(el) {
+          return !el.classList.contains('section-eyebrow') && !el.classList.contains('section-title')
+            && !(el.style && el.style.display === 'none');
+        });
+        if (remaining.length < 2) break;
+        var last = remaining[remaining.length - 1];
+        if (!cont) { cont = makeCont(); page.parentNode.insertBefore(cont, page.nextSibling); }
+        var cc = cont.querySelector('.page-content');
+        var anchor = Array.prototype.slice.call(cc.children).filter(function(el) {
+          return !el.classList.contains('section-eyebrow') && !el.classList.contains('section-title');
+        })[0];
+        if (anchor) cc.insertBefore(last, anchor); else cc.appendChild(last);
+        // If the continuation itself overflows, start another one next round.
+        if (cont.getBoundingClientRect().height > MAXH) {
+          var next = makeCont();
+          cont.parentNode.insertBefore(next, cont.nextSibling);
+          var overflowBlocks = Array.prototype.slice.call(cc.children).filter(function(el) {
+            return !el.classList.contains('section-eyebrow') && !el.classList.contains('section-title');
+          });
+          if (overflowBlocks.length > 1) next.querySelector('.page-content').appendChild(overflowBlocks[overflowBlocks.length - 1]);
+          cont = next;
+        }
+      }
+    }
     function paginateTableSection(pageId, contTitle) {
       var page = document.getElementById(pageId);
       if (!page || page.style.display === 'none') return;

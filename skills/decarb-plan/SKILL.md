@@ -1411,6 +1411,16 @@ so you develop it WITH them.
 
 **Sequence:**
 
+0. **The derive now CHECKS your figures.** `derive_engagement` emits
+   `exec-summary-figure-untraceable` (warn) listing any number in the summary that does not match a
+   value of its own kind in the record — an intensity claim is checked against intensities, a share
+   against shares, a dollar figure against dollars. **Resolve every one before you show the summary
+   to the user**: trace it to an exhibit or delete it. This exists because the first real summary
+   broke the rule below three times in four paragraphs — "37 to 15 kgCO₂e/m²" when the trajectory
+   ends at 11.0, "solar drives 58% of the carbon reduction" when solar is 94% of measure abatement
+   and 58% was the *consumption* share, and a net-value figure that contradicted the exhibit on the
+   same page (Bain/Evergreen 2026-08-03). The check is a warning, not a block, because it cannot know
+   every legitimate derivation — but a warning you ignore becomes a client-facing error.
 1. **Draft from the derived record.** Read the rendered figures. Every number you use must already
    appear in the record — the compliance basis and divergence year come from
    `impact.trajectory` vs `impact.crrem.pathway`, not from eyeballing the chart. Never introduce a
@@ -1442,6 +1452,15 @@ should have been settled before P5.
   is exactly the case that prompted this request.
 - `limitations` is not boilerplate. Say what a reader would otherwise assume wrongly — e.g. "metered
   energy data available from 2026 only", or an exit cap still awaiting survey confirmation.
+- **Say what the plan costs per tonne, and rank it.** The measures table now carries a marginal
+  abatement cost per measure (net capex ÷ annual tCO₂e). If the headline measure is the *expensive*
+  one — on Evergreen the 175 kW array is $4,377/annual tCO₂e against $1,490 for the DHW heat pump —
+  say so and say why it still earns its place (exit value, not carbon cost-effectiveness). A summary
+  that omits this reads as advocacy; one that states it reads as advice.
+- **Name which value convention you are quoting.** The bridge's Net counts operating cash over the
+  hold PLUS the capitalized exit uplift; the engine's plan-level net value creation counts the uplift
+  against capital alone. They legitimately differ. Quote one, label it, and do not let the summary
+  and the exhibit show different numbers with no explanation.
 - If the plan misses the client's `irr_hurdle_pct`, say so in the headline. The report already prints
   the pass/fail; the summary should not imply a rosier verdict than the cashflow page.
 

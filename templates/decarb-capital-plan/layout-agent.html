@@ -1181,13 +1181,16 @@
       var eBase = num(energy.baseline_kwh), ePost = num(energy.post_retrofit_kwh);
       var eMax = Math.max(eBase, ePost) || 1;
       var eBaseF = formatEnergyKwh(eBase), ePostF = formatEnergyKwh(ePost);
-      var ePct = eBase ? (eBase - ePost) / eBase : null;
-      // "Show both": the headline is the building's own CONSUMPTION reduction (efficiency +
-      // electrification). On-site solar GENERATION doesn't reduce consumption — it offsets
-      // purchased energy — so it gets its own bar/EUI figure instead of inflating the headline
-      // (it was driving a 75% "site energy reduction" and EUI 100->26; Bain/Evergreen 2026-07-30).
       var eNet = energy.net_purchased_kwh != null ? num(energy.net_purchased_kwh) : null;
       var showNet = eNet != null && Math.abs(eNet - ePost) > 1;
+      var ePct = eBase ? (eBase - (showNet ? eNet : ePost)) / eBase : null;
+      // The headline is the TOTAL energy saving including on-site solar — the reduction in what the
+      // building actually buys (user, 2026-08-03). It previously showed efficiency ONLY, so the panel
+      // led with 4.3% while its own bottom bar showed a 66% fall in purchased energy and the cover
+      // KPI said 66% — three numbers for one question. The decomposition stays in the bars below,
+      // where "After efficiency" and "+ solar" carry it explicitly, and the earlier concern still
+      // holds: generation offsets purchased energy rather than reducing consumption, which is why
+      // the sublabel names what the figure includes rather than calling it a consumption cut.
       var eMaxAll = Math.max(eBase, ePost, eNet != null ? eNet : 0) || 1;
       var eNetF = eNet != null ? formatEnergyKwh(eNet) : null;
       var euiLine = (energy.eui_baseline != null && energy.eui_target != null)
@@ -1199,7 +1202,9 @@
         // Same basis rule as carbon: only claim "efficiency measures only" when the projector says
         // the figure actually excludes on-site generation.
         + (ePct != null ? '<div class="impact-reduction-pct">' + fmtPct(ePct) + '</div><div class="exhibit-note">'
-            + (energy.basis === 'efficiency_only' ? ((HORIZON ? HORIZON + ' ' : '') + 'consumption reduction, efficiency measures only') : ((HORIZON ? HORIZON + ' ' : '') + 'reduction'))
+            + (HORIZON ? HORIZON + ' ' : '')
+            + (showNet ? 'reduction in purchased energy, incl. on-site solar'
+                       : (energy.basis === 'efficiency_only' ? 'consumption reduction, efficiency measures only' : 'reduction'))
             + '</div>' : '')
         + '<div style="margin-top:12px">'
         + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((eBase / eMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + eBaseF.value + ' ' + eBaseF.unit + '</div></div>'

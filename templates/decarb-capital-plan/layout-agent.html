@@ -180,7 +180,10 @@
     .section-title { font-family: var(--font-serif); font-size: 24px; font-weight: 400; color: var(--text-primary); margin-bottom: var(--space-8); padding-bottom: var(--space-4); border-bottom: 2px solid var(--black); }
     .subsection-title { font-family: var(--font-serif); font-size: 16px; font-weight: 600; color: var(--text-primary); margin: var(--space-8) 0 var(--space-4); }
     .subsection-title:first-of-type { margin-top: 0; }
-    .exec-summary { border-left: 3px solid var(--bronze); padding: 0 0 0 var(--space-5); margin-bottom: var(--space-8); }
+    /* Plain paragraphs. The bronze left rule read as a pull-quote or a callout — a device for an
+       aside — when this is the primary text of the section and everything below it is supporting
+       detail (user, 2026-08-03). No border, no indent. */
+    .exec-summary { margin-bottom: var(--space-8); }
     .exec-summary-eyebrow { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bronze); font-weight: 700; margin-bottom: var(--space-3); }
     .exec-summary-headline { font-family: var(--font-serif); font-size: 20px; line-height: 1.4; color: var(--text-primary); margin-bottom: var(--space-4); }
     .exec-summary-row { font-size: 12.5px; line-height: 1.6; color: var(--text-muted); margin-bottom: var(--space-2); }
@@ -744,7 +747,15 @@
       }
       if (xs.recommendation) xsRows += '<div class="exec-summary-row"><strong>Recommendation:</strong> ' + esc(xs.recommendation) + '</div>';
       if (Array.isArray(xs.limitations) && xs.limitations.length) {
-        xsRows += '<div class="exec-summary-row"><strong>Data limitations:</strong> ' + xs.limitations.map(function(l) { return esc(l); }).join('; ') + '</div>';
+        // One line per limitation. Joining with '; ' produced ".; " wherever a limitation already
+        // ended in a full stop, which it usually does — visible in the first delivered report.
+        xsRows += '<div class="exec-summary-row"><strong>Data limitations:</strong></div>'
+          + xs.limitations.filter(function(l) { return l != null && String(l).trim(); })
+              .map(function(l) {
+                var t = String(l).trim();
+                if (!/[.!?]$/.test(t)) t += '.';
+                return '<div class="exec-summary-row" style="margin-left:var(--space-4)">' + esc(t) + '</div>';
+              }).join('');
       }
       setHtml('exec-summary', '<div class="exec-summary">'
         + '<div class="exec-summary-eyebrow">Executive Summary</div>'

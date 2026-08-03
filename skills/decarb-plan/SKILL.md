@@ -1209,6 +1209,15 @@ gate (resume may have skipped P4's check).
      no stable per-measure id to key on — `measure_id` is accepted but matches nothing today). Rename
      a measure in Audette and its description no longer matches; the report then flags that scope to
      be confirmed rather than presenting it as current.
+   - `dropped_alternatives_ack`: `[{measure, reason}]` — the ONLY sanctioned way to honour a
+     user-approved removal of a measure that an earlier version showed as analyzed-but-not-recommended.
+     `derive_engagement` BLOCKS with `alternatives-dropped` when such a measure silently disappears,
+     because the client was already shown it. If the user says to keep it out, pass it here with their
+     reason and the block becomes a disclosed exclusion recorded on the record.
+     ⛔ **Never add a measure back into an Audette plan purely to clear this gate**, and never
+     self-approve — the finding exists to force a human decision, not to be worked around. A live run
+     spent ~50 minutes looping on this and briefly re-added a measure the user had explicitly told it
+     to drop (Bain, 2026-08-03); the fix is one arg, not a plan edit.
    - `executive_summary`: do NOT pass this on the first derive. It is authored interactively in **P6**,
      after the report has rendered and the wording has been agreed with the user.
    - `implementation_considerations` (+ optional `implementation_narrative`): the non-financial
@@ -1443,6 +1452,11 @@ In practice:
 - **Audette outage** mid-P1/P3/P4: stop the phase, tell the user the Audette integration
   needs reconnecting, save state at the last completed step. Do not substitute estimates for
   the modeled physics and continue.
+- ⛔ **A derive that comes back `ok:false` is telling YOU something — read the finding, don't
+  reverse-engineer the engine.** Each finding names its own remedy. `alternatives-dropped` is cleared
+  either by restoring the measure or by `dropped_alternatives_ack` (see P5) — not by editing plans to
+  fool the check, and not by re-reading the skill hoping for a hidden mechanism. If a finding's remedy
+  is genuinely unclear, say so to the user and ask, rather than burning turns theorising.
 - ⛔ **A tool error is NOT an auth error unless it says so — and "reconnect" is not a remedy for
   anything else.** Only a 401/403, an `invalid_token`/`expired` message, or an explicit
   "connection expired" is an auth failure. Anything else — a 500, a validation error, a database

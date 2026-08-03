@@ -858,7 +858,7 @@
         + '<thead><tr>'
         + '<th>Measure</th><th>Status</th><th class="num">Year</th>'
         + '<th class="num">Like-for-Like Cost</th><th class="num">Incremental Cost</th><th class="num">Incentives</th><th class="num">Net Total Cost</th>'
-        + '<th class="num">Energy Savings (MWh)</th><th class="num">Emissions Savings (tCO2e)</th><th class="num">Landlord Utility Savings</th><th class="num">Tenant Utility Savings</th><th class="num">Ancillary Revenue</th><th class="num">Payback (yrs)</th><th class="num">Marginal Abatement Cost ($/tCO2e)</th><th class="num">Return on Cost</th>'
+        + '<th class="num">Energy Savings (MWh)</th><th class="num">Emissions Savings (tCO2e)</th><th class="num">Landlord Utility Savings</th><th class="num">Tenant Utility Savings</th><th class="num">Ancillary Revenue</th><th class="num">Payback (yrs)</th><th class="num">Marginal Abatement Cost ($/annual tCO2e)</th><th class="num">Return on Cost</th>'
         + '</tr></thead><tbody>';
       items.forEach(function(m) {
         var lfl = num(m.like_for_like_cost), incr = num(m.incremental_cost);
@@ -891,16 +891,10 @@
           // not a threshold, and the reader has the number and the Return on Cost column already
           // (user, 2026-08-03). meets_five_year_screen is still on the record for whoever wants it.
           + '<td class="num">' + (m.simple_payback_years != null ? fmt2sig(num(m.simple_payback_years)) : '—') + '</td>'
-          // Net MAC. NEGATIVE = abates and pays for itself — the informative half of the sign
-          // convention, so never clamp it at zero. Prefer the hold basis (the client's own horizon);
-          // fall back to the measure-life basis, marked "(life)", because a hold-denominated MAC is
-          // UNDEFINED for a measure installed in the exit year — on a 3-year hold that blanked the
-          // column for two of three measures the client had asked to see costed (2026-08-03).
-          + '<td class="num">' + (m.marginal_abatement_cost != null
-              ? fmtCurrency(num(m.marginal_abatement_cost))
-              : (m.marginal_abatement_cost_life != null
-                  ? fmtCurrency(num(m.marginal_abatement_cost_life)) + ' <span style="font-size:9px;color:var(--text-muted)">(life)</span>'
-                  : '—')) + '</td>'
+          // MAC = net capex per ANNUAL tonne abated (user directive, 2026-08-03). One basis, no
+          // footnote, no exit dependency — the hold/life variants needed a marker per row to say
+          // which denominator they used, which is worse than a single honest number.
+          + '<td class="num">' + (m.marginal_abatement_cost != null ? fmtCurrency(num(m.marginal_abatement_cost)) : '—') + '</td>'
           + '<td class="num">' + (roc != null ? fmtPct(roc) : '—') + '</td>'
           + '</tr>';
       });
@@ -952,26 +946,22 @@
           + '<td class="num">—</td>'   // ancillary revenue
           + '<td class="num">—</td>'   // payback
           // An alternative measure is exactly what a MAC column is FOR — it is how a reader compares
-          // what was not recommended against what was. The at-RUL electrification measures fall past
-          // the exit, so the hold basis is meaningless for them and the life basis is the only honest
-          // one; the row was rendering no MAC cell at all (user asked to see MAC per measure, 2026-08-03).
-          + '<td class="num">' + (cm.marginal_abatement_cost_life != null
-              ? fmtCurrency(num(cm.marginal_abatement_cost_life)) + ' <span style="font-size:9px;color:var(--text-muted)">(life)</span>'
-              : (cm.marginal_abatement_cost != null ? fmtCurrency(num(cm.marginal_abatement_cost)) : '—')) + '</td>'
+          // what was not recommended against what was, and these rows carried no MAC cell at all.
+          // The per-annual-tonne basis works for a post-exit measure without any special casing.
+          + '<td class="num">' + (cm.marginal_abatement_cost != null ? fmtCurrency(num(cm.marginal_abatement_cost)) : '—') + '</td>'
           + '<td class="num">—</td>'   // return on cost
           + '</tr>';
       });
       html += '</tbody></table>';
       setHtml('measures-groups', html);
-      // Say which MAC basis each row used, since the column can carry either.
+      // One line stating the definition, since "$/tCO2e" alone is ambiguous about whether it is
+      // per tonne per year or over some horizon.
       (function() {
         var items = (data.measures && data.measures.items) || [];
-        var anyLife = items.some(function(x) { return x.marginal_abatement_cost == null && x.marginal_abatement_cost_life != null; });
-        var anyHold = items.some(function(x) { return x.marginal_abatement_cost != null; });
-        var parts = [];
-        if (anyHold) parts.push('Marginal abatement cost is net lifetime cost \u00f7 tCO2e abated over the hold to exit.');
-        if (anyLife) parts.push('Rows marked (life) are levelized over the measure\'s own life instead \u2014 a hold-based figure is undefined for a measure installed in the exit year.');
-        if (parts.length) { setText('measures-basis-note', parts.join(' ')); showEl('measures-basis-note'); }
+        if (items.some(function(x) { return x.marginal_abatement_cost != null; })) {
+          setText('measures-basis-note', 'Marginal abatement cost is net capital cost after incentives \u00f7 annual tCO2e abated \u2014 dollars per tonne per year, independent of the hold period and of measure life.');
+          showEl('measures-basis-note');
+        }
       })();
     }
 

@@ -652,7 +652,11 @@
               },
               "unmatched_measure": {
                 "type": "boolean",
-                "description": "Set by the projector when no measure of this name is in the recommended plan (e.g. the Audette plan was renamed or the measure dropped after the conversation). Rendered as a \"confirm this scope is current\" note, not dropped."
+                "description": "Set by the projector when NO measure of this name exists in the record at all (renamed in Audette, or dropped after the description was agreed). Rendered as a \"confirm this scope is current\" note, not dropped."
+              },
+              "in_alternative_plan": {
+                "type": "boolean",
+                "description": "Set by the projector when this measure exists but sits in a non-recommended plan. Rendered as \"Alternative — not part of the recommended plan\"; not an error."
               }
             }
           }

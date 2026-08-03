@@ -1443,6 +1443,28 @@ In practice:
 - **Audette outage** mid-P1/P3/P4: stop the phase, tell the user the Audette integration
   needs reconnecting, save state at the last completed step. Do not substitute estimates for
   the modeled physics and continue.
+- ⛔ **A tool error is NOT an auth error unless it says so — and "reconnect" is not a remedy for
+  anything else.** Only a 401/403, an `invalid_token`/`expired` message, or an explicit
+  "connection expired" is an auth failure. Anything else — a 500, a validation error, a database
+  or transaction error, a timeout — is the tool failing at its own job, and reconnecting the
+  connector cannot change it. **Read the error text and repeat it to the user verbatim** rather
+  than paraphrasing it into a connection problem.
+  This cost a real user four reconnect cycles across 15 minutes (Bain, 2026-08-03):
+  `update_custom_plan_measures` returned `InvalidRequestError: A transaction is already begun on
+  this Session` — a server-side defect in Audette's own handler, reproducible with a plan id of
+  all zeros that matches nothing, while reads and other writes worked fine. The agent correctly
+  wrote "this is server-side, not a token issue" and then told the user to disconnect and
+  reconnect anyway, four times.
+  When a tool fails and it is not an auth error:
+  1. **Isolate it.** Does a READ against the same server work? Does a DIFFERENT write work? That
+     one comparison separates "the integration is down" from "this one endpoint is broken", and it
+     is the difference between a reconnect and a bug report.
+  2. **Say which it is**, name the failing tool, and quote the error.
+  3. **Offer the route around it** if one exists — e.g. `create_custom_plan` works while
+     `update_custom_plan_measures` is broken, so a corrected plan can be created rather than
+     edited (note the cost: Audette has no delete-plan tool, so every workaround plan is permanent).
+  4. **Never claim a fix you have not observed.** "Retrying cleared it" requires a successful call,
+     not an assumption.
 - **Verifier outage** at P2/Gate 1/P4: stop — conflicts cannot be recorded/resolved and the
   render gate cannot be evaluated without it. Never proceed on the assumption it would pass.
 - **Renderer outage** at P5: stop after saving `state.report.data_json_path` — the data JSON

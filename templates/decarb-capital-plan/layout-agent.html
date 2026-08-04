@@ -237,7 +237,15 @@
     .legend-swatch.line { height: 2px; width: 16px; }
 
     /* ─── Impact bars (legacy, still used for measures section absent trajectory) ─── */
-    .impact-row { display: flex; gap: var(--space-8); margin-bottom: var(--space-8); flex-wrap: wrap; }
+    .impact-row { display: flex; gap: var(--space-6); margin-bottom: var(--space-6); flex-wrap: wrap; }
+    /* Impact compaction (client edit, 2026-08-04): two panels plus two charts overflowed onto a
+       continuation page. Tightening the exhibit padding and capping chart height fits the section on
+       one page, which reads better than a two-page Impact with one chart stranded. The block
+       paginator still catches it if a future asset's content genuinely needs more room. */
+    #impact-section .exhibit { padding: var(--space-5) var(--space-6); margin: var(--space-5) 0; }
+    #impact-section .exhibit-title { margin-bottom: var(--space-4); }
+    #impact-section .impact-metric { padding: var(--space-5); }
+    #impact-section svg { max-height: 125px; }
     .impact-metric { flex: 1; min-width: 220px; padding: var(--space-6); border: 1px solid var(--border-hairline); }
     .impact-metric-title { font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-6); }
     .impact-reduction-pct { font-size: 28px; font-weight: 700; color: var(--mi-forest); font-family: var(--font-data); }
@@ -938,13 +946,19 @@
       // the totals row so they visibly sit outside the recommended package's totals, in
       // muted styling. Only the fields their (thin) shape carries are shown; every other
       // cell stays em-dash rather than implying a figure that was never computed.
+      var exitYr = (fin && fin.exit_year != null) ? num(fin.exit_year) : null;
       considered.forEach(function(cm) {
         var cCost = num(cm.incremental_cost), cCO2 = num(cm.emissions_savings_tco2e);
+        var cmYear = (cm.install_year != null) ? num(cm.install_year) : null;
         html += '<tr style="color:var(--text-muted)">'
           + '<td><strong style="font-weight:600">' + esc(cm.name) + '</strong>'
           + (cm.reason ? '<div style="font-size:10px;margin-top:2px">' + esc(cm.reason) + '</div>' : '')
           + '</td>'
-          + '<td>' + esc(cm.status || 'Alternative — not modeled in financials') + '</td>'
+          // "Post exit" where that is the actual reason (client edit, 2026-08-04): a measure landing
+          // after the exit year is not a rejected alternative, it is the buyer's capital, and calling
+          // it "not modelled in financials" describes our treatment rather than the client's decision.
+          // Any OTHER non-recommended measure keeps the generic label — it was screened out, not deferred.
+          + '<td>' + esc(cm.status || ((cmYear != null && exitYr != null && cmYear > exitYr) ? 'Post exit' : 'Alternative — not modelled in financials')) + '</td>'
           + '<td class="num">—</td>'
           + '<td class="num">—</td>'
           + '<td class="num">' + (cCost != null ? fmtCurrency(cCost) : '—') + '</td>'
@@ -952,7 +966,7 @@
           + '<td class="num">—</td>'
           + '<td class="num">—</td>'
           + '<td class="num">' + (cCO2 != null ? fmt2sig(cCO2) : '—') + '</td>'
-          + '<td class="num">—</td>'   // landlord savings — not modeled for an alternative
+          + '<td class="num">—</td>'   // landlord savings — not modelled for an alternative
           + '<td class="num">—</td>'   // tenant savings
           + '<td class="num">—</td>'   // ancillary revenue
           + '<td class="num">—</td>'   // payback
@@ -1091,7 +1105,7 @@
         if (wf.incremental_capex) steps.push({ label: 'Incremental Capex', v: num(wf.incremental_capex) });
         if (wf.incentives != null) steps.push({ label: 'Incentives', v: num(wf.incentives) });
         if (wf.cumulative_utility_savings) steps.push({ label: 'Cumulative Utility Savings', v: num(wf.cumulative_utility_savings) });
-        // Real final-year cumulative cash position from the modeled cashflow series — NOT a sum
+        // Real final-year cumulative cash position from the modelled cashflow series — NOT a sum
         // of the steps above (the engine's cashflow reflects year-by-year timing the simple
         // sum can't capture) and never an exit-capitalized figure.
         net = num(wf.net_position);
@@ -1263,7 +1277,7 @@
       var vMin, vMax;
       if (opts.zeroBased) { vMin = 0; vMax = Math.max.apply(null, allV) * 1.15 || 1; }
       else {
-        // Zoomed to the modeled range (NOT forced to include zero) — this is a trend line,
+        // Zoomed to the modelled range (NOT forced to include zero) — this is a trend line,
         // not a bar chart, and a real ~15-20% intensity decline reads as visually flat if
         // the axis spans down to 0. Padded 15% each side so no line ever touches the frame.
         var raw0 = Math.min.apply(null, allV), raw1 = Math.max.apply(null, allV);
@@ -1383,7 +1397,7 @@
       // Planned = the building's actual energy position under the plan: net of on-site generation
       // where there is any, otherwise the consumption line.
       var hasNetEui = traj.some(function(t) { return num(t.net_purchased_eui_kwh_m2) != null; });
-      euiSeries.push({ label: 'Planned (EUI)', color: COLOR_S1,
+      euiSeries.push({ label: 'Recommended', color: COLOR_S1,
         points: traj.map(function(t) {
           var v = hasNetEui ? num(t.net_purchased_eui_kwh_m2) : num(t.eui_kwh_m2);
           return { x: t.year, y: v != null ? v : num(t.eui_kwh_m2) };
@@ -1405,8 +1419,8 @@
       // nothing changes in BAU, so its entire decline IS projected grid decarbonization. Say so in
       // the legend, the way the carbon ladder already does with its "+ grid decarb." row.
       var ghgiSeries = [
-        { label: 'Business-as-Usual (grid decarbonization only)', color: COLOR_BAU, dash: '4,3', points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_bau_kgco2_m2) }; }) },
-        { label: 'Planned (GHGi)', color: COLOR_S1, points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_kgco2_m2) }; }) }
+        { label: 'Business-as-Usual', color: COLOR_BAU, dash: '4,3', points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_bau_kgco2_m2) }; }) },
+        { label: 'Recommended', color: COLOR_S1, points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_kgco2_m2) }; }) }
       ];
       if (crremPath && crremPath.length && crremPath.some(function(p) { return p.carbon_kgco2_m2yr != null; })) {
         // The compliance pathway must not share the planned line's hue — an org brand overlay can
@@ -1426,7 +1440,7 @@
       // real staged curve — today's engine stages every measure to a single install year.
       var uniqueYearsWithChange = traj.filter(function(t, i) { return i === 0 || t.ghgi_kgco2_m2 !== traj[0].ghgi_kgco2_m2; }).length;
       if (traj.length > 1 && uniqueYearsWithChange <= 1) {
-        setText('trajectory-flag', 'Flat across the modeled horizon — this reflects the current engagement model staging every measure to a single install year, not a real multi-year rollout curve.');
+        setText('trajectory-flag', 'Flat across the modelled horizon — this reflects the current engagement model staging every measure to a single install year, not a real multi-year rollout curve.');
         document.getElementById('trajectory-flag').style.display = '';
       }
     }
@@ -1533,6 +1547,13 @@
     ════════════════════════════════ */
     // Two variable-length sections now flow: Measure Descriptions (one item per measure — a 7-measure
     // plan overflows a single page on its own) and Notes. Same machinery for both.
+    // Every paginator measures RENDERED TEXT, so it must not run on fallback font metrics.
+    // DOMContentLoaded fires before the web face arrives; the Summary page paginated to 1056px in
+    // the fallback and then grew to 1080 — 24px over frame — when Inter swapped in (2026-08-04).
+    // So the whole reflow runs twice: once now (so a no-webfont viewer still gets real pages) and
+    // again on fonts.ready, where each paginator re-measures, tops up its existing continuation
+    // page, and page numbers are recomputed over the final set.
+    var reflowPages = function() {
     paginateFlowSection('measure-descriptions-section', 'Measure Descriptions (continued)', ['measure-descriptions-items']);
     paginateFlowSection('notes-section', 'Notes (continued)', ['implementation-considerations', 'incentives-items', 'compliance-items']);
     // The measures TABLE is variable-length too — one row per measure plus a totals row plus an
@@ -1563,11 +1584,15 @@
         if (el.classList.contains('section-eyebrow') || el.classList.contains('section-title')) return false;
         return !(el.style && el.style.display === 'none');
       });
-      if (blocks.length < 2) return; // one oversized block cannot be split — leave it
+      // A single oversized block is no longer a dead end: the loop below splits a block by its own
+      // children (paragraph granularity), which is how the second, post-fonts pass tops up a cover
+      // whose only remaining block is the executive summary.
+      if (blocks.length < 1) return;
 
       var makeCont = function() {
         var clone = page.cloneNode(true);
         clone.removeAttribute('id');
+        clone.setAttribute('data-cont-of', pageId);
         clone.style.display = '';
         // Keep the page's own classes: the KPI grid's column layout is scoped under .cover-page, and
         // stripping the class collapsed it to one column 555px tall — a continuation page that
@@ -1585,15 +1610,51 @@
         return clone;
       };
 
-      var cont = null;
+      // Reuse the continuation this page already has, if a first pass made one. The second pass runs
+      // after web fonts load (see reflowPages) and only needs to shed the extra few lines the real
+      // face added — a fresh continuation page for two orphan paragraphs is worse than none.
+      var cont = page.parentNode.querySelector('[data-cont-of="' + pageId + '"]');
       // Move trailing blocks off the page until it fits, newest-first so document order is preserved.
       for (var guard = 0; guard < 20 && page.getBoundingClientRect().height > MAXH; guard++) {
         var remaining = Array.prototype.slice.call(content.children).filter(function(el) {
           return !el.classList.contains('section-eyebrow') && !el.classList.contains('section-title')
             && !(el.style && el.style.display === 'none');
         });
-        if (remaining.length < 2) break;
-        var last = remaining[remaining.length - 1];
+        var last;
+        if (remaining.length < 2) {
+          // A single block taller than the frame on its own — the cover, whose header band eats 3.7in
+          // before the executive summary starts. Moving whole blocks can no longer help, so split the
+          // block by its OWN children into a same-class shell on the continuation, which keeps the
+          // paragraph/tile styling (a bare div loses .kpi-grid's columns and .exec-summary's spacing).
+          var solo = remaining[0];
+          var visKids = function(el) {
+            return Array.prototype.slice.call(el.children).filter(function(c) {
+              return !(c.style && c.style.display === 'none');
+            });
+          };
+          // Descend through single-child wrappers — #exec-summary holds one inner div that holds the
+          // paragraphs, so splitting at the top level finds "one child" and gives up.
+          var parts = visKids(solo);
+          for (var d = 0; d < 4 && parts.length === 1 && visKids(parts[0]).length > 1; d++) {
+            solo = parts[0]; parts = visKids(solo);
+          }
+          if (parts.length < 2) break; // genuinely unsplittable — better long than lost
+          if (!cont) { cont = makeCont(); page.parentNode.insertBefore(cont, page.nextSibling); }
+          var cc0 = cont.querySelector('.page-content');
+          var shell = cc0.querySelector('[data-split-shell="' + solo.className + '"]');
+          if (!shell) {
+            shell = document.createElement(solo.tagName);
+            shell.className = solo.className;
+            shell.setAttribute('data-split-shell', solo.className);
+            var a0 = Array.prototype.slice.call(cc0.children).filter(function(el) {
+              return !el.classList.contains('section-eyebrow') && !el.classList.contains('section-title');
+            })[0];
+            if (a0) cc0.insertBefore(shell, a0); else cc0.appendChild(shell);
+          }
+          shell.insertBefore(parts[parts.length - 1], shell.firstChild);
+          continue;
+        }
+        last = remaining[remaining.length - 1];
         if (!cont) { cont = makeCont(); page.parentNode.insertBefore(cont, page.nextSibling); }
         var cc = cont.querySelector('.page-content');
         var anchor = Array.prototype.slice.call(cc.children).filter(function(el) {
@@ -1766,6 +1827,14 @@
       var el = p.querySelector('.page-num-run');
       if (el) el.textContent = 'Page ' + (i + 1) + ' of ' + visiblePages.length;
     });
+    }; // end reflowPages
+    reflowPages();
+    if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
+      document.fonts.ready.then(function() { requestAnimationFrame(function() {
+        try { reflowPages(); } catch (e) { /* a failed top-up must never blank the report */ }
+        window.__reportReady = true;
+      }); });
+    } else { window.__reportReady = true; }
   }
 </script>
 

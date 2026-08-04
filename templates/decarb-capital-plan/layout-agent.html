@@ -877,7 +877,7 @@
         + '<thead><tr>'
         + '<th>Measure</th><th>Status</th><th class="num">Year</th>'
         + '<th class="num">Like-for-Like Cost</th><th class="num">Incremental Cost</th><th class="num">Incentives</th><th class="num">Net Total Cost</th>'
-        + '<th class="num">Energy Savings (MWh)</th><th class="num">Emissions Savings (tCO2e)</th><th class="num">Landlord Utility Savings</th><th class="num">Tenant Utility Savings</th><th class="num">Ancillary Revenue</th><th class="num">Payback (yrs)</th><th class="num">Marginal Abatement Cost ($/annual tCO2e)</th><th class="num">Return on Cost</th>'
+        + '<th class="num">Energy Savings (MWh)</th><th class="num">Emissions Savings (tCO2e)</th><th class="num">Landlord Utility Savings</th><th class="num">Tenant Utility Savings</th><th class="num">Revenue</th><th class="num">Payback (yrs)</th><th class="num">Marginal Abatement Cost ($/annual tCO2e)</th><th class="num">Return on Cost</th>'
         + '</tr></thead><tbody>';
       items.forEach(function(m) {
         var lfl = num(m.like_for_like_cost), incr = num(m.incremental_cost);
@@ -1010,7 +1010,7 @@
       var hasAncCol = cashflow.some(function(c) { var av = num(c.ancillary_revenue_usd); return av != null && av !== 0; });
       setHtml('cashflow-thead', '<tr>'
         + '<th class="num">Year</th><th class="num">Incremental Capex</th><th class="num">Incentives</th><th class="num">Utility Savings</th>'
-        + (hasAncCol ? '<th class="num">Ancillary Revenue</th>' : '')
+        + (hasAncCol ? '<th class="num">Revenue</th>' : '')
         + '<th class="num">Cumulative</th>'
         + (hasFineCol ? '<th class="num">Fine Avoidance</th>' : '')
         + '<th class="num">Implied Value Uplift</th>'
@@ -1397,7 +1397,7 @@
       // Planned = the building's actual energy position under the plan: net of on-site generation
       // where there is any, otherwise the consumption line.
       var hasNetEui = traj.some(function(t) { return num(t.net_purchased_eui_kwh_m2) != null; });
-      euiSeries.push({ label: 'Recommended', color: COLOR_S1,
+      euiSeries.push({ label: 'Recommended (EUI)', color: COLOR_S1,
         points: traj.map(function(t) {
           var v = hasNetEui ? num(t.net_purchased_eui_kwh_m2) : num(t.eui_kwh_m2);
           return { x: t.year, y: v != null ? v : num(t.eui_kwh_m2) };
@@ -1420,7 +1420,7 @@
       // the legend, the way the carbon ladder already does with its "+ grid decarb." row.
       var ghgiSeries = [
         { label: 'Business-as-Usual', color: COLOR_BAU, dash: '4,3', points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_bau_kgco2_m2) }; }) },
-        { label: 'Recommended', color: COLOR_S1, points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_kgco2_m2) }; }) }
+        { label: 'Recommended (GHGi)', color: COLOR_S1, points: traj.map(function(t) { return { x: t.year, y: num(t.ghgi_kgco2_m2) }; }) }
       ];
       if (crremPath && crremPath.length && crremPath.some(function(p) { return p.carbon_kgco2_m2yr != null; })) {
         // The compliance pathway must not share the planned line's hue — an org brand overlay can

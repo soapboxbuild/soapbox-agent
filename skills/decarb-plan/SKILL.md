@@ -1197,6 +1197,13 @@ ship with the FIRST render, so this phase adds **no** extra render.
   update its description. Matching is by name, so a rename reads exactly like a removal: the report
   flags any description with no matching measure name as scope to confirm. That flag appearing in a
   delivered report means this step was skipped, not that the flag did its job.
+- **Don't restate the install year in the prose.** The measures table two pages earlier has an
+  install-year column, and the description sits under the measure's own heading. "…retro-commissioning
+  across 13 zones installed in 2029" was cut to "…across 13 zones" by the client on the Evergreen
+  report (2026-08-04) for exactly this reason.
+- **Round any cost you do mention** — "$30k", not "$29,291". Cost lives in the table to the dollar;
+  in prose a precise figure reads as a quote rather than a planning number, and it goes stale the
+  moment the plan is re-priced. (Same client pass: "$3,129" → "$5k", "$29,291" → "$30k".)
 
 Set `phase: "P5"` and save.
 

@@ -1201,6 +1201,10 @@ ship with the FIRST render, so this phase adds **no** extra render.
   install-year column, and the description sits under the measure's own heading. "…retro-commissioning
   across 13 zones installed in 2029" was cut to "…across 13 zones" by the client on the Evergreen
   report (2026-08-04) for exactly this reason.
+- **Spell it "modelled", not "modeled"**, in every string you write — measure descriptions,
+  executive summary, limitations, notes. The template's own labels are British ("Alternative — not
+  modelled in financials"), and the Evergreen report shipped with both spellings one column apart
+  because the prose was American and the chrome was not. Pick nothing; just match the template.
 - **Round any cost you do mention** — "$30k", not "$29,291". Cost lives in the table to the dollar;
   in prose a precise figure reads as a quote rather than a planning number, and it goes stale the
   moment the plan is re-priced. (Same client pass: "$3,129" → "$5k", "$29,291" → "$30k".)

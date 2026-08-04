@@ -76,6 +76,16 @@ async function renderReportPdf(html: string): Promise<Buffer> {
     await page.waitForFunction(
       "window.__reportReady === true || document.querySelectorAll('table tbody tr, .kpi, .slide').length > 2",
       { timeout: 8_000 }).catch(() => {})
+    // The handshake above resolves on the row-count arm long before a template that paginates
+    // itself has finished: decarb-capital-plan reflows a second time on fonts.ready (its first
+    // pass measures fallback metrics and lands pages ~24px over the sheet), so Paged.js would
+    // otherwise snapshot a half-paginated DOM. Wait for the real faces, give the template's
+    // fonts.ready handler its frames, and let __reportReady settle if it is coming.
+    await page.evaluate(
+      '(async()=>{ if (document.fonts && document.fonts.ready) await document.fonts.ready;'
+      + ' await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); })()',
+    ).catch(() => {})
+    await page.waitForFunction('window.__reportReady === true', { timeout: 2_000 }).catch(() => {})
     await page.evaluate(TRANSFORM_JS)
     await page.evaluate('(async()=>{ await window.PagedPolyfill.preview(); })()')
     await page.waitForSelector('.pagedjs_page', { timeout: 45_000 })

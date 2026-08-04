@@ -1151,7 +1151,16 @@
     var carbon = imp.carbon || {};
     if (carbon.baseline_tco2e != null && carbon.post_retrofit_tco2e != null) {
       var cBase = num(carbon.baseline_tco2e), cPost = num(carbon.post_retrofit_tco2e);
-      var cPct = carbon.reduction_pct != null ? num(carbon.reduction_pct) : (cBase ? (cBase - cPost) / cBase : null);
+      // Headline is measured VS TODAY, so it uses the same denominator as the energy panel and
+      // reconciles with this panel's own ladder (baseline -> + solar reads as the same percentage).
+      // It therefore INCLUDES projected grid decarbonization, which is not the plan's own achievement
+      // — so the note names both the inclusion and the measures-only figure beneath it. Chosen by the
+      // user 2026-08-03 over the alternative of labelling the measures-only denominator, because two
+      // panels on one page disagreeing on what "reduction" is measured against is the worse failure.
+      var cCombined = (carbon.combined_post_retrofit_tco2e != null) ? num(carbon.combined_post_retrofit_tco2e) : cPost;
+      var cPctToday = (cBase && cCombined != null) ? (cBase - cCombined) / cBase : null;
+      var cPctMeasures = carbon.reduction_pct != null ? num(carbon.reduction_pct) : null;
+      var cPct = (cPctToday != null) ? cPctToday : (cPctMeasures != null ? cPctMeasures : (cBase ? (cBase - cPost) / cBase : null));
       var cMax = Math.max(cBase, cPost) || 1;
       // Headline is MEASURES-ONLY. When the projector also supplies the grid-decarbonized figure,
       // it renders as its OWN labeled bar underneath — the two contributions stay visibly
@@ -1166,7 +1175,10 @@
       setHtml('impact-carbon',
         '<div class="impact-metric-title">Carbon (tCO2e/yr)</div>'
         + (cPct != null ? '<div class="impact-reduction-pct">' + fmtPct(cPct) + '</div><div class="exhibit-note">'
-            + (carbon.basis === 'measures_only' ? ((HORIZON ? HORIZON + ' ' : '') + 'reduction, all measures incl. on-site solar') : ((HORIZON ? HORIZON + ' ' : '') + 'reduction, incl. grid decarbonization'))
+            + (HORIZON ? HORIZON + ' ' : '') + 'reduction vs today, incl. on-site solar and projected grid decarbonization'
+            + ((cPctMeasures != null && cPctToday != null && Math.abs(cPctToday - cPctMeasures) > 0.005)
+                ? ' \u00b7 measures alone account for ' + fmtPct(cPctMeasures) + ' against business-as-usual at exit'
+                : '')
             + '</div>' : '')
         + '<div style="margin-top:12px">'
         + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">Baseline</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-bau);width:' + ((cBase / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cBase) + '</div></div>'

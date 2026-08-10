@@ -188,6 +188,10 @@
     .exec-summary-headline { font-family: var(--font-serif); font-size: 20px; line-height: 1.4; color: var(--text-primary); margin-bottom: var(--space-4); }
     .exec-summary-row { font-size: 12.5px; line-height: 1.6; color: var(--text-muted); margin-bottom: var(--space-2); }
     .exec-summary-row strong { color: var(--text-primary); font-weight: 600; }
+    /* Uniform multi-paragraph executive summary: every paragraph the same size and weight,
+       no headline callout, no bold labels. Reads as plain prose. */
+    .exec-summary-para { font-size: 13px; line-height: 1.65; color: var(--text-primary); margin-bottom: var(--space-4); }
+    .exec-summary-para:last-child { margin-bottom: 0; }
     .narrative { font-size: 14px; line-height: 1.6; white-space: pre-line; margin-bottom: var(--space-8); }
     .narrative:last-child { margin-bottom: 0; }
 
@@ -246,7 +250,7 @@
     #impact-section .exhibit-title { margin-bottom: var(--space-4); }
     #impact-section .impact-metric { padding: var(--space-5); }
     #impact-section svg { max-height: 125px; }
-    .impact-metric { flex: 1; min-width: 220px; padding: var(--space-6); border: 1px solid var(--border-hairline); }
+    .impact-metric { flex: 1; min-width: 220px; padding: var(--space-6); }
     .impact-metric-title { font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-6); }
     .impact-reduction-pct { font-size: 28px; font-weight: 700; color: var(--mi-forest); font-family: var(--font-data); }
     .regulatory-badge { display: inline-block; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; margin-bottom: var(--space-4); }
@@ -330,9 +334,36 @@
       <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property"><span class="page-prop-name">—</span><span class="phr-address"></span></span></div>
       <div class="page-content">
         <div class="section-eyebrow">Section 02</div>
-        <h2 class="section-title">Measures</h2>
+        <h2 class="section-title">Recommended Measures</h2>
         <div class="table-scroll" id="measures-groups"></div>
         <div class="exhibit-note" id="measures-basis-note" style="display:none"></div>
+      </div>
+      <div class="page-footer-run"><span>Confidential</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
+    </div>
+  </div>
+
+  <!-- Measures considered but NOT recommended — its own page, a simple two-column
+       (measure + reason) table. Measures that are inapplicable due to building
+       characteristics (no gas, no elevators, etc.) are filtered out entirely and never
+       reach this table. Hidden when there is nothing to show. -->
+  <div class="page" id="measures-nr-section" style="display:none">
+    <div class="rail">
+      <div class="rail-index">
+        <div class="rail-item"><span class="rail-num">01</span><span class="rail-label">Summary</span></div>
+        <div class="rail-item current"><span class="rail-num">02</span><span class="rail-label">Measures</span></div>
+        <div class="rail-item"><span class="rail-num">03</span><span class="rail-label">Financial</span></div>
+        <div class="rail-item"><span class="rail-num">04</span><span class="rail-label">Impact</span></div>
+        <div class="rail-item"><span class="rail-num">05</span><span class="rail-label">Measure Detail</span></div>
+        <div class="rail-item"><span class="rail-num">06</span><span class="rail-label">Notes</span></div>
+      </div>
+      <div class="rail-brand">Decarbonization Capital Plan</div>
+    </div>
+    <div class="page-body">
+      <div class="page-header-run"><span class="phr-brand"></span><span class="phr-property"><span class="page-prop-name">—</span><span class="phr-address"></span></span></div>
+      <div class="page-content">
+        <div class="section-eyebrow">Section 02</div>
+        <h2 class="section-title">Measures Considered — Not Recommended</h2>
+        <div class="table-scroll" id="measures-nr-groups"></div>
       </div>
       <div class="page-footer-run"><span>Confidential</span><span class="page-prop-name">—</span><span class="page-num-run">—</span></div>
     </div>
@@ -741,7 +772,18 @@
     // record. Rendered only when it exists — an empty shell is worse than no section, and the client
     // asked for something punchy they can read in ten seconds.
     var xs = data.executive_summary_block;
-    if (xs && (xs.headline || xs.crrem_status || xs.recommendation)) {
+    // PREFERRED: a simple multi-paragraph summary. Every paragraph renders at the same size and
+    // weight, in the order the author supplies them — the intended order is the building's current
+    // state, the measures considered, the recommended bundle, and only then a brief note on CRREM
+    // (context, not the driver). No headline callout, no bold labels, no CRREM emphasis.
+    if (xs && Array.isArray(xs.paragraphs) && xs.paragraphs.filter(function(p){ return p != null && String(p).trim(); }).length) {
+      var xsParas = xs.paragraphs.filter(function(p){ return p != null && String(p).trim(); })
+        .map(function(p){ return '<p class="exec-summary-para">' + esc(String(p).trim()) + '</p>'; }).join('');
+      setHtml('exec-summary', '<div class="exec-summary">' + xsParas + '</div>');
+      showEl('exec-summary');
+    } else if (xs && (xs.headline || xs.crrem_status || xs.recommendation)) {
+      // LEGACY structured summary (headline + labelled rows) — kept so engagements authored before
+      // the paragraphs field still render. New decarb runs should supply paragraphs[].
       var xsRows = '';
       if (xs.crrem_status) {
         xsRows += '<div class="exec-summary-row"><strong>Compliance:</strong> ' + esc(xs.crrem_status)
@@ -887,6 +929,13 @@
         var co2 = num(m.emissions_savings_tco2e), ll = num(m.landlord_utility_savings);
         var ten = num(m.tenant_utility_savings), anc = num(m.ancillary_revenue);
         var roc = (netCost && netCost !== 0) ? ((ll || 0) + (anc || 0)) / netCost : null;
+        // Tenant-paid measure: the owner captures no utility saving (elec_capture 0), so owner-side
+        // payback and return-on-cost are not applicable — "n/a" is honest, "—" reads as missing and
+        // "0%" reads as a bad return the owner never faced.
+        var tenantPaid = (ll == null || ll === 0) && ten != null && ten > 0;
+        // Generation measure (e.g. solar): produces energy rather than saving it, so it has no
+        // "energy savings" figure — show the generation instead of a blank cell.
+        var genMwh = num(m.generation_kwh) != null ? num(m.generation_kwh) / 1000 : null;
         if (lfl != null) TLfL += lfl; if (incr != null) TIncr += incr;
         if (incent != null) TIncent += incent; if (netCost != null) TNet += netCost;
         if (energyMwh != null) TEnergy += energyMwh;
@@ -900,7 +949,11 @@
           + '<td class="num">' + (incr != null ? fmtCurrency(incr) : '—') + '</td>'
           + '<td class="num">' + (incent ? fmtCurrency(incent) : '—') + '</td>'
           + '<td class="num">' + (netCost != null ? fmtCurrency(netCost) : '—') + '</td>'
-          + '<td class="num">' + (energyMwh != null ? fmt2sig(energyMwh) : '—') + '</td>'
+          // num(null) is 0 (Number(null)===0), so test the RAW field for absence: a generation
+          // measure has no energy-saving figure and should show its generation, not a spurious 0.
+          + '<td class="num">' + ((m.energy_savings_kwh == null && genMwh != null)
+              ? fmt2sig(genMwh) + ' <span style="font-size:9px;color:var(--text-muted)">gen</span>'
+              : (m.energy_savings_kwh != null ? fmt2sig(energyMwh) : '—')) + '</td>'
           + '<td class="num">' + (co2 != null ? fmt2sig(co2) : '—') + '</td>'
           + '<td class="num">' + (ll != null ? fmtCurrency(ll) : '—') + '</td>'
           + '<td class="num">' + (ten != null ? fmtCurrency(ten) : '—') + '</td>'
@@ -909,12 +962,12 @@
           // stray UI artifact in a client document — a tick in a numeric column implies a checkbox,
           // not a threshold, and the reader has the number and the Return on Cost column already
           // (user, 2026-08-03). meets_five_year_screen is still on the record for whoever wants it.
-          + '<td class="num">' + (m.simple_payback_years != null ? fmt2sig(num(m.simple_payback_years)) : '—') + '</td>'
+          + '<td class="num">' + (tenantPaid ? 'n/a' : (m.simple_payback_years != null ? fmt2sig(num(m.simple_payback_years)) : '—')) + '</td>'
           // MAC = net capex per ANNUAL tonne abated (user directive, 2026-08-03). One basis, no
           // footnote, no exit dependency — the hold/life variants needed a marker per row to say
           // which denominator they used, which is worse than a single honest number.
           + '<td class="num">' + (m.marginal_abatement_cost != null ? fmtCurrency(num(m.marginal_abatement_cost)) : '—') + '</td>'
-          + '<td class="num">' + (roc != null ? fmtPct(roc) : '—') + '</td>'
+          + '<td class="num">' + (tenantPaid ? 'n/a' : (roc != null ? fmtPct(roc) : '—')) + '</td>'
           + '</tr>';
       });
       // Totals row must live in the SAME <table> as the measure rows, not a second
@@ -942,49 +995,51 @@
           + '<td class="num">' + (TRoc != null ? fmtPct(TRoc) : '—') + '</td>'
           + '</tr>';
       }
-      // Analyzed-but-not-recommended measures (data.measures_considered) — appended AFTER
-      // the totals row so they visibly sit outside the recommended package's totals, in
-      // muted styling. Only the fields their (thin) shape carries are shown; every other
-      // cell stays em-dash rather than implying a figure that was never computed.
-      var exitYr = (fin && fin.exit_year != null) ? num(fin.exit_year) : null;
-      considered.forEach(function(cm) {
-        var cCost = num(cm.incremental_cost), cCO2 = num(cm.emissions_savings_tco2e);
-        var cmYear = (cm.install_year != null) ? num(cm.install_year) : null;
-        html += '<tr style="color:var(--text-muted)">'
-          + '<td><strong style="font-weight:600">' + esc(cm.name) + '</strong>'
-          + (cm.reason ? '<div style="font-size:10px;margin-top:2px">' + esc(cm.reason) + '</div>' : '')
-          + '</td>'
-          // "Post exit" where that is the actual reason (client edit, 2026-08-04): a measure landing
-          // after the exit year is not a rejected alternative, it is the buyer's capital, and calling
-          // it "not modelled in financials" describes our treatment rather than the client's decision.
-          // Any OTHER non-recommended measure keeps the generic label — it was screened out, not deferred.
-          + '<td>' + esc(cm.status || ((cmYear != null && exitYr != null && cmYear > exitYr) ? 'Post exit' : 'Alternative — not modelled in financials')) + '</td>'
-          + '<td class="num">—</td>'
-          + '<td class="num">—</td>'
-          + '<td class="num">' + (cCost != null ? fmtCurrency(cCost) : '—') + '</td>'
-          + '<td class="num">—</td>'
-          + '<td class="num">—</td>'
-          + '<td class="num">—</td>'
-          + '<td class="num">' + (cCO2 != null ? fmt2sig(cCO2) : '—') + '</td>'
-          + '<td class="num">—</td>'   // landlord savings — not modelled for an alternative
-          + '<td class="num">—</td>'   // tenant savings
-          + '<td class="num">—</td>'   // ancillary revenue
-          + '<td class="num">—</td>'   // payback
-          // An alternative measure is exactly what a MAC column is FOR — it is how a reader compares
-          // what was not recommended against what was, and these rows carried no MAC cell at all.
-          // The per-annual-tonne basis works for a post-exit measure without any special casing.
-          + '<td class="num">' + (cm.marginal_abatement_cost != null ? fmtCurrency(num(cm.marginal_abatement_cost)) : '—') + '</td>'
-          + '<td class="num">—</td>'   // return on cost
-          + '</tr>';
-      });
+      // Considered-but-not-recommended measures are NO LONGER appended here. They render as
+      // their own two-column table on a separate page (see the not-recommended block below),
+      // so the recommended table carries only the recommended package + its totals.
       html += '</tbody></table>';
       setHtml('measures-groups', html);
+
+      // ── Measures considered but NOT recommended ──────────────────────────────────────────
+      // Own page, own two-column (measure + reason) table — never mixed into the recommended
+      // table's financial columns. Measures that are inapplicable because of the building's
+      // characteristics (not_applicable === true: no gas, no elevators, all-electric, and so on)
+      // are dropped entirely and never appear anywhere in the report. Hidden when nothing remains.
+      var notRec = considered.filter(function(cm) {
+        return cm && !cm.not_applicable && (cm.name || cm.reason);
+      });
+      if (notRec.length) {
+        var nrHtml = '<table class="data-table">'
+          + '<colgroup><col style="width:34%"><col style="width:66%"></colgroup>'
+          + '<thead><tr><th>Measure</th><th>Reason not recommended</th></tr></thead><tbody>';
+        notRec.forEach(function(cm) {
+          nrHtml += '<tr>'
+            + '<td><strong>' + esc(cm.name || '—') + '</strong></td>'
+            + '<td>' + esc(cm.reason || '—') + '</td>'
+            + '</tr>';
+        });
+        nrHtml += '</tbody></table>';
+        setHtml('measures-nr-groups', nrHtml);
+        showEl('measures-nr-section');
+      }
       // One line stating the definition, since "$/tCO2e" alone is ambiguous about whether it is
       // per tonne per year or over some horizon.
       (function() {
         var items = (data.measures && data.measures.items) || [];
+        var parts = [];
         if (items.some(function(x) { return x.marginal_abatement_cost != null; })) {
-          setText('measures-basis-note', 'Marginal abatement cost is net capital cost after incentives \u00f7 annual tCO2e abated \u2014 dollars per tonne per year, independent of the hold period and of measure life.');
+          parts.push('Marginal abatement cost is net capital cost after incentives \u00f7 annual tCO2e abated \u2014 dollars per tonne per year, independent of the hold period and of measure life.');
+        }
+        // Explain the two non-numeric markers the rows can carry, only when they actually appear.
+        if (items.some(function(x) { var l = num(x.landlord_utility_savings), t = num(x.tenant_utility_savings); return (l == null || l === 0) && t != null && t > 0; })) {
+          parts.push('\u201cn/a\u201d on payback and return-on-cost marks a tenant-paid measure: the utility saving accrues to residents, not the owner, so an owner-side payback does not apply.');
+        }
+        if (items.some(function(x) { return x.generation_kwh != null && x.energy_savings_kwh == null; })) {
+          parts.push('\u201cgen\u201d marks on-site generation (e.g. solar) \u2014 energy produced rather than saved.');
+        }
+        if (parts.length) {
+          setText('measures-basis-note', parts.join(' '));
           showEl('measures-basis-note');
         }
       })();
@@ -1200,6 +1255,12 @@
         + (cEff != null ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">After efficiency</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);opacity:0.75;width:' + ((cEff / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cEff) + '</div></div>' : '')
         + '<div style="display:flex;align-items:center;gap:8px;font-size:12px"><div style="width:90px;flex-shrink:0;color:#707477">+ solar</div><div style="flex:1;height:14px;background:#E2E4E5;position:relative"><div style="height:100%;background:var(--chart-positive);width:' + ((cPost / cMaxAll) * 100) + '%"></div></div><div style="width:90px;text-align:right;font-family:Arial;font-weight:600">' + fmt2sig(cPost) + '</div></div>'
         + '</div>'
+        // When on-site solar earns no carbon reduction (e.g. a VOST/REC-retention tariff), the
+        // "+ solar" bar equals "after efficiency" and looks like a rendering error. Explain it.
+        // Prefer an authored note from the data; fall back to a generic, accurate statement.
+        + ((cEff != null && Math.abs(cPost - cEff) < 0.01 * cMaxAll)
+            ? '<div class="exhibit-note">' + esc(carbon.solar_carbon_note || 'On-site solar earns no Scope 2 carbon reduction under the applicable utility tariff — the renewable energy credits are retained by the utility — so the “+ solar” bar matches “after efficiency.” See Compliance Notes.') + '</div>'
+            : '')
         + (cBauExit != null ? '<div class="exhibit-note">Grid decarbonization (Cambium projection) is shown separately — it is a projection of the regional grid, not an action taken at this asset.</div>' : ''));
     }
     var energy = imp.energy || {};
@@ -1446,16 +1507,26 @@
     }
 
     var reg = imp.regulatory;
-    if (reg && reg.applicable_standard) {
+    if (reg && (reg.applicable_standard || reg.note)) {
       var statusClass = reg.compliance_status || 'not-applicable';
-      var fineLine = reg.annual_fine_avoided_usd != null
-        ? '<div class="exhibit-note"><strong>Annual fine avoided: ' + fmtCurrency(num(reg.annual_fine_avoided_usd)) + '/yr</strong></div>' : '';
       showEl('impact-regulatory');
-      setHtml('impact-regulatory',
-        '<span class="regulatory-badge ' + esc(statusClass) + '">' + esc((statusClass || '').replace(/-/g, ' ')) + '</span>'
-        + '<div class="impact-metric-title" style="margin-top:8px">' + esc(reg.applicable_standard) + '</div>'
-        + fineLine
-        + (reg.note ? '<div class="narrative" style="margin-top:8px;font-size:12px">' + esc(reg.note) + '</div>' : ''));
+      if (statusClass === 'not-applicable') {
+        // No BPS applies. Just say so once — no "not applicable" badge stacked on a
+        // "Not applicable" title stacked on the sentence that already says it.
+        setHtml('impact-regulatory',
+          '<div class="impact-metric-title">Building Performance Standard</div>'
+          + '<div class="narrative" style="margin-top:8px;font-size:12px">'
+          + esc(reg.note || 'Not subject to a Building Performance Standard as of the report date.')
+          + '</div>');
+      } else {
+        var fineLine = reg.annual_fine_avoided_usd != null
+          ? '<div class="exhibit-note"><strong>Annual fine avoided: ' + fmtCurrency(num(reg.annual_fine_avoided_usd)) + '/yr</strong></div>' : '';
+        setHtml('impact-regulatory',
+          '<span class="regulatory-badge ' + esc(statusClass) + '">' + esc((statusClass || '').replace(/-/g, ' ')) + '</span>'
+          + '<div class="impact-metric-title" style="margin-top:8px">' + esc(reg.applicable_standard) + '</div>'
+          + fineLine
+          + (reg.note ? '<div class="narrative" style="margin-top:8px;font-size:12px">' + esc(reg.note) + '</div>' : ''));
+      }
     }
 
     /* ════════════════════════════════
@@ -1521,7 +1592,11 @@
         if (incentivePrograms.summary) { setHtml('incentives-summary', esc(incentivePrograms.summary)); showEl('incentives-summary'); }
         if (incentiveItems.length) {
           setHtml('incentives-items', incentiveItems.map(function(it) {
-            return '<div class="consideration-item"><div class="consideration-title">' + esc(it.program || it.title || '') + '</div><div class="consideration-detail">' + esc(it.description || it.detail || '') + '</div></div>';
+            var ref = it.reference || it.citation || it.source || '';
+            return '<div class="consideration-item"><div class="consideration-title">' + esc(it.program || it.title || '') + '</div>'
+              + '<div class="consideration-detail">' + esc(it.description || it.detail || '') + '</div>'
+              + (ref ? '<div class="consideration-detail" style="margin-top:3px;color:var(--text-muted);font-size:10px">Reference: ' + esc(ref) + '</div>' : '')
+              + '</div>';
           }).join(''));
         }
       }

@@ -719,6 +719,10 @@
               "description": {
                 "type": "string",
                 "description": "What the program offers and how it applies to this asset/measures."
+              },
+              "reference": {
+                "type": "string",
+                "description": "Grounded citation for the program — administering authority + program/statute (e.g. 'Austin Energy — Multifamily HVAC Rebate' or 'IRC §168(k)'). From the incentives research agent; a dollar figure with no reference is not defensible."
               }
             }
           }

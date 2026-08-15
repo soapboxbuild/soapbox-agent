@@ -272,6 +272,13 @@
           "type": "object",
           "description": "Value Creation Bridge (Exhibit 3.1) — cumulative operating flows over the hold plus the capitalized exit value uplift at the presumed exit cap. Preferred over the legacy operating-basis 'waterfall' shape; when present it replaces it. All figures engine-computed — omit entirely rather than estimate any field.",
           "additionalProperties": false,
+          "required": [
+            "incremental_capex",
+            "incentives",
+            "cumulative_utility_savings",
+            "exit_value_uplift",
+            "net"
+          ],
           "properties": {
             "incremental_capex": {
               "type": "number",
@@ -402,7 +409,9 @@
             },
             "reduction_pct": {
               "type": "number",
-              "description": "Percent reduction, computed as (baseline - post) / baseline if omitted."
+              "minimum": -1,
+              "maximum": 1,
+              "description": "FRACTION in [0,1] (occasionally slightly negative for an increase), e.g. 0.70 for a 70% reduction, computed as (baseline - post) / baseline if omitted. NOT a whole-number percent — a value like 70 belongs here as 0.70. The template's renderer multiplies this by 100 when displaying it (a raw 70 would print as \"7000%\"; a real Crystal View Apartments report shipped exactly that bug, 2026-08-15)."
             },
             "combined_post_retrofit_tco2e": {
               "type": "number",
@@ -410,6 +419,8 @@
             },
             "grid_decarb_reduction_pct": {
               "type": "number",
+              "minimum": -1,
+              "maximum": 1,
               "description": "Additional emissions-reduction fraction (0-1) attributable to grid decarbonization beyond the measures-only headline."
             },
             "basis": {
@@ -421,6 +432,8 @@
             },
             "efficiency_reduction_pct": {
               "type": "number",
+              "minimum": -1,
+              "maximum": 1,
               "description": "Emissions-reduction fraction (0-1) from efficiency + electrification measures ONLY, excluding on-site generation. The like-for-like partner of impact.energy.post_retrofit_kwh, so the carbon and energy panels can be compared on the same measure set."
             },
             "post_retrofit_efficiency_tco2e": {

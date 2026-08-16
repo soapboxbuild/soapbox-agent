@@ -87,10 +87,17 @@
       --radius-none: 0px;
       --radius-pill: 999px;
       --border-width-accent-bar: 6px;
+      --space-3: 4px;
       --space-4: 8px;
+      --space-5: 12px;
       --space-6: 16px;
       --space-8: 24px;
       --space-9: 32px;
+      /* --space-3 and --space-5 were referenced (exec-summary-eyebrow margin, and the impact-section
+         exhibit/metric compaction below) but never defined here — an undefined var() with no fallback
+         makes the WHOLE declaration invalid, so those rules were silently computing to 0, not to the
+         "tightened" padding/margin the impact-compaction comment (2026-08-04) describes. Filled in on
+         the file's own 4px-step scale (matches --space-4/6/8 exactly: value = (N-2)*4) (user, 2026-08-15). */
       --page-margin-print: 0.5in;
       --rail-width: 0.9in;
       --page-w-portrait: 8.5in;
@@ -198,6 +205,10 @@
     /* ─── Exhibit framing (numbered chart/table figures, pitchbook convention) ─── */
     .exhibit { border: 1px solid var(--border-hairline); padding: var(--space-8); margin: var(--space-8) 0; }
     .exhibit:first-of-type { margin-top: 0; }
+    /* EUI and GHGi charts specifically, per the user's request (user, 2026-08-15). No border on just
+       these two exhibits — do not touch the shared .exhibit rule above, which still frames the Value
+       Bridge, capex table, and every other exhibit in this template. */
+    #exhibit-eui, #exhibit-ghgi { border: none; }
     .exhibit-label { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--bronze); font-weight: 700; margin-bottom: 2px; }
     .exhibit-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-6); }
     .exhibit-note { font-size: 10px; color: var(--text-muted); margin-top: var(--space-4); }
@@ -251,6 +262,10 @@
     #impact-section .impact-metric { padding: var(--space-5); }
     #impact-section svg { max-height: 125px; }
     .impact-metric { flex: 1; min-width: 220px; padding: var(--space-6); }
+    /* Guaranteed break between the GHGi exhibit and the BPS panel that follows it — do not rely
+       solely on the preceding exhibit's own trailing margin (which computed to 0 while --space-5 was
+       undefined above, and would vanish anyway if EUI/GHGi are both hidden for this asset) (user, 2026-08-15). */
+    #impact-regulatory { margin-top: var(--space-6); }
     .impact-metric-title { font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: var(--space-6); }
     .impact-reduction-pct { font-size: 28px; font-weight: 700; color: var(--mi-forest); font-family: var(--font-data); }
     .regulatory-badge { display: inline-block; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; margin-bottom: var(--space-4); }
@@ -690,6 +705,18 @@
       var p = dec * 100;
       return (Math.abs(p) >= 10 ? Math.round(p) : parseFloat(p.toFixed(1))) + '%';
     }
+    // fmtPct (above) expects a FRACTION in [0,1] (occasionally slightly negative for an increase),
+    // e.g. 0.70 for "70%". A reduction-percentage field like carbon.reduction_pct reads, by its own
+    // name, as "the percent value itself" to whoever populates it (e.g. 70) — and 70 fed straight
+    // into fmtPct prints "7000%" (confirmed from a real report: reduction_pct: 70, derived from
+    // baseline/post-retrofit tCO2e that itself implies ~70%, i.e. 0.70 was intended). A genuine
+    // fraction for a reduction is never > 1 in magnitude, so any |v| > 1 arriving here is
+    // unambiguously an already-scaled whole-number percent, never a valid fraction — normalize it
+    // once, right where the raw field is read, rather than guessing at every fmtPct call site
+    // downstream (user, 2026-08-15).
+    function toFraction(v) {
+      return (typeof v === 'number' && isFinite(v) && Math.abs(v) > 1) ? v / 100 : v;
+    }
     function formatEnergyKwh(kwh) {
       if (typeof kwh !== 'number' || !isFinite(kwh)) return { value: '—', unit: 'kWh/yr' };
       var a = Math.abs(kwh);
@@ -772,18 +799,33 @@
     // record. Rendered only when it exists — an empty shell is worse than no section, and the client
     // asked for something punchy they can read in ten seconds.
     var xs = data.executive_summary_block;
-    // PREFERRED: a simple multi-paragraph summary. Every paragraph renders at the same size and
-    // weight, in the order the author supplies them — the intended order is the building's current
-    // state, the measures considered, the recommended bundle, and only then a brief note on CRREM
-    // (context, not the driver). No headline callout, no bold labels, no CRREM emphasis.
-    if (xs && Array.isArray(xs.paragraphs) && xs.paragraphs.filter(function(p){ return p != null && String(p).trim(); }).length) {
-      var xsParas = xs.paragraphs.filter(function(p){ return p != null && String(p).trim(); })
-        .map(function(p){ return '<p class="exec-summary-para">' + esc(String(p).trim()) + '</p>'; }).join('');
+    var xsParaList = (xs && Array.isArray(xs.paragraphs))
+      ? xs.paragraphs.filter(function(p){ return p != null && String(p).trim(); }) : [];
+    // The engine's deterministic narrative (sum.narrative), split into paragraphs on blank lines.
+    // Falls back to the whole string as one paragraph when the author wrote it without blank-line
+    // breaks (still renders as prose, just one block instead of several).
+    var narrativeRaw = (sum.narrative != null && String(sum.narrative).trim()) ? String(sum.narrative).trim() : '';
+    var narrativeParaList = narrativeRaw ? narrativeRaw.split(/\n\s*\n/).map(function(p){ return p.trim(); }).filter(function(p){ return p; }) : [];
+    if (!narrativeParaList.length && narrativeRaw) narrativeParaList = [narrativeRaw];
+    // PREFERRED, in this order: xs.paragraphs, then sum.narrative. Both render as uniform
+    // plain-prose paragraphs (.exec-summary-para) — every paragraph the same size and weight, no
+    // headline callout, no bold labels, no CRREM emphasis (user, 2026-08-03). The structured
+    // eyebrow/headline/labelled-row rendering below is a LEGACY fallback only — it was winning
+    // over an already-correct sum.narrative whenever xs carried ANY of headline/crrem_status/
+    // recommendation, which is almost always, silently reintroducing the boxed/labelled format
+    // this exact request already rejected once (user, 2026-08-15).
+    if (xsParaList.length) {
+      var xsParas = xsParaList.map(function(p){ return '<p class="exec-summary-para">' + esc(String(p).trim()) + '</p>'; }).join('');
       setHtml('exec-summary', '<div class="exec-summary">' + xsParas + '</div>');
+      showEl('exec-summary');
+    } else if (narrativeParaList.length) {
+      var narParas = narrativeParaList.map(function(p){ return '<p class="exec-summary-para">' + esc(p) + '</p>'; }).join('');
+      setHtml('exec-summary', '<div class="exec-summary">' + narParas + '</div>');
       showEl('exec-summary');
     } else if (xs && (xs.headline || xs.crrem_status || xs.recommendation)) {
       // LEGACY structured summary (headline + labelled rows) — kept so engagements authored before
-      // the paragraphs field still render. New decarb runs should supply paragraphs[].
+      // the paragraphs field still render, and reached now ONLY when neither paragraph source above
+      // supplied anything.
       var xsRows = '';
       if (xs.crrem_status) {
         xsRows += '<div class="exec-summary-row"><strong>Compliance:</strong> ' + esc(xs.crrem_status)
@@ -813,20 +855,17 @@
         + xsRows + '</div>');
       showEl('exec-summary');
     }
-    // The agreed executive summary SUPERSEDES the engine's deterministic narrative — it does not sit
-    // above it. Two summaries of the same plan on the same page is a worse document than either alone:
-    // the reader has to work out which one is authoritative, and they restate the same figures in
-    // different words (the engine's is generated, the exec summary is the one agreed with the client).
-    // Show the narrative only when there is no executive summary to lead with.
-    setHtml('summary-narrative', esc(sum.narrative || '').replace(/\n/g, '<br>'));
-    var hasExecSummary = !!(document.getElementById('exec-summary') && document.getElementById('exec-summary').style.display !== 'none' && document.getElementById('exec-summary').innerHTML.trim());
-    // The agreed executive summary supersedes the engine narrative (see above).
-    if (hasExecSummary) { var _sn = document.getElementById('summary-narrative'); if (_sn) _sn.style.display = 'none'; }
+    // #summary-narrative is now dead: sum.narrative renders (as plain paragraphs, above) INSIDE
+    // #exec-summary whenever it's the winning source, so there is never a second copy of the same
+    // content to show separately. Keep the element for older cached renders that may still
+    // reference the id, but it never gets populated or shown from this path.
+    var _sn = document.getElementById('summary-narrative');
+    if (_sn) { _sn.style.display = 'none'; _sn.innerHTML = ''; }
     var kpiTiles = [];
     if (fin.total_investment != null) kpiTiles.push({ label: 'Total Incremental Investment', value: fmtCurrency(num(fin.total_investment)) });
     if (fin.total_incentives != null) kpiTiles.push({ label: 'Incentives', value: fmtCurrency(num(fin.total_incentives)) });
     if (fin.net_investment != null) kpiTiles.push({ label: 'Net Investment', value: fmtCurrency(num(fin.net_investment)), sublabel: 'after incentives' });
-    var carbonPctForKpi = (imp.carbon && imp.carbon.reduction_pct != null) ? num(imp.carbon.reduction_pct)
+    var carbonPctForKpi = (imp.carbon && imp.carbon.reduction_pct != null) ? toFraction(num(imp.carbon.reduction_pct))
       : (imp.carbon && imp.carbon.baseline_tco2e != null && imp.carbon.post_retrofit_tco2e != null)
         ? (num(imp.carbon.baseline_tco2e) - num(imp.carbon.post_retrofit_tco2e)) / num(imp.carbon.baseline_tco2e)
         : null;
@@ -836,7 +875,7 @@
     // beside a 75% measures figure, which read as a separate, unrelated number — and the two do not
     // add anyway, they compound. It now shows the CUMULATIVE reduction against today's baseline,
     // matching how the energy tiles already step (user, 2026-07-30).
-    var effCarbonPct = (imp.carbon && imp.carbon.efficiency_reduction_pct != null) ? num(imp.carbon.efficiency_reduction_pct) : null;
+    var effCarbonPct = (imp.carbon && imp.carbon.efficiency_reduction_pct != null) ? toFraction(num(imp.carbon.efficiency_reduction_pct)) : null;
     var cumCarbonPct = (imp.carbon && imp.carbon.baseline_tco2e != null && imp.carbon.combined_post_retrofit_tco2e != null && num(imp.carbon.baseline_tco2e) > 0)
       ? (num(imp.carbon.baseline_tco2e) - num(imp.carbon.combined_post_retrofit_tco2e)) / num(imp.carbon.baseline_tco2e)
       : null;
@@ -1228,7 +1267,7 @@
       // panels on one page disagreeing on what "reduction" is measured against is the worse failure.
       var cCombined = (carbon.combined_post_retrofit_tco2e != null) ? num(carbon.combined_post_retrofit_tco2e) : cPost;
       var cPctToday = (cBase && cCombined != null) ? (cBase - cCombined) / cBase : null;
-      var cPctMeasures = carbon.reduction_pct != null ? num(carbon.reduction_pct) : null;
+      var cPctMeasures = carbon.reduction_pct != null ? toFraction(num(carbon.reduction_pct)) : null;
       var cPct = (cPctToday != null) ? cPctToday : (cPctMeasures != null ? cPctMeasures : (cBase ? (cBase - cPost) / cBase : null));
       var cMax = Math.max(cBase, cPost) || 1;
       // Headline is MEASURES-ONLY. When the projector also supplies the grid-decarbonized figure,

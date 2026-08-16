@@ -862,7 +862,14 @@
     var _sn = document.getElementById('summary-narrative');
     if (_sn) { _sn.style.display = 'none'; _sn.innerHTML = ''; }
     var kpiTiles = [];
-    if (fin.total_investment != null) kpiTiles.push({ label: 'Total Incremental Investment', value: fmtCurrency(num(fin.total_investment)) });
+    // Mislabeled "Total Incremental Investment" until 2026-08-15 (Crystal View Apartments):
+    // fin.total_investment is the GROSS capital plan (like-for-like/mandatory replacement PLUS
+    // the true incremental decarb spend combined, e.g. $7.4M here), not net of the like-for-like
+    // portion -- the actual incremental-only figure is bridge.incremental_capex (e.g. $1.7M),
+    // shown correctly as "Incremental Capex" in the Value Bridge exhibit. Calling this tile
+    // "Incremental" read as if it were that smaller number and didn't reconcile against the
+    // bridge, which is exactly what was reported. Label now says what the value actually is.
+    if (fin.total_investment != null) kpiTiles.push({ label: 'Total Investment', value: fmtCurrency(num(fin.total_investment)) });
     if (fin.total_incentives != null) kpiTiles.push({ label: 'Incentives', value: fmtCurrency(num(fin.total_incentives)) });
     if (fin.net_investment != null) kpiTiles.push({ label: 'Net Investment', value: fmtCurrency(num(fin.net_investment)), sublabel: 'after incentives' });
     var carbonPctForKpi = (imp.carbon && imp.carbon.reduction_pct != null) ? toFraction(num(imp.carbon.reduction_pct))
